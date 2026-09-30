@@ -1,0 +1,917 @@
+import { useState } from "react";
+import {
+  PlusCircle,
+  Pencil,
+  Trash2,
+  Check,
+  X,
+  ChevronDown,
+  ArrowLeft,
+  History,
+  AlertTriangle,
+  Clock3,
+} from "lucide-react";
+import { useCatalog } from "../../context/CatalogContext";
+import { useCourses } from "../../context/CoursesContext";
+import { useStudents } from "../../context/StudentsContext";
+import { useEntries } from "../../context/EntriesContext";
+import { categoryOf } from "../../domain/catalog";
+import {
+  totalsForStudent,
+  totalsForStudentOnHold,
+  targetsForStudent,
+  programName,
+  coursesWithinTransferWindow,
+  holdLabel,
+} from "../../domain/totals";
+import { formatLogTime } from "../../domain/format";
+import { emptyForm } from "../../domain/entryForm";
+
+import { Field } from "../../components/ui/Field";
+import { CategoryCard } from "../../components/ui/CategoryCard";
+import { EntryForm } from "../../components/ui/EntryForm";
+import { Student } from "@/types/user";
+import { AuditEvent } from "@/types/domain";
+import { TimeEntry } from "@/types/entry";
+import { LogEventArgs } from "@/types/log";
+import { useNavigate } from "react-router-dom";
+import { routes } from "@/routes";
+
+type AdminDetailViewProps = {
+  student: Student;
+  auditLog: AuditEvent[];
+  onLog: (log: LogEventArgs) => void;
+  embedded: boolean;
+};
+export const AdminDetailView = ({
+  student,
+  auditLog,
+  onLog,
+  embedded,
+}: AdminDetailViewProps) => {
+  const navigate = useNavigate();
+  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS, programs } = useCatalog();
+  const { courses } = useCourses();
+  const { students, updateStudent: persistStudent, deleteStudent: removeStudentApi } =
+    useStudents();
+  const { entries, createEntry, updateEntry, deleteEntry } = useEntries();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState(
+    emptyForm(student.courseId, CATEGORIES, LEARNING_GOALS),
+  );
+  const [addingNew, setAddingNew] = useState(false);
+  const [newForm, setNewForm] = useState(
+    emptyForm(student.courseId, CATEGORIES, LEARNING_GOALS),
+  );
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [scope, setScope] = useState("uddannelse");
+  const [confirmRemoveCourseId, setConfirmRemoveCourseId] = useState<
+    string | null
+  >(null);
+  const [showMoveHold, setShowMoveHold] = useState(false);
+  const [moveTargetId, setMoveTargetId] = useState("");
+  const [moveKeepAsLink, setMoveKeepAsLink] = useState(true);
+  const [confirmDeleteStudent, setConfirmDeleteStudent] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editName, setEditName] = useState(student.name);
+  const [editEmail, setEditEmail] = useState(student.email);
+  const [profileError, setProfileError] = useState("");
+  const [toast, setToast] = useState("");
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2200);
+  };
+
+  const totalsWholeProgram = totalsForStudent(student, entries, CATEGORIES);
+  const targetsWholeProgram = targetsForStudent(student, courses, CATEGORIES);
+  const totalsThisHold = totalsForStudentOnHold(
+    student,
+    entries,
+    student.courseId,
+    CATEGORIES,
+  );
+  const targetsThisHold = courses[student.courseId].targets || {};
+  const includedLinks = (student.courseLinks || []).filter((l) => l.included);
+  const totals = scope === "hold" ? totalsThisHold : totalsWholeProgram;
+  const targets = scope === "hold" ? targetsThisHold : targetsWholeProgram;
+  const studentEntries = entries
+    .filter((e) => e.studentId === student.id)
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+
+  const availableHoldsToAdd = coursesWithinTransferWindow(
+    student.courseId,
+    courses,
+  ).filter(
+    (h) => !(student.courseLinks || []).some((l) => l.courseId === h.id),
+  );
+  const [addcourseId, setAddcourseId] = useState(
+    availableHoldsToAdd[0]?.id || "",
+  );
+
+  const holdOptions = [
+    courses[student.courseId],
+    ...Object.values(courses).filter((h) => h.id !== student.courseId),
+  ];
+
+  const studentLog = auditLog
+    .filter(
+      (log: AuditEvent) =>
+        log.studentId === student.id || log.courseId === student.courseId,
+    )
+    .sort((a: AuditEvent, b: AuditEvent) => b.at.getTime() - a.at.getTime());
+
+  const patchStudent = async (patch: Partial<Student>) => {
+    await persistStudent(student.id, patch);
+  };
+
+  const startEditProfile = () => {
+    setEditName(student.name);
+    setEditEmail(student.email);
+    setProfileError("");
+    setEditingProfile(true);
+  };
+
+  const saveProfile = async () => {
+    const trimmedName = editName.trim();
+    const trimmedEmail = editEmail.trim();
+    if (!trimmedName || !trimmedEmail) {
+      setProfileError("Udfyld både navn og email.");
+      return;
+    }
+    if (
+      students.some(
+        (s) =>
+          s.id !== student.id &&
+          s.email.toLowerCase() === trimmedEmail.toLowerCase(),
+      )
+    ) {
+      setProfileError("En anden kursist bruger allerede denne email.");
+      return;
+    }
+    const oldName = student.name;
+    const oldEmail = student.email;
+    await patchStudent({ name: trimmedName, email: trimmedEmail });
+    const changes = [];
+    if (trimmedName !== oldName)
+      changes.push(`navn fra "${oldName}" til "${trimmedName}"`);
+    if (trimmedEmail !== oldEmail)
+      changes.push(`email fra "${oldEmail}" til "${trimmedEmail}"`);
+    if (changes.length > 0) {
+      onLog({
+        actor: "Administrator",
+        studentId: student.id,
+        description: `Administrator ændrede ${changes.join(" og ")}`,
+      });
+      showToast("Oplysninger opdateret");
+    }
+    setEditingProfile(false);
+  };
+
+  const addHoldLink = async () => {
+    if (!addcourseId) return;
+    await patchStudent({
+      courseLinks: [
+        ...(student.courseLinks || []),
+        { courseId: addcourseId, included: true },
+      ],
+    });
+    onLog({
+      actor: "Administrator",
+      studentId: student.id,
+      description: `Administrator tilføjede ${courses[addcourseId]?.label || addcourseId} til ${student.name}s holdhistorik`,
+    });
+    showToast(`${courses[addcourseId]?.label} tilføjet`);
+  };
+
+  const toggleHoldLink = async (courseId: string) => {
+    const link = (student.courseLinks || []).find(
+      (l) => l.courseId === courseId,
+    );
+    const nowIncluded = !link?.included;
+    await patchStudent({
+      courseLinks: (student.courseLinks || []).map((l) =>
+        l.courseId === courseId ? { ...l, included: nowIncluded } : l,
+      ),
+    });
+    onLog({
+      actor: "Administrator",
+      studentId: student.id,
+      description: nowIncluded
+        ? `Administrator lod timer fra ${courses[courseId]?.label || courseId} tælle med for ${student.name}`
+        : `Administrator udelod timer fra ${courses[courseId]?.label || courseId} for ${student.name}`,
+    });
+  };
+
+  const removeHoldLink = async (courseId: string) => {
+    const wasIncluded = (student.courseLinks || []).some(
+      (l) => l.courseId === courseId && l.included,
+    );
+    const hoursFromHold = wasIncluded
+      ? entries
+          .filter((e) => e.studentId === student.id && e.courseId === courseId)
+          .reduce((sum, e) => sum + Number(e.hours), 0)
+      : 0;
+    await patchStudent({
+      courseLinks: (student.courseLinks || []).filter(
+        (l) => l.courseId !== courseId,
+      ),
+    });
+    onLog({
+      actor: "Administrator",
+      studentId: student.id,
+      description: wasIncluded
+        ? `Administrator fjernede overførslen fra ${courses[courseId]?.label || courseId} for ${student.name} — ${hoursFromHold} timer blev trukket ud af regnskabet igen`
+        : `Administrator fjernede ${courses[courseId]?.label || courseId} fra ${student.name}s holdhistorik`,
+    });
+    showToast(
+      wasIncluded
+        ? `Overførsel fjernet — ${hoursFromHold} timer trukket tilbage`
+        : `${courses[courseId]?.label || courseId} fjernet fra holdhistorik`,
+    );
+    setConfirmRemoveCourseId(null);
+  };
+
+  const moveToHold = async () => {
+    if (!moveTargetId || moveTargetId === student.courseId) {
+      setShowMoveHold(false);
+      return;
+    }
+    const oldcourseId = student.courseId;
+    const oldHoldLabel = courses[oldcourseId]?.label || oldcourseId;
+    const newHoldLabel = courses[moveTargetId]?.label || moveTargetId;
+    const restOfLinks = (student.courseLinks || []).filter(
+      (l) => l.courseId !== oldcourseId && l.courseId !== moveTargetId,
+    );
+    const newLinks = moveKeepAsLink
+      ? [...restOfLinks, { courseId: oldcourseId, included: true }]
+      : restOfLinks;
+    await patchStudent({ courseId: moveTargetId, courseLinks: newLinks });
+    onLog({
+      actor: "Administrator",
+      studentId: student.id,
+      description: moveKeepAsLink
+        ? `Administrator flyttede ${student.name} fra ${oldHoldLabel} til ${newHoldLabel} (${oldHoldLabel} beholdt som tidligere hold, timer tæller fortsat med)`
+        : `Administrator flyttede ${student.name} fra ${oldHoldLabel} til ${newHoldLabel} (${oldHoldLabel} fjernet helt, fx pga. fejlregistrering)`,
+    });
+    showToast(`${student.name} flyttet til ${newHoldLabel}`);
+    setShowMoveHold(false);
+    setMoveTargetId("");
+    setMoveKeepAsLink(true);
+  };
+
+  const handleDeleteStudent = async () => {
+    const entryCount = entries.filter((e) => e.studentId === student.id).length;
+    await removeStudentApi(student.id);
+    onLog({
+      actor: "Administrator",
+      description: `Administrator slettede kursisten ${student.name} (${student.email}) permanent, inkl. ${entryCount} registreringer — jf. GDPR`,
+    });
+    navigate(-1);
+  };
+
+  const startEdit = (entry: TimeEntry) => {
+    setEditingId(entry.id as string);
+    setEditForm({ ...entry, hours: String(entry.hours) });
+    setConfirmId(null);
+    setAddingNew(false);
+  };
+
+  const saveEdit = async () => {
+    if (!editingId) return;
+    await updateEntry(editingId, {
+      ...editForm,
+      hours: Number(editForm.hours),
+    });
+    onLog({
+      actor: "Administrator",
+      studentId: student.id,
+      description: `Administrator rettede en registrering for ${student.name} (${categoryOf(ALL_CATEGORIES, editForm.category).label})`,
+    });
+    setEditingId(null);
+    showToast("Registrering opdateret");
+  };
+
+  const removeEntry = async (id: string) => {
+    const removed = entries.find((e) => e.id === id);
+    await deleteEntry(id);
+    if (removed) {
+      onLog({
+        actor: "Administrator",
+        studentId: student.id,
+        description: `Administrator slettede en registrering på ${removed.hours} timer for ${student.name} (${categoryOf(ALL_CATEGORIES, removed.category).label})`,
+      });
+    }
+    setConfirmId(null);
+    showToast("Registrering slettet");
+  };
+
+  const addEntry = async () => {
+    if (!newForm.hours || Number(newForm.hours) <= 0) return;
+    await createEntry({
+      studentId: student.id,
+      ...newForm,
+      hours: Number(newForm.hours),
+    });
+    onLog({
+      actor: "Administrator",
+      studentId: student.id,
+      description: `Administrator tilføjede ${newForm.hours} timer for ${student.name} (${categoryOf(ALL_CATEGORIES, newForm.category).label})`,
+    });
+    setNewForm(emptyForm(student.courseId, CATEGORIES, LEARNING_GOALS));
+    setAddingNew(false);
+    showToast("Registrering tilføjet");
+  };
+
+  const body = (
+    <>
+      <div className="px-5 pb-[18px] pt-[26px]">
+        <button
+          className="inline-flex cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 font-sans text-[13px] font-semibold text-[var(--ink-soft)]"
+          onClick={() => navigate(routes.adminStudents)}
+        >
+          <ArrowLeft size={15} /> Kursister
+        </button>
+        <div
+          className="mt-2 flex items-start justify-between"
+          style={{ marginTop: 10 }}
+        >
+          {editingProfile ? (
+            <div style={{ flex: 1 }}>
+              <div className="flex gap-3">
+                <Field label="Navn">
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+                </Field>
+                <Field label="Email">
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                  />
+                </Field>
+              </div>
+              {profileError && (
+                <div className="-mt-1.5 mb-3 text-xs text-[#a14b36]">
+                  {profileError}
+                </div>
+              )}
+              <div className="mt-[18px] flex gap-2.5">
+                <button
+                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  onClick={() => setEditingProfile(false)}
+                >
+                  Annuller
+                </button>
+                <button
+                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  onClick={saveProfile}
+                >
+                  Gem
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div>
+                <div
+                  className="mb-0.5 font-[family-name:var(--font-display)] text-[28px] font-semibold"
+                  style={{ fontSize: 22 }}
+                >
+                  {student.name}
+                </div>
+                <div className="text-[13px] text-[var(--ink-soft)]">
+                  {student.email} · {courses[student.courseId].label}
+                </div>
+              </div>
+              <button
+                className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                onClick={startEditProfile}
+                title="Ret navn eller email"
+              >
+                <Pencil size={16} />
+              </button>
+            </>
+          )}
+        </div>
+        <div className="mt-4 flex items-center gap-2">
+          <span className="h-3 w-0.5 shrink-0 rounded-sm bg-[var(--surplus)]" />
+          <span className="stitch-line" />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-5 pb-25 pt-1">
+        <div className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]">
+          <Clock3 size={14} style={{ verticalAlign: -2, marginRight: 6 }} />
+          Holdhistorik
+        </div>
+        <div className="mb-4 rounded-[14px] border border-[var(--border)] bg-[var(--card)] px-[18px] py-4">
+          <p className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]">
+            Kursister kan have gået på et andet hold eller kursus tidligere i
+            uddannelsen. Her ses alle hold {student.name} har været tilknyttet,
+            og I kan bestemme hvilke af dem der skal tælle med i timeregnskabet.
+            Kun hold oprettet inden for 5 år af{" "}
+            {courses[student.courseId].label} kan tilføjes, da uddannelsen
+            forløber over op til 5 år.
+          </p>
+
+          <div className="flex items-center justify-between gap-2.5 border-b border-[var(--border)] py-2.5 last:border-b-0">
+            <div>
+              <div className="text-sm font-semibold" style={{ fontSize: 13 }}>
+                {courses[student.courseId].label} ·{" "}
+                {courses[student.courseId].startYear}
+              </div>
+              <div className="mt-px text-xs text-[var(--ink-soft)]">
+                {programName(courses[student.courseId], programs)
+                  ? `${programName(courses[student.courseId], programs)} · `
+                  : ""}
+                Nuværende hold · tæller altid med
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full border border-[var(--blue)] px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.04em] text-[var(--blue)]">
+              Nuværende
+            </span>
+          </div>
+
+          {showMoveHold ? (
+            <div
+              className="my-[18px] mb-1.5 rounded-xl border-[1.5px] border-dashed border-[var(--border)] p-3.5"
+              style={{ marginTop: -6, marginBottom: 16 }}
+            >
+              <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                Forkert hold tilknyttet?
+              </div>
+              <Field
+                label="Flyt til hold"
+                hint="Fx hvis kursisten ved en fejl er blevet tilknyttet det forkerte hold."
+              >
+                <div className="relative">
+                  <select
+                    value={moveTargetId}
+                    onChange={(e) => setMoveTargetId(e.target.value)}
+                  >
+                    <option value="">Vælg hold…</option>
+                    {Object.values(courses)
+                      .filter((h) => h.id !== student.courseId)
+                      .map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.label} · {h.startYear}
+                        </option>
+                      ))}
+                  </select>
+                  <ChevronDown
+                    size={16}
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+                  />
+                </div>
+              </Field>
+              <label
+                className="mb-1 flex cursor-pointer items-center justify-between text-[13px] font-semibold"
+                style={{ marginTop: 4 }}
+              >
+                <span>
+                  Behold {courses[student.courseId].label} som tidligere hold
+                  (timer tæller stadig med)
+                </span>
+                <span
+                  className={`switch switch-sm ${moveKeepAsLink ? "on" : ""}`}
+                  onClick={() => setMoveKeepAsLink(!moveKeepAsLink)}
+                >
+                  <span className="absolute top-[3px] left-[3px] h-[18px] w-[18px] rounded-full bg-[var(--card)] transition-[left] duration-150" />
+                </span>
+              </label>
+              {!moveKeepAsLink && (
+                <p
+                  className="mt-1 block text-[11px] text-[var(--ink-soft)]"
+                  style={{ color: "var(--terracotta)" }}
+                >
+                  {courses[student.courseId].label} fjernes helt fra{" "}
+                  {student.name}s historik — brug kun dette, hvis tilknytningen
+                  var en ren fejl.
+                </p>
+              )}
+              <div className="mt-[18px] flex gap-2.5" style={{ marginTop: 10 }}>
+                <button
+                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  onClick={() => {
+                    setShowMoveHold(false);
+                    setMoveTargetId("");
+                    setMoveKeepAsLink(true);
+                  }}
+                >
+                  Annuller
+                </button>
+                <button
+                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  onClick={moveToHold}
+                  disabled={!moveTargetId}
+                >
+                  Flyt kursisten
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-[var(--blue)]"
+              style={{ marginTop: -6, marginBottom: 16 }}
+              onClick={() => setShowMoveHold(true)}
+            >
+              Forkert hold tilknyttet? Flyt kursisten til et andet hold
+            </button>
+          )}
+
+          {(student.courseLinks || []).map((link) => (
+            <div
+              className="flex items-center justify-between gap-2.5 border-b border-[var(--border)] py-2.5 last:border-b-0"
+              key={link.courseId}
+            >
+              <div>
+                <div className="text-sm font-semibold" style={{ fontSize: 13 }}>
+                  {holdLabel(link.courseId, courses)} ·{" "}
+                  {courses[link.courseId]?.startYear || ""}
+                </div>
+                <div className="mt-px text-xs text-[var(--ink-soft)]">
+                  {programName(courses[link.courseId], programs)
+                    ? `${programName(courses[link.courseId], programs)} · `
+                    : ""}
+                  {link.included
+                    ? "Tæller med i regnskabet"
+                    : "Vises i historik, tæller ikke med"}
+                </div>
+              </div>
+              {confirmRemoveCourseId === link.courseId ? (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span>Fjern helt?</span>
+                  <button
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                    onClick={() => removeHoldLink(link.courseId)}
+                  >
+                    <Check size={14} />
+                  </button>
+                  <button
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                    onClick={() => setConfirmRemoveCourseId(null)}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span
+                    className={`switch switch-sm ${link.included ? "on" : ""}`}
+                    onClick={() => toggleHoldLink(link.courseId)}
+                  >
+                    <span className="absolute top-[3px] left-[3px] h-[18px] w-[18px] rounded-full bg-[var(--card)] transition-[left] duration-150" />
+                  </span>
+                  <button
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                    onClick={() => setConfirmRemoveCourseId(link.courseId)}
+                    title="Fjern hold helt (fx hvis forkert hold blev tilknyttet)"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {availableHoldsToAdd.length > 0 ? (
+            <div className="mt-3.5 flex flex-wrap items-center gap-2">
+              <div className="relative" style={{ flex: 1 }}>
+                <select
+                  value={addcourseId}
+                  onChange={(e) => setAddcourseId(e.target.value)}
+                >
+                  {availableHoldsToAdd.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.label} · {h.startYear}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+                />
+              </div>
+              <button
+                className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+                onClick={addHoldLink}
+              >
+                <PlusCircle size={14} /> Tilføj eksisterende hold
+              </button>
+            </div>
+          ) : (
+            <p
+              className="mt-1 block text-[11px] text-[var(--ink-soft)]"
+              style={{ marginTop: 10 }}
+            >
+              Ingen flere hold inden for 5-års-vinduet at tilføje.
+            </p>
+          )}
+        </div>
+
+        {includedLinks.length > 0 && (
+          <div className="flex flex-wrap gap-2" style={{ marginBottom: 12 }}>
+            <button
+              className="cursor-pointer rounded-full border-[1.5px] px-3.5 py-2 text-[13px] font-semibold transition-all"
+              style={{
+                background:
+                  scope === "uddannelse" ? "var(--ink)" : "var(--card)",
+                color: scope === "uddannelse" ? "var(--card)" : "var(--ink)",
+              }}
+              onClick={() => setScope("uddannelse")}
+            >
+              Hele uddannelsen
+            </button>
+            <button
+              className="cursor-pointer rounded-full border-[1.5px] px-3.5 py-2 text-[13px] font-semibold transition-all"
+              style={{
+                background: scope === "hold" ? "var(--ink)" : "var(--card)",
+                color: scope === "hold" ? "var(--card)" : "var(--ink)",
+              }}
+              onClick={() => setScope("hold")}
+            >
+              Dette hold
+            </button>
+          </div>
+        )}
+
+        <div className="md:grid md:grid-cols-3 md:gap-3">
+          {Object.values(CATEGORIES).map((cat) => (
+            <CategoryCard
+              key={cat.key}
+              label={cat.label}
+              registered={totals[cat.key]}
+              target={targets[cat.key]}
+              color={cat.color}
+            />
+          ))}
+        </div>
+
+        <div className="mt-[22px] flex items-center justify-between">
+          <div
+            className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]"
+            style={{ margin: 0 }}
+          >
+            Registreringer
+          </div>
+          {!addingNew && (
+            <button
+              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+              onClick={() => {
+                setAddingNew(true);
+                setEditingId(null);
+                setNewForm(
+                  emptyForm(student.courseId, CATEGORIES, LEARNING_GOALS),
+                );
+              }}
+            >
+              <PlusCircle size={14} /> Tilføj
+            </button>
+          )}
+        </div>
+
+        {addingNew && (
+          <div className="mb-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3">
+            <EntryForm
+              values={newForm}
+              onChange={setNewForm}
+              onSubmit={addEntry}
+              onCancel={() => setAddingNew(false)}
+              submitLabel="Tilføj registrering"
+              showHoldField
+              holdOptions={holdOptions}
+            />
+          </div>
+        )}
+
+        {studentEntries.length === 0 && !addingNew && (
+          <div className="px-2.5 py-10 text-center text-[13px] text-[var(--ink-soft)]">
+            Ingen registreringer endnu.
+          </div>
+        )}
+
+        {studentEntries.map((e) => {
+          const cat = categoryOf(ALL_CATEGORIES, e.category);
+          if (editingId === e.id) {
+            return (
+              <div
+                className="mb-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3"
+                key={e.id}
+              >
+                <EntryForm
+                  values={editForm}
+                  onChange={setEditForm}
+                  onSubmit={saveEdit}
+                  onCancel={() => setEditingId(null)}
+                  submitLabel="Gem ændring"
+                  showHoldField
+                  holdOptions={holdOptions}
+                />
+              </div>
+            );
+          }
+          return (
+            <div
+              className="mb-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3"
+              key={e.id}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ background: cat.color }}
+                />
+                <span
+                  className="text-xs font-semibold"
+                  style={{ color: cat.color }}
+                >
+                  {cat.label}
+                </span>
+                <span className="ml-auto font-[family-name:var(--font-mono)] text-[11px] text-[var(--ink-soft)]">
+                  {e.date}
+                </span>
+              </div>
+              <div className="mt-1.5 flex items-end justify-between">
+                <div>
+                  <div className="font-[family-name:var(--font-mono)] text-xl font-semibold">
+                    {e.hours} timer
+                  </div>
+                  {e.therapist && (
+                    <div className="mt-0.5 text-xs text-[var(--ink-soft)]">
+                      Terapeut: {e.therapist}
+                    </div>
+                  )}
+                  <div className="mt-0.5 text-xs text-[var(--ink-soft)]">
+                    Hold: {holdLabel(e.courseId, courses)}
+                  </div>
+                </div>
+                {confirmId === e.id ? (
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <span>Slet?</span>
+                    <button
+                      className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                      onClick={() => removeEntry(e.id ?? "")}
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                      onClick={() => setConfirmId(null)}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-1.5">
+                    <button
+                      className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                      onClick={() => startEdit(e)}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                      onClick={() => setConfirmId(e.id ?? "")}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="mt-1.5 text-xs leading-snug text-[var(--ink-soft)]">
+                {e.learningGoal}
+              </div>
+              {e.notes && (
+                <div className="mt-1.5 text-xs leading-snug text-[var(--ink-soft)]">
+                  {e.notes}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        <div className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]">
+          <History size={14} style={{ verticalAlign: -2, marginRight: 6 }} />
+          Aktivitetslog
+        </div>
+        <p
+          className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]"
+          style={{ marginTop: -6 }}
+        >
+          Sporer hvem der har ændret {student.name}s timer og timeoverførsel,
+          til dokumentation.
+        </p>
+        {studentLog.length === 0 && (
+          <div className="px-2.5 py-10 text-center text-[13px] text-[var(--ink-soft)]">
+            Ingen ændringer registreret endnu.
+          </div>
+        )}
+        {studentLog.map((log) => (
+          <div
+            className="flex flex-wrap items-baseline gap-x-2 gap-y-1.5 border-b border-[var(--border)] py-2.5 text-xs last:border-b-0"
+            key={log.id}
+          >
+            <span
+              className={`shrink-0 rounded-full border px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.04em] ${log.actor === "Administrator" ? "border-[var(--terracotta)] text-[var(--terracotta)]" : "border-[var(--border)] text-[var(--ink-soft)]"}`}
+            >
+              {log.actor}
+            </span>
+            <span className="min-w-[140px] flex-1 text-[var(--ink)]">
+              {log.description}
+            </span>
+            <span className="w-full font-[family-name:var(--font-mono)] text-[11px] text-[var(--ink-soft)]">
+              {formatLogTime(log.at)}
+            </span>
+          </div>
+        ))}
+
+        <div
+          className="mt-4 flex items-center gap-2"
+          style={{ margin: "20px 0" }}
+        >
+          <span className="stitch-line" />
+        </div>
+
+        <div
+          className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]"
+          style={{ color: "var(--terracotta)" }}
+        >
+          <AlertTriangle
+            size={14}
+            style={{ verticalAlign: -2, marginRight: 6 }}
+          />
+          Faresone
+        </div>
+        {confirmDeleteStudent ? (
+          <div className="my-[18px] mb-1.5 rounded-xl border-[1.5px] border-dashed border-[var(--border)] p-3.5">
+            <div
+              className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.08em] text-[var(--ink-soft)]"
+              style={{ color: "var(--terracotta)" }}
+            >
+              Bekræft sletning
+            </div>
+            <p
+              className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]"
+              style={{ margin: "6px 0 10px" }}
+            >
+              {student.name} og alle {studentEntries.length} registreringer
+              slettes permanent. Dette kan ikke fortrydes.
+            </p>
+            <div className="mt-[18px] flex gap-2.5">
+              <button
+                className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                onClick={() => setConfirmDeleteStudent(false)}
+              >
+                Annuller
+              </button>
+              <button
+                className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                style={{
+                  background: "var(--terracotta)",
+                  borderColor: "var(--terracotta)",
+                }}
+                onClick={handleDeleteStudent}
+              >
+                Ja, slet permanent
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+            style={{
+              color: "var(--terracotta)",
+              borderColor: "var(--terracotta)",
+            }}
+            onClick={() => setConfirmDeleteStudent(true)}
+          >
+            <Trash2 size={14} /> Slet kursist permanent (GDPR)
+          </button>
+        )}
+      </div>
+
+      {toast && (
+        <div className="fixed bottom-[84px] left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--ink)] px-[18px] py-2.5 text-[13px] text-[var(--card)] shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
+          <Check size={14} /> {toast}
+        </div>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="min-w-0 flex-1 overflow-y-auto px-6 pb-10 pt-1 -body">
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative mx-auto flex min-h-screen max-w-[430px] flex-col bg-[var(--paper)] font-sans text-[var(--ink)] md:my-10 md:min-h-[calc(100vh-80px)] md:max-w-[900px] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
+      {body}
+    </div>
+  );
+};
