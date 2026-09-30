@@ -15,6 +15,7 @@ import { useCatalog } from "../../context/CatalogContext";
 import { useCourses } from "../../context/CoursesContext";
 import { useStudents } from "../../context/StudentsContext";
 import { useEntries } from "../../context/EntriesContext";
+import { useAuditLogs } from "../../context/AuditLogsContext";
 import { categoryOf } from "../../domain/catalog";
 import {
   totalsForStudent,
@@ -31,37 +32,31 @@ import { Field } from "../../components/ui/Field";
 import { CategoryCard } from "../../components/ui/CategoryCard";
 import { EntryForm } from "../../components/ui/EntryForm";
 import { Student } from "@/types/user";
-import { AuditEvent } from "@/types/domain";
 import { TimeEntry } from "@/types/entry";
-import { LogEventArgs } from "@/types/log";
 import { useNavigate } from "react-router-dom";
 import { routes } from "@/routes";
 
-type AdminDetailViewProps = {
-  student: Student;
-  auditLog: AuditEvent[];
-  onLog: (log: LogEventArgs) => void;
-  embedded: boolean;
-};
-export const AdminDetailView = ({
-  student,
-  auditLog,
-  onLog,
-  embedded,
-}: AdminDetailViewProps) => {
+type AdminDetailViewProps = {};
+export const AdminDetailView = ({}: AdminDetailViewProps) => {
   const navigate = useNavigate();
   const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS, programs } = useCatalog();
   const { courses } = useCourses();
-  const { students, updateStudent: persistStudent, deleteStudent: removeStudentApi } =
-    useStudents();
+  const {
+    students,
+    selectedStudent,
+    updateStudent: persistStudent,
+    deleteStudent: removeStudentApi,
+  } = useStudents();
   const { entries, createEntry, updateEntry, deleteEntry } = useEntries();
+  const { auditLogs, logEvent } = useAuditLogs();
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(
-    emptyForm(student.courseId, CATEGORIES, LEARNING_GOALS),
+    emptyForm(selectedStudent?.courseId || "", CATEGORIES, LEARNING_GOALS),
   );
   const [addingNew, setAddingNew] = useState(false);
   const [newForm, setNewForm] = useState(
-    emptyForm(student.courseId, CATEGORIES, LEARNING_GOALS),
+    emptyForm(selectedStudent?.courseId || "", CATEGORIES, LEARNING_GOALS),
   );
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [scope, setScope] = useState("uddannelse");
@@ -73,61 +68,71 @@ export const AdminDetailView = ({
   const [moveKeepAsLink, setMoveKeepAsLink] = useState(true);
   const [confirmDeleteStudent, setConfirmDeleteStudent] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
-  const [editName, setEditName] = useState(student.name);
-  const [editEmail, setEditEmail] = useState(student.email);
+  const [editName, setEditName] = useState(selectedStudent?.name || "");
+  const [editEmail, setEditEmail] = useState(selectedStudent?.email || "");
   const [profileError, setProfileError] = useState("");
   const [toast, setToast] = useState("");
+  const [addcourseId, setAddcourseId] = useState("");
+
+  if (!selectedStudent) {
+    return <div>Kursist ikke fundet</div>;
+  }
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(""), 2200);
   };
 
-  const totalsWholeProgram = totalsForStudent(student, entries, CATEGORIES);
-  const targetsWholeProgram = targetsForStudent(student, courses, CATEGORIES);
-  const totalsThisHold = totalsForStudentOnHold(
-    student,
+  const totalsWholeProgram = totalsForStudent(
+    selectedStudent,
     entries,
-    student.courseId,
     CATEGORIES,
   );
-  const targetsThisHold = courses[student.courseId].targets || {};
-  const includedLinks = (student.courseLinks || []).filter((l) => l.included);
+  const targetsWholeProgram = targetsForStudent(
+    selectedStudent,
+    courses,
+    CATEGORIES,
+  );
+  const totalsThisHold = totalsForStudentOnHold(
+    selectedStudent,
+    entries,
+    selectedStudent?.courseId || "",
+    CATEGORIES,
+  );
+  const targetsThisHold =
+    courses[selectedStudent?.courseId || ""].targets || {};
+  const includedLinks = (selectedStudent?.courseLinks || []).filter(
+    (l) => l.included,
+  );
   const totals = scope === "hold" ? totalsThisHold : totalsWholeProgram;
   const targets = scope === "hold" ? targetsThisHold : targetsWholeProgram;
   const studentEntries = entries
-    .filter((e) => e.studentId === student.id)
+    .filter((e) => e.studentId === selectedStudent.id)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   const availableHoldsToAdd = coursesWithinTransferWindow(
-    student.courseId,
+    selectedStudent.courseId,
     courses,
   ).filter(
-    (h) => !(student.courseLinks || []).some((l) => l.courseId === h.id),
-  );
-  const [addcourseId, setAddcourseId] = useState(
-    availableHoldsToAdd[0]?.id || "",
+    (h) =>
+      !(selectedStudent.courseLinks || []).some((l) => l.courseId === h.id),
   );
 
   const holdOptions = [
-    courses[student.courseId],
-    ...Object.values(courses).filter((h) => h.id !== student.courseId),
+    courses[selectedStudent.courseId],
+    ...Object.values(courses).filter((h) => h.id !== selectedStudent.courseId),
   ];
 
-  const studentLog = auditLog
-    .filter(
-      (log: AuditEvent) =>
-        log.studentId === student.id || log.courseId === student.courseId,
-    )
-    .sort((a: AuditEvent, b: AuditEvent) => b.at.getTime() - a.at.getTime());
-
+  const studentLog = auditLogs.filter(
+    (log) => log.studentId === selectedStudent.id,
+  );
   const patchStudent = async (patch: Partial<Student>) => {
-    await persistStudent(student.id, patch);
+    await persistStudent(selectedStudent.id, patch);
   };
 
   const startEditProfile = () => {
-    setEditName(student.name);
-    setEditEmail(student.email);
+    setEditName(selectedStudent.name);
+    setEditEmail(selectedStudent.email);
     setProfileError("");
     setEditingProfile(true);
   };
@@ -142,15 +147,15 @@ export const AdminDetailView = ({
     if (
       students.some(
         (s) =>
-          s.id !== student.id &&
+          s.id !== selectedStudent.id &&
           s.email.toLowerCase() === trimmedEmail.toLowerCase(),
       )
     ) {
       setProfileError("En anden kursist bruger allerede denne email.");
       return;
     }
-    const oldName = student.name;
-    const oldEmail = student.email;
+    const oldName = selectedStudent.name;
+    const oldEmail = selectedStudent.email;
     await patchStudent({ name: trimmedName, email: trimmedEmail });
     const changes = [];
     if (trimmedName !== oldName)
@@ -158,9 +163,9 @@ export const AdminDetailView = ({
     if (trimmedEmail !== oldEmail)
       changes.push(`email fra "${oldEmail}" til "${trimmedEmail}"`);
     if (changes.length > 0) {
-      onLog({
+      void logEvent({
         actor: "Administrator",
-        studentId: student.id,
+        studentId: selectedStudent.id,
         description: `Administrator ændrede ${changes.join(" og ")}`,
       });
       showToast("Oplysninger opdateret");
@@ -172,57 +177,60 @@ export const AdminDetailView = ({
     if (!addcourseId) return;
     await patchStudent({
       courseLinks: [
-        ...(student.courseLinks || []),
+        ...(selectedStudent.courseLinks || []),
         { courseId: addcourseId, included: true },
       ],
     });
-    onLog({
+    void logEvent({
       actor: "Administrator",
-      studentId: student.id,
-      description: `Administrator tilføjede ${courses[addcourseId]?.label || addcourseId} til ${student.name}s holdhistorik`,
+      studentId: selectedStudent.id,
+      description: `Administrator tilføjede ${courses[addcourseId]?.label || addcourseId} til ${selectedStudent.name}s holdhistorik`,
     });
     showToast(`${courses[addcourseId]?.label} tilføjet`);
   };
 
   const toggleHoldLink = async (courseId: string) => {
-    const link = (student.courseLinks || []).find(
+    const link = (selectedStudent.courseLinks || []).find(
       (l) => l.courseId === courseId,
     );
     const nowIncluded = !link?.included;
     await patchStudent({
-      courseLinks: (student.courseLinks || []).map((l) =>
+      courseLinks: (selectedStudent.courseLinks || []).map((l) =>
         l.courseId === courseId ? { ...l, included: nowIncluded } : l,
       ),
     });
-    onLog({
+    void logEvent({
       actor: "Administrator",
-      studentId: student.id,
+      studentId: selectedStudent.id,
       description: nowIncluded
-        ? `Administrator lod timer fra ${courses[courseId]?.label || courseId} tælle med for ${student.name}`
-        : `Administrator udelod timer fra ${courses[courseId]?.label || courseId} for ${student.name}`,
+        ? `Administrator lod timer fra ${courses[courseId]?.label || courseId} tælle med for ${selectedStudent.name}`
+        : `Administrator udelod timer fra ${courses[courseId]?.label || courseId} for ${selectedStudent.name}`,
     });
   };
 
   const removeHoldLink = async (courseId: string) => {
-    const wasIncluded = (student.courseLinks || []).some(
+    const wasIncluded = (selectedStudent.courseLinks || []).some(
       (l) => l.courseId === courseId && l.included,
     );
     const hoursFromHold = wasIncluded
       ? entries
-          .filter((e) => e.studentId === student.id && e.courseId === courseId)
+          .filter(
+            (e) =>
+              e.studentId === selectedStudent.id && e.courseId === courseId,
+          )
           .reduce((sum, e) => sum + Number(e.hours), 0)
       : 0;
     await patchStudent({
-      courseLinks: (student.courseLinks || []).filter(
+      courseLinks: (selectedStudent.courseLinks || []).filter(
         (l) => l.courseId !== courseId,
       ),
     });
-    onLog({
+    void logEvent({
       actor: "Administrator",
-      studentId: student.id,
+      studentId: selectedStudent.id,
       description: wasIncluded
-        ? `Administrator fjernede overførslen fra ${courses[courseId]?.label || courseId} for ${student.name} — ${hoursFromHold} timer blev trukket ud af regnskabet igen`
-        : `Administrator fjernede ${courses[courseId]?.label || courseId} fra ${student.name}s holdhistorik`,
+        ? `Administrator fjernede overførslen fra ${courses[courseId]?.label || courseId} for ${selectedStudent.name} — ${hoursFromHold} timer blev trukket ud af regnskabet igen`
+        : `Administrator fjernede ${courses[courseId]?.label || courseId} fra ${selectedStudent.name}s holdhistorik`,
     });
     showToast(
       wasIncluded
@@ -233,39 +241,42 @@ export const AdminDetailView = ({
   };
 
   const moveToHold = async () => {
-    if (!moveTargetId || moveTargetId === student.courseId) {
+    if (!moveTargetId || moveTargetId === selectedStudent.courseId) {
       setShowMoveHold(false);
       return;
     }
-    const oldcourseId = student.courseId;
+    const oldcourseId = selectedStudent.courseId;
     const oldHoldLabel = courses[oldcourseId]?.label || oldcourseId;
     const newHoldLabel = courses[moveTargetId]?.label || moveTargetId;
-    const restOfLinks = (student.courseLinks || []).filter(
+    const restOfLinks = (selectedStudent.courseLinks || []).filter(
       (l) => l.courseId !== oldcourseId && l.courseId !== moveTargetId,
     );
     const newLinks = moveKeepAsLink
       ? [...restOfLinks, { courseId: oldcourseId, included: true }]
       : restOfLinks;
     await patchStudent({ courseId: moveTargetId, courseLinks: newLinks });
-    onLog({
+    void logEvent({
       actor: "Administrator",
-      studentId: student.id,
+      studentId: selectedStudent.id,
       description: moveKeepAsLink
-        ? `Administrator flyttede ${student.name} fra ${oldHoldLabel} til ${newHoldLabel} (${oldHoldLabel} beholdt som tidligere hold, timer tæller fortsat med)`
-        : `Administrator flyttede ${student.name} fra ${oldHoldLabel} til ${newHoldLabel} (${oldHoldLabel} fjernet helt, fx pga. fejlregistrering)`,
+        ? `Administrator flyttede ${selectedStudent.name} fra ${oldHoldLabel} til ${newHoldLabel} (${oldHoldLabel} beholdt som tidligere hold, timer tæller fortsat med)`
+        : `Administrator flyttede ${selectedStudent.name} fra ${oldHoldLabel} til ${newHoldLabel} (${oldHoldLabel} fjernet helt, fx pga. fejlregistrering)`,
     });
-    showToast(`${student.name} flyttet til ${newHoldLabel}`);
+    showToast(`${selectedStudent.name} flyttet til ${newHoldLabel}`);
     setShowMoveHold(false);
     setMoveTargetId("");
     setMoveKeepAsLink(true);
   };
 
   const handleDeleteStudent = async () => {
-    const entryCount = entries.filter((e) => e.studentId === student.id).length;
-    await removeStudentApi(student.id);
-    onLog({
+    const entryCount = entries.filter(
+      (e) => e.studentId === selectedStudent.id,
+    ).length;
+    await removeStudentApi(selectedStudent.id);
+    void logEvent({
       actor: "Administrator",
-      description: `Administrator slettede kursisten ${student.name} (${student.email}) permanent, inkl. ${entryCount} registreringer — jf. GDPR`,
+      studentId: selectedStudent.id,
+      description: `Administrator slettede kursisten ${selectedStudent.name} (${selectedStudent.email}) permanent, inkl. ${entryCount} registreringer — jf. GDPR`,
     });
     navigate(-1);
   };
@@ -283,10 +294,10 @@ export const AdminDetailView = ({
       ...editForm,
       hours: Number(editForm.hours),
     });
-    onLog({
+    void logEvent({
       actor: "Administrator",
-      studentId: student.id,
-      description: `Administrator rettede en registrering for ${student.name} (${categoryOf(ALL_CATEGORIES, editForm.category).label})`,
+      studentId: selectedStudent.id,
+      description: `Administrator rettede en registrering for ${selectedStudent.name} (${categoryOf(ALL_CATEGORIES, editForm.category).label})`,
     });
     setEditingId(null);
     showToast("Registrering opdateret");
@@ -296,10 +307,10 @@ export const AdminDetailView = ({
     const removed = entries.find((e) => e.id === id);
     await deleteEntry(id);
     if (removed) {
-      onLog({
+      void logEvent({
         actor: "Administrator",
-        studentId: student.id,
-        description: `Administrator slettede en registrering på ${removed.hours} timer for ${student.name} (${categoryOf(ALL_CATEGORIES, removed.category).label})`,
+        studentId: selectedStudent.id,
+        description: `Administrator slettede en registrering på ${removed.hours} timer for ${selectedStudent.name} (${categoryOf(ALL_CATEGORIES, removed.category).label})`,
       });
     }
     setConfirmId(null);
@@ -309,25 +320,25 @@ export const AdminDetailView = ({
   const addEntry = async () => {
     if (!newForm.hours || Number(newForm.hours) <= 0) return;
     await createEntry({
-      studentId: student.id,
+      studentId: selectedStudent.id,
       ...newForm,
       hours: Number(newForm.hours),
     });
-    onLog({
+    void logEvent({
       actor: "Administrator",
-      studentId: student.id,
-      description: `Administrator tilføjede ${newForm.hours} timer for ${student.name} (${categoryOf(ALL_CATEGORIES, newForm.category).label})`,
+      studentId: selectedStudent.id,
+      description: `Administrator tilføjede ${newForm.hours} timer for ${selectedStudent.name} (${categoryOf(ALL_CATEGORIES, newForm.category).label})`,
     });
-    setNewForm(emptyForm(student.courseId, CATEGORIES, LEARNING_GOALS));
+    setNewForm(emptyForm(selectedStudent.courseId, CATEGORIES, LEARNING_GOALS));
     setAddingNew(false);
     showToast("Registrering tilføjet");
   };
 
   const body = (
     <>
-      <div className="px-5 pb-[18px] pt-[26px]">
+      <div className="px-5 pb-4.5 pt-6.5">
         <button
-          className="inline-flex cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 font-sans text-[13px] font-semibold text-[var(--ink-soft)]"
+          className="inline-flex cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 font-sans text-[13px] font-semibold text-ink-soft"
           onClick={() => navigate(routes.adminStudents)}
         >
           <ArrowLeft size={15} /> Kursister
@@ -355,19 +366,19 @@ export const AdminDetailView = ({
                 </Field>
               </div>
               {profileError && (
-                <div className="-mt-1.5 mb-3 text-xs text-[#a14b36]">
+                <div className="-mt-1.5 mb-3 text-xs text-terracotta">
                   {profileError}
                 </div>
               )}
-              <div className="mt-[18px] flex gap-2.5">
+              <div className="mt-6 flex gap-2.5">
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={() => setEditingProfile(false)}
                 >
                   Annuller
                 </button>
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-paper transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={saveProfile}
                 >
                   Gem
@@ -378,17 +389,18 @@ export const AdminDetailView = ({
             <>
               <div>
                 <div
-                  className="mb-0.5 font-[family-name:var(--font-display)] text-[28px] font-semibold"
+                  className="mb-0.5 font-display text-[28px] font-semibold"
                   style={{ fontSize: 22 }}
                 >
-                  {student.name}
+                  {selectedStudent.name}
                 </div>
-                <div className="text-[13px] text-[var(--ink-soft)]">
-                  {student.email} · {courses[student.courseId].label}
+                <div className="text-[13px] text-ink-soft">
+                  {selectedStudent.email} ·{" "}
+                  {courses[selectedStudent.courseId].label}
                 </div>
               </div>
               <button
-                className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                 onClick={startEditProfile}
                 title="Ret navn eller email"
               >
@@ -398,50 +410,50 @@ export const AdminDetailView = ({
           )}
         </div>
         <div className="mt-4 flex items-center gap-2">
-          <span className="h-3 w-0.5 shrink-0 rounded-sm bg-[var(--surplus)]" />
+          <span className="h-3 w-0.5 shrink-0 rounded-sm bg-surplus" />
           <span className="stitch-line" />
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 pb-25 pt-1">
-        <div className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]">
+        <div className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink">
           <Clock3 size={14} style={{ verticalAlign: -2, marginRight: 6 }} />
           Holdhistorik
         </div>
-        <div className="mb-4 rounded-[14px] border border-[var(--border)] bg-[var(--card)] px-[18px] py-4">
-          <p className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]">
+        <div className="mb-4 rounded-[14px] border border-border bg-card px-4.5 py-4">
+          <p className="mb-3.5 text-[13px] leading-normal text-ink-soft">
             Kursister kan have gået på et andet hold eller kursus tidligere i
-            uddannelsen. Her ses alle hold {student.name} har været tilknyttet,
-            og I kan bestemme hvilke af dem der skal tælle med i timeregnskabet.
-            Kun hold oprettet inden for 5 år af{" "}
-            {courses[student.courseId].label} kan tilføjes, da uddannelsen
-            forløber over op til 5 år.
+            uddannelsen. Her ses alle hold {selectedStudent.name} har været
+            tilknyttet, og I kan bestemme hvilke af dem der skal tælle med i
+            timeregnskabet. Kun hold oprettet inden for 5 år af{" "}
+            {courses[selectedStudent.courseId].label} kan tilføjes, da
+            uddannelsen forløber over op til 5 år.
           </p>
 
-          <div className="flex items-center justify-between gap-2.5 border-b border-[var(--border)] py-2.5 last:border-b-0">
+          <div className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0">
             <div>
               <div className="text-sm font-semibold" style={{ fontSize: 13 }}>
-                {courses[student.courseId].label} ·{" "}
-                {courses[student.courseId].startYear}
+                {courses[selectedStudent.courseId].label} ·{" "}
+                {courses[selectedStudent.courseId].startYear}
               </div>
-              <div className="mt-px text-xs text-[var(--ink-soft)]">
-                {programName(courses[student.courseId], programs)
-                  ? `${programName(courses[student.courseId], programs)} · `
+              <div className="mt-px text-xs text-ink-soft">
+                {programName(courses[selectedStudent.courseId], programs)
+                  ? `${programName(courses[selectedStudent.courseId], programs)} · `
                   : ""}
                 Nuværende hold · tæller altid med
               </div>
             </div>
-            <span className="shrink-0 rounded-full border border-[var(--blue)] px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.04em] text-[var(--blue)]">
+            <span className="shrink-0 rounded-full border border-blue px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-blue">
               Nuværende
             </span>
           </div>
 
           {showMoveHold ? (
             <div
-              className="my-[18px] mb-1.5 rounded-xl border-[1.5px] border-dashed border-[var(--border)] p-3.5"
+              className="my-6 mb-1.5 rounded-xl border-[1.5px] border-dashed border-border p-3.5"
               style={{ marginTop: -6, marginBottom: 16 }}
             >
-              <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+              <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink-soft">
                 Forkert hold tilknyttet?
               </div>
               <Field
@@ -455,7 +467,7 @@ export const AdminDetailView = ({
                   >
                     <option value="">Vælg hold…</option>
                     {Object.values(courses)
-                      .filter((h) => h.id !== student.courseId)
+                      .filter((h) => h.id !== selectedStudent.courseId)
                       .map((h) => (
                         <option key={h.id} value={h.id}>
                           {h.label} · {h.startYear}
@@ -464,7 +476,7 @@ export const AdminDetailView = ({
                   </select>
                   <ChevronDown
                     size={16}
-                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
                   />
                 </div>
               </Field>
@@ -473,29 +485,29 @@ export const AdminDetailView = ({
                 style={{ marginTop: 4 }}
               >
                 <span>
-                  Behold {courses[student.courseId].label} som tidligere hold
-                  (timer tæller stadig med)
+                  Behold {courses[selectedStudent.courseId].label} som tidligere
+                  hold (timer tæller stadig med)
                 </span>
                 <span
                   className={`switch switch-sm ${moveKeepAsLink ? "on" : ""}`}
                   onClick={() => setMoveKeepAsLink(!moveKeepAsLink)}
                 >
-                  <span className="absolute top-[3px] left-[3px] h-[18px] w-[18px] rounded-full bg-[var(--card)] transition-[left] duration-150" />
+                  <span className="absolute top-0.75 left-0.75 h-5 w-5 rounded-full bg-card transition-[left] duration-150" />
                 </span>
               </label>
               {!moveKeepAsLink && (
                 <p
-                  className="mt-1 block text-[11px] text-[var(--ink-soft)]"
+                  className="mt-1 block text-[11px] text-ink-soft"
                   style={{ color: "var(--terracotta)" }}
                 >
-                  {courses[student.courseId].label} fjernes helt fra{" "}
-                  {student.name}s historik — brug kun dette, hvis tilknytningen
-                  var en ren fejl.
+                  {courses[selectedStudent.courseId].label} fjernes helt fra{" "}
+                  {selectedStudent.name}s historik — brug kun dette, hvis
+                  tilknytningen var en ren fejl.
                 </p>
               )}
-              <div className="mt-[18px] flex gap-2.5" style={{ marginTop: 10 }}>
+              <div className="mt-6 flex gap-2.5" style={{ marginTop: 10 }}>
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={() => {
                     setShowMoveHold(false);
                     setMoveTargetId("");
@@ -505,7 +517,7 @@ export const AdminDetailView = ({
                   Annuller
                 </button>
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-paper transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={moveToHold}
                   disabled={!moveTargetId}
                 >
@@ -515,7 +527,7 @@ export const AdminDetailView = ({
             </div>
           ) : (
             <button
-              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-[var(--blue)]"
+              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
               style={{ marginTop: -6, marginBottom: 16 }}
               onClick={() => setShowMoveHold(true)}
             >
@@ -523,9 +535,9 @@ export const AdminDetailView = ({
             </button>
           )}
 
-          {(student.courseLinks || []).map((link) => (
+          {(selectedStudent.courseLinks || []).map((link) => (
             <div
-              className="flex items-center justify-between gap-2.5 border-b border-[var(--border)] py-2.5 last:border-b-0"
+              className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0"
               key={link.courseId}
             >
               <div>
@@ -533,7 +545,7 @@ export const AdminDetailView = ({
                   {holdLabel(link.courseId, courses)} ·{" "}
                   {courses[link.courseId]?.startYear || ""}
                 </div>
-                <div className="mt-px text-xs text-[var(--ink-soft)]">
+                <div className="mt-px text-xs text-ink-soft">
                   {programName(courses[link.courseId], programs)
                     ? `${programName(courses[link.courseId], programs)} · `
                     : ""}
@@ -546,13 +558,13 @@ export const AdminDetailView = ({
                 <div className="flex items-center gap-1.5 text-xs">
                   <span>Fjern helt?</span>
                   <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                     onClick={() => removeHoldLink(link.courseId)}
                   >
                     <Check size={14} />
                   </button>
                   <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                     onClick={() => setConfirmRemoveCourseId(null)}
                   >
                     <X size={14} />
@@ -564,10 +576,10 @@ export const AdminDetailView = ({
                     className={`switch switch-sm ${link.included ? "on" : ""}`}
                     onClick={() => toggleHoldLink(link.courseId)}
                   >
-                    <span className="absolute top-[3px] left-[3px] h-[18px] w-[18px] rounded-full bg-[var(--card)] transition-[left] duration-150" />
+                    <span className="absolute top-0.75 left-0.75 h-5 w-5 rounded-full bg-card transition-[left] duration-150" />
                   </span>
                   <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                     onClick={() => setConfirmRemoveCourseId(link.courseId)}
                     title="Fjern hold helt (fx hvis forkert hold blev tilknyttet)"
                   >
@@ -593,11 +605,11 @@ export const AdminDetailView = ({
                 </select>
                 <ChevronDown
                   size={16}
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
                 />
               </div>
               <button
-                className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+                className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
                 onClick={addHoldLink}
               >
                 <PlusCircle size={14} /> Tilføj eksisterende hold
@@ -605,7 +617,7 @@ export const AdminDetailView = ({
             </div>
           ) : (
             <p
-              className="mt-1 block text-[11px] text-[var(--ink-soft)]"
+              className="mt-1 block text-[11px] text-ink-soft"
               style={{ marginTop: 10 }}
             >
               Ingen flere hold inden for 5-års-vinduet at tilføje.
@@ -651,21 +663,25 @@ export const AdminDetailView = ({
           ))}
         </div>
 
-        <div className="mt-[22px] flex items-center justify-between">
+        <div className="mt-5.5 flex items-center justify-between">
           <div
-            className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]"
+            className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
             style={{ margin: 0 }}
           >
             Registreringer
           </div>
           {!addingNew && (
             <button
-              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
               onClick={() => {
                 setAddingNew(true);
                 setEditingId(null);
                 setNewForm(
-                  emptyForm(student.courseId, CATEGORIES, LEARNING_GOALS),
+                  emptyForm(
+                    selectedStudent.courseId,
+                    CATEGORIES,
+                    LEARNING_GOALS,
+                  ),
                 );
               }}
             >
@@ -675,7 +691,7 @@ export const AdminDetailView = ({
         </div>
 
         {addingNew && (
-          <div className="mb-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3">
+          <div className="mb-2.5 rounded-xl border border-border bg-card px-3.5 py-3">
             <EntryForm
               values={newForm}
               onChange={setNewForm}
@@ -689,7 +705,7 @@ export const AdminDetailView = ({
         )}
 
         {studentEntries.length === 0 && !addingNew && (
-          <div className="px-2.5 py-10 text-center text-[13px] text-[var(--ink-soft)]">
+          <div className="px-2.5 py-10 text-center text-[13px] text-ink-soft">
             Ingen registreringer endnu.
           </div>
         )}
@@ -699,7 +715,7 @@ export const AdminDetailView = ({
           if (editingId === e.id) {
             return (
               <div
-                className="mb-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3"
+                className="mb-2.5 rounded-xl border border-border bg-card px-3.5 py-3"
                 key={e.id}
               >
                 <EntryForm
@@ -716,7 +732,7 @@ export const AdminDetailView = ({
           }
           return (
             <div
-              className="mb-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3"
+              className="mb-2.5 rounded-xl border border-border bg-card px-3.5 py-3"
               key={e.id}
             >
               <div className="flex items-center gap-2">
@@ -730,21 +746,21 @@ export const AdminDetailView = ({
                 >
                   {cat.label}
                 </span>
-                <span className="ml-auto font-[family-name:var(--font-mono)] text-[11px] text-[var(--ink-soft)]">
+                <span className="ml-auto font-mono text-[11px] text-ink-soft">
                   {e.date}
                 </span>
               </div>
               <div className="mt-1.5 flex items-end justify-between">
                 <div>
-                  <div className="font-[family-name:var(--font-mono)] text-xl font-semibold">
+                  <div className="font-mono text-xl font-semibold">
                     {e.hours} timer
                   </div>
                   {e.therapist && (
-                    <div className="mt-0.5 text-xs text-[var(--ink-soft)]">
+                    <div className="mt-0.5 text-xs text-ink-soft">
                       Terapeut: {e.therapist}
                     </div>
                   )}
-                  <div className="mt-0.5 text-xs text-[var(--ink-soft)]">
+                  <div className="mt-0.5 text-xs text-ink-soft">
                     Hold: {holdLabel(e.courseId, courses)}
                   </div>
                 </div>
@@ -752,13 +768,13 @@ export const AdminDetailView = ({
                   <div className="flex items-center gap-1.5 text-xs">
                     <span>Slet?</span>
                     <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                       onClick={() => removeEntry(e.id ?? "")}
                     >
                       <Check size={14} />
                     </button>
                     <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                       onClick={() => setConfirmId(null)}
                     >
                       <X size={14} />
@@ -767,13 +783,13 @@ export const AdminDetailView = ({
                 ) : (
                   <div className="flex gap-1.5">
                     <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                       onClick={() => startEdit(e)}
                     >
                       <Pencil size={14} />
                     </button>
                     <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                       onClick={() => setConfirmId(e.id ?? "")}
                     >
                       <Trash2 size={14} />
@@ -781,11 +797,11 @@ export const AdminDetailView = ({
                   </div>
                 )}
               </div>
-              <div className="mt-1.5 text-xs leading-snug text-[var(--ink-soft)]">
+              <div className="mt-1.5 text-xs leading-snug text-ink-soft">
                 {e.learningGoal}
               </div>
               {e.notes && (
-                <div className="mt-1.5 text-xs leading-snug text-[var(--ink-soft)]">
+                <div className="mt-1.5 text-xs leading-snug text-ink-soft">
                   {e.notes}
                 </div>
               )}
@@ -793,36 +809,36 @@ export const AdminDetailView = ({
           );
         })}
 
-        <div className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]">
+        <div className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink">
           <History size={14} style={{ verticalAlign: -2, marginRight: 6 }} />
           Aktivitetslog
         </div>
         <p
-          className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]"
+          className="mb-3.5 text-[13px] leading-normal text-ink-soft"
           style={{ marginTop: -6 }}
         >
-          Sporer hvem der har ændret {student.name}s timer og timeoverførsel,
-          til dokumentation.
+          Sporer hvem der har ændret {selectedStudent.name}s timer og
+          timeoverførsel, til dokumentation.
         </p>
         {studentLog.length === 0 && (
-          <div className="px-2.5 py-10 text-center text-[13px] text-[var(--ink-soft)]">
+          <div className="px-2.5 py-10 text-center text-[13px] text-ink-soft">
             Ingen ændringer registreret endnu.
           </div>
         )}
         {studentLog.map((log) => (
           <div
-            className="flex flex-wrap items-baseline gap-x-2 gap-y-1.5 border-b border-[var(--border)] py-2.5 text-xs last:border-b-0"
+            className="flex flex-wrap items-baseline gap-x-2 gap-y-1.5 border-b border-border py-2.5 text-xs last:border-b-0"
             key={log.id}
           >
             <span
-              className={`shrink-0 rounded-full border px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.04em] ${log.actor === "Administrator" ? "border-[var(--terracotta)] text-[var(--terracotta)]" : "border-[var(--border)] text-[var(--ink-soft)]"}`}
+              className={`shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.04em] ${log.actor === "Administrator" ? "border-terracotta text-terracotta" : "border-border text-ink-soft"}`}
             >
               {log.actor}
             </span>
-            <span className="min-w-[140px] flex-1 text-[var(--ink)]">
+            <span className="min-w-35 flex-1 text-ink">
               {log.description}
             </span>
-            <span className="w-full font-[family-name:var(--font-mono)] text-[11px] text-[var(--ink-soft)]">
+            <span className="w-full font-mono text-[11px] text-ink-soft">
               {formatLogTime(log.at)}
             </span>
           </div>
@@ -836,7 +852,7 @@ export const AdminDetailView = ({
         </div>
 
         <div
-          className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]"
+          className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
           style={{ color: "var(--terracotta)" }}
         >
           <AlertTriangle
@@ -846,32 +862,32 @@ export const AdminDetailView = ({
           Faresone
         </div>
         {confirmDeleteStudent ? (
-          <div className="my-[18px] mb-1.5 rounded-xl border-[1.5px] border-dashed border-[var(--border)] p-3.5">
+          <div className="my-6 mb-1.5 rounded-xl border-[1.5px] border-dashed border-border p-3.5">
             <div
-              className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.08em] text-[var(--ink-soft)]"
+              className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink-soft"
               style={{ color: "var(--terracotta)" }}
             >
               Bekræft sletning
             </div>
             <p
-              className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]"
+              className="mb-3.5 text-[13px] leading-normal text-ink-soft"
               style={{ margin: "6px 0 10px" }}
             >
-              {student.name} og alle {studentEntries.length} registreringer
-              slettes permanent. Dette kan ikke fortrydes.
+              {selectedStudent.name} og alle {studentEntries.length}{" "}
+              registreringer slettes permanent. Dette kan ikke fortrydes.
             </p>
-            <div className="mt-[18px] flex gap-2.5">
+            <div className="mt-6 flex gap-2.5">
               <button
-                className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                 onClick={() => setConfirmDeleteStudent(false)}
               >
                 Annuller
               </button>
               <button
-                className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-paper transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                 style={{
-                  background: "var(--terracotta)",
-                  borderColor: "var(--terracotta)",
+                  background: "terracotta",
+                  borderColor: "terracotta",
                 }}
                 onClick={handleDeleteStudent}
               >
@@ -881,7 +897,7 @@ export const AdminDetailView = ({
           </div>
         ) : (
           <button
-            className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+            className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
             style={{
               color: "var(--terracotta)",
               borderColor: "var(--terracotta)",
@@ -894,23 +910,15 @@ export const AdminDetailView = ({
       </div>
 
       {toast && (
-        <div className="fixed bottom-[84px] left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--ink)] px-[18px] py-2.5 text-[13px] text-[var(--card)] shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
+        <div className="fixed bottom-21 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-ink px-4.5 py-2.5 text-[13px] text-card shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
           <Check size={14} /> {toast}
         </div>
       )}
     </>
   );
 
-  if (embedded) {
-    return (
-      <div className="min-w-0 flex-1 overflow-y-auto px-6 pb-10 pt-1 -body">
-        {body}
-      </div>
-    );
-  }
-
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-[430px] flex-col bg-[var(--paper)] font-sans text-[var(--ink)] md:my-10 md:min-h-[calc(100vh-80px)] md:max-w-[900px] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
+    <div className="relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:max-w-225 md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
       {body}
     </div>
   );

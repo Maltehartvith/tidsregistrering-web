@@ -6,10 +6,10 @@ import { CoursesProvider } from "@/context/CoursesContext.tsx";
 import { StudentsProvider } from "@/context/StudentsContext.tsx";
 import { EntriesProvider } from "@/context/EntriesContext.tsx";
 import { UsersProvider } from "@/context/UsersContext.tsx";
+import { AuditLogsProvider } from "@/context/AuditLogsContext.tsx";
 import { useAuth } from "@/context/AuthContext.tsx";
 import { useStudents } from "@/context/StudentsContext.tsx";
 import { initialViewPrefs } from "@/theme/viewPrefs.ts";
-import type { AuditEvent } from "@/types/domain.ts";
 import { ViewPrefs } from "@/types/ui.ts";
 
 import { StudentView } from "@/pages/kursist/StudentView";
@@ -30,16 +30,13 @@ import {
 import { DemoSwitcher } from "@/pages/dev/DemoSwitcher.tsx";
 import { useBootstrapQuery } from "@/hooks/useBootstrapQuery.ts";
 import { routes } from "@/routes.ts";
-import { LogEventArgs } from "@/types/log";
 
 function StudentRoute({
   viewPrefs,
   setViewPrefs,
-  onLog,
 }: {
   viewPrefs: ViewPrefs;
   setViewPrefs: (viewPrefs: ViewPrefs) => void;
-  onLog: (args: LogEventArgs) => void;
 }) {
   const { user } = useAuth();
   const { students } = useStudents();
@@ -53,7 +50,6 @@ function StudentRoute({
   return (
     <StudentView
       student={currentStudent}
-      onLog={onLog}
       viewPrefs={viewPrefs}
       setViewPrefs={setViewPrefs}
     />
@@ -65,7 +61,6 @@ export const TimeregistreringApp = () => {
   const navigate = useNavigate();
   const bootstrap = useBootstrapQuery();
   const [viewPrefs, setViewPrefs] = useState<ViewPrefs>(initialViewPrefs);
-  const [auditLog, setAuditLog] = useState<AuditEvent[]>([]);
 
   const {
     branding,
@@ -93,25 +88,6 @@ export const TimeregistreringApp = () => {
     document.title = `${branding.appTitle} · ${branding.orgName}`;
   }, [branding.appTitle, branding.orgName]);
 
-  const logEvent = ({
-    actor,
-    studentId: sid,
-    courseId,
-    description,
-  }: LogEventArgs) => {
-    setAuditLog((prev) => [
-      {
-        id: "log" + Math.random().toString(36).slice(2, 9),
-        at: new Date(),
-        actor,
-        studentId: sid || null,
-        courseId: courseId || null,
-        description,
-      },
-      ...prev,
-    ]);
-  };
-
   const needsBootstrap = Boolean(user) || demoMode;
 
   // Only wait for bootstrap when logged in (or demo). Guests should see login
@@ -122,7 +98,7 @@ export const TimeregistreringApp = () => {
 
   if (needsBootstrap && bootstrapError && !demoMode) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6 text-center text-sm text-[var(--ink-soft)]">
+      <div className="flex min-h-screen items-center justify-center p-6 text-center text-sm text-ink-soft">
         Kunne ikke hente data fra serveren. Genindlæs siden eller log ind igen.
       </div>
     );
@@ -147,141 +123,139 @@ export const TimeregistreringApp = () => {
                 adminUsers={adminUsers}
                 setAdminUsers={setAdminUsers}
               >
-                <div>
-                  <DemoSwitcher />
-                  {import.meta.env.DEV && authenticated && (
-                    <div className="sticky top-10 z-20 mx-auto flex max-w-[430px] justify-center gap-1.5 border-b border-border bg-[#f4f3ee] p-2">
-                      <button
-                        type="button"
-                        className="cursor-pointer rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-1 font-[family-name:var(--font-mono)] text-[10px] tracking-[0.04em] text-[var(--ink-soft)]"
-                        onClick={() => {
-                          setDemoMode(false);
-                          void logout();
-                          navigate(routes.login);
-                        }}
-                      >
-                        LOG UD {user ? `(${user.email})` : "(demo)"}
-                      </button>
-                    </div>
-                  )}
-                  <Routes>
-                    <Route
-                      path={routes.login}
-                      element={
-                        <RequireGuest>
-                          <AuthFlow
-                            onLoggedIn={(role) => {
-                              setDemoMode(false);
-                              navigate(homeForRole(role), { replace: true });
-                            }}
-                            onContinueDemo={() => {
-                              setDemoMode(true);
-                              navigate(routes.student);
-                            }}
-                          />
-                        </RequireGuest>
-                      }
-                    />
-                    <Route
-                      path={routes.resetPassword}
-                      element={
-                        <RequireGuest>
-                          <AuthFlow
-                            initialStep="glemt-nyt"
-                            onLoggedIn={(role) => {
-                              setDemoMode(false);
-                              navigate(homeForRole(role), { replace: true });
-                            }}
-                          />
-                        </RequireGuest>
-                      }
-                    />
-                    <Route path={routes.invite} element={<InviteAcceptPage />} />
+                <AuditLogsProvider>
+                  <div>
+                    <DemoSwitcher />
+                    {import.meta.env.DEV && authenticated && (
+                      <div className="sticky top-10 z-20 mx-auto flex max-w-107.5 justify-center gap-1.5 border-b border-border bg-[#f4f3ee] p-2">
+                        <button
+                          type="button"
+                          className="cursor-pointer rounded-full border border-border bg-card px-2.5 py-1 font-mono text-[10px] tracking-[0.04em] text-ink-soft"
+                          onClick={() => {
+                            setDemoMode(false);
+                            void logout();
+                            navigate(routes.login);
+                          }}
+                        >
+                          LOG UD {user ? `(${user.email})` : "(demo)"}
+                        </button>
+                      </div>
+                    )}
+                    <Routes>
+                      <Route
+                        path={routes.login}
+                        element={
+                          <RequireGuest>
+                            <AuthFlow
+                              onLoggedIn={(role) => {
+                                setDemoMode(false);
+                                navigate(homeForRole(role), { replace: true });
+                              }}
+                              onContinueDemo={() => {
+                                setDemoMode(true);
+                                navigate(routes.student);
+                              }}
+                            />
+                          </RequireGuest>
+                        }
+                      />
+                      <Route
+                        path={routes.resetPassword}
+                        element={
+                          <RequireGuest>
+                            <AuthFlow
+                              initialStep="glemt-nyt"
+                              onLoggedIn={(role) => {
+                                setDemoMode(false);
+                                navigate(homeForRole(role), { replace: true });
+                              }}
+                            />
+                          </RequireGuest>
+                        }
+                      />
+                      <Route
+                        path={routes.invite}
+                        element={<InviteAcceptPage />}
+                      />
 
-                    <Route
-                      path={routes.student}
-                      element={
-                        <RequireAuth>
-                          <StudentRoute
-                            viewPrefs={viewPrefs}
-                            setViewPrefs={setViewPrefs}
-                            onLog={logEvent}
-                          />
-                        </RequireAuth>
-                      }
-                    />
+                      <Route
+                        path={routes.student}
+                        element={
+                          <RequireAuth>
+                            <StudentRoute
+                              viewPrefs={viewPrefs}
+                              setViewPrefs={setViewPrefs}
+                            />
+                          </RequireAuth>
+                        }
+                      />
 
-                    <Route
-                      path={routes.adminStudents}
-                      element={
-                        <RequireStaff>
-                          <AdminStudentsView
-                            auditLog={auditLog}
-                            onLog={logEvent}
+                      <Route
+                        path={routes.adminStudents}
+                        element={
+                          <RequireStaff>
+                            <AdminStudentsView />
+                          </RequireStaff>
+                        }
+                      />
+                      <Route
+                        path="/admin/students/:studentId"
+                        element={
+                          <RequireStaff>
+                            <AdminStudentsView />
+                          </RequireStaff>
+                        }
+                      />
+                      <Route
+                        path={routes.adminCourses}
+                        element={
+                          <RequireStaff>
+                            <AdminCourseView />
+                          </RequireStaff>
+                        }
+                      />
+                      <Route
+                        path={routes.adminCatalog}
+                        element={
+                          <RequireStaff>
+                            <AdminCatalogView />
+                          </RequireStaff>
+                        }
+                      />
+                      <Route
+                        path={routes.adminDesign}
+                        element={
+                          <RequireStaff>
+                            <AdminDesignView />
+                          </RequireStaff>
+                        }
+                      />
+                      <Route
+                        path={routes.adminUsers}
+                        element={
+                          <RequireStaff>
+                            <AdminUsersView />
+                          </RequireStaff>
+                        }
+                      />
+                      <Route
+                        path="*"
+                        element={
+                          <Navigate
+                            to={
+                              authenticated
+                                ? user
+                                  ? homeForRole(user.role)
+                                  : routes.student
+                                : routes.login
+                            }
+                            replace
                           />
-                        </RequireStaff>
-                      }
-                    />
-                    <Route
-                      path="/admin/students/:studentId"
-                      element={
-                        <RequireStaff>
-                          <AdminStudentsView
-                            auditLog={auditLog}
-                            onLog={logEvent}
-                          />
-                        </RequireStaff>
-                      }
-                    />
-                    <Route
-                      path={routes.adminCourses}
-                      element={
-                        <RequireStaff>
-                          <AdminCourseView onLog={logEvent} />
-                        </RequireStaff>
-                      }
-                    />
-                    <Route
-                      path={routes.adminCatalog}
-                      element={
-                        <RequireStaff>
-                          <AdminCatalogView onLog={logEvent} />
-                        </RequireStaff>
-                      }
-                    />
-                    <Route
-                      path={routes.adminDesign}
-                      element={
-                        <RequireStaff>
-                          <AdminDesignView onLog={logEvent} />
-                        </RequireStaff>
-                      }
-                    />
-                    <Route
-                      path={routes.adminUsers}
-                      element={
-                        <RequireStaff>
-                          <AdminUsersView onLog={logEvent} />
-                        </RequireStaff>
-                      }
-                    />
-                    <Route
-                      path="*"
-                      element={
-                        <Navigate
-                          to={
-                            authenticated
-                              ? user
-                                ? homeForRole(user.role)
-                                : routes.student
-                              : routes.login
-                          }
-                          replace
-                        />
-                      }
-                    />
-                  </Routes>
-                </div>
+                        }
+                      />
+                    </Routes>
+                  </div>
+                </AuditLogsProvider>
               </UsersProvider>
             </EntriesProvider>
           </StudentsProvider>

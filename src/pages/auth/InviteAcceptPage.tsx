@@ -92,27 +92,27 @@ export function InviteAcceptPage() {
   };
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-[430px] flex-col bg-[var(--paper)] font-sans text-[var(--ink)] md:my-10 md:min-h-[calc(100vh-80px)] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
-      <div className="mx-auto mt-[60px] flex max-w-[340px] flex-col px-6">
-        <BrandLogo className="mx-auto mb-5 h-12 w-auto max-w-[220px] object-contain" />
+    <div className="relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
+      <div className="mx-auto mt-15 flex max-w-85 flex-col px-6">
+        <BrandLogo className="mx-auto mb-5 h-12 w-auto max-w-55 object-contain" />
 
         {loading && (
-          <div className="text-center text-[13px] text-[var(--ink-soft)]">
+          <div className="text-center text-[13px] text-ink-soft">
             Indlæser invitation…
           </div>
         )}
 
         {!loading && loadError && (
           <>
-            <div className="mb-2 text-center font-[family-name:var(--font-display)] text-[24px] font-semibold">
+            <div className="mb-2 text-center font-display text-[24px] font-semibold">
               Ugyldigt link
             </div>
-            <p className="mb-6 text-center text-[13px] text-[var(--ink-soft)]">
+            <p className="mb-6 text-center text-[13px] text-ink-soft">
               {loadError}
             </p>
             <button
               type="button"
-              className="cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7]"
+              className="cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card"
               onClick={() => navigate(routes.login)}
             >
               Gå til login
@@ -122,23 +122,23 @@ export function InviteAcceptPage() {
 
         {!loading && preview && !done && (
           <>
-            <div className="mb-0.5 text-center font-[family-name:var(--font-display)] text-[28px] font-semibold">
+            <div className="mb-0.5 text-center font-display text-[28px] font-semibold">
               Fuldfør invitation
             </div>
-            <p className="mb-6 text-center text-[13px] text-[var(--ink-soft)]">
+            <p className="mb-6 text-center text-[13px] text-ink-soft">
               Du er inviteret til <strong>{preview.orgName}</strong> som{" "}
               {preview.role}. Tjek dit navn og vælg en adgangskode.
             </p>
 
             <Field label="Email">
-              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 text-[var(--ink-soft)] opacity-80">
+              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 text-ink-soft opacity-80">
                 <Mail size={16} />
                 <input type="email" value={preview.email} readOnly disabled />
               </div>
             </Field>
 
             <Field label="Navn">
-              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 text-[var(--ink-soft)]">
+              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 text-ink-soft">
                 <User size={16} />
                 <input
                   type="text"
@@ -150,7 +150,7 @@ export function InviteAcceptPage() {
             </Field>
 
             <Field label="Adgangskode">
-              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 text-[var(--ink-soft)]">
+              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 text-ink-soft">
                 <Lock size={16} />
                 <input
                   type="password"
@@ -163,7 +163,7 @@ export function InviteAcceptPage() {
             </Field>
 
             <Field label="Gentag adgangskode">
-              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 text-[var(--ink-soft)]">
+              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 text-ink-soft">
                 <Lock size={16} />
                 <input
                   type="password"
@@ -183,7 +183,7 @@ export function InviteAcceptPage() {
 
             <button
               type="button"
-              className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] disabled:opacity-45"
+              className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card disabled:opacity-45"
               disabled={busy}
               onClick={() => void submit()}
             >

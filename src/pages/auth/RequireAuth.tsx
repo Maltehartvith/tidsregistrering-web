@@ -7,9 +7,9 @@ import { routes } from "../../routes.ts";
 
 function LoadingScreen() {
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-[430px] flex-col bg-[var(--paper)] font-sans text-[var(--ink)] md:my-10 md:min-h-[calc(100vh-80px)] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
-      <div className="mx-auto mt-[60px] flex max-w-[340px] flex-col px-6">
-        <div className="text-center text-[13px] text-[var(--ink-soft)]">
+    <div className="relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
+      <div className="mx-auto mt-15 flex max-w-85 flex-col px-6">
+        <div className="text-center text-[13px] text-ink-soft">
           Indlæser…
         </div>
       </div>

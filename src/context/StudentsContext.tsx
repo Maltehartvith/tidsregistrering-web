@@ -5,6 +5,7 @@ import {
   type ReactNode,
   type Dispatch,
   type SetStateAction,
+  useState,
 } from "react";
 import type { Student } from "../types/user";
 import type { CourseLink } from "../types/course";
@@ -15,6 +16,8 @@ import * as studentsApi from "../api/students";
 export interface StudentsContextValue {
   students: Student[];
   setStudents: Dispatch<SetStateAction<Student[]>>;
+  selectedStudent: Student | null;
+  setSelectedStudent: Dispatch<SetStateAction<Student | null>>;
   createStudent: (input: {
     id?: string;
     name: string;
@@ -47,7 +50,7 @@ export function StudentsProvider({
 }) {
   const { demoMode } = useAuth();
   const refresh = useRefreshBootstrap();
-
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const createStudent = useCallback(
     async (input: {
       id?: string;
@@ -122,6 +125,8 @@ export function StudentsProvider({
       value={{
         students,
         setStudents,
+        selectedStudent,
+        setSelectedStudent,
         createStudent,
         updateStudent,
         deleteStudent: deleteStudentFn,

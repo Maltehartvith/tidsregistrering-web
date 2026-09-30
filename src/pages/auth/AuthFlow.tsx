@@ -105,26 +105,26 @@ export function AuthFlow({
   };
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-[430px] flex-col bg-[var(--paper)] font-sans text-[var(--ink)] md:my-10 md:min-h-[calc(100vh-80px)] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
-      <div className="mx-auto mt-[60px] flex max-w-[340px] flex-col px-6">
-        <BrandLogo className="mx-auto mb-5 h-12 w-auto max-w-[220px] object-contain" />
+    <div className="relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
+      <div className="mx-auto mt-15 flex max-w-85 flex-col px-6">
+        <BrandLogo className="mx-auto mb-5 h-12 w-auto max-w-55 object-contain" />
 
         {step === "login" && (
           <>
             <div
-              className="mb-0.5 font-[family-name:var(--font-display)] text-[28px] font-semibold"
+              className="mb-0.5 font-display text-[28px] font-semibold"
               style={{ textAlign: "center" }}
             >
               Log ind
             </div>
             <div
-              className="text-[13px] text-[var(--ink-soft)]"
+              className="text-[13px] text-ink-soft"
               style={{ textAlign: "center", marginBottom: 24 }}
             >
               <BrandName />
             </div>
             <Field label="Email">
-              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 text-[var(--ink-soft)]">
+              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 text-ink-soft">
                 <Mail size={16} />
                 <input
                   type="email"
@@ -135,7 +135,7 @@ export function AuthFlow({
               </div>
             </Field>
             <Field label="Adgangskode">
-              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 text-[var(--ink-soft)]">
+              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 text-ink-soft">
                 <Lock size={16} />
                 <input
                   type="password"
@@ -167,7 +167,7 @@ export function AuthFlow({
               <div className="-mt-1.5 mb-3 text-xs text-[#a14b36]">{error}</div>
             )}
             <button
-              className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+              className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
               style={{ width: "100%", marginTop: 6 }}
               disabled={busy}
               onClick={() => void handleLogin()}
@@ -175,14 +175,14 @@ export function AuthFlow({
               {busy ? "Logger ind…" : "Log ind"}
             </button>
             <button
-              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-[var(--blue)]"
+              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
               type="button"
               onClick={() => setStep("glemt-email")}
             >
               Glemt adgangskode?
             </button>
             <button
-              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-[var(--blue)]"
+              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
               type="button"
               onClick={() => setStep("installer")}
             >
@@ -190,7 +190,7 @@ export function AuthFlow({
             </button>
             {import.meta.env.DEV && onContinueDemo && (
               <button
-                className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-[var(--blue)]"
+                className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
                 type="button"
                 onClick={onContinueDemo}
               >
@@ -203,20 +203,20 @@ export function AuthFlow({
         {step === "glemt-email" && (
           <>
             <div
-              className="mb-0.5 font-[family-name:var(--font-display)] text-[28px] font-semibold"
+              className="mb-0.5 font-display text-[28px] font-semibold"
               style={{ textAlign: "center" }}
             >
               Nulstil adgangskode
             </div>
             <div
-              className="text-[13px] text-[var(--ink-soft)]"
+              className="text-[13px] text-ink-soft"
               style={{ textAlign: "center", marginBottom: 24 }}
             >
               Indtast din email, så sender vi et link til at vælge en ny
               adgangskode.
             </div>
             <Field label="Email">
-              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 text-[var(--ink-soft)]">
+              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 text-ink-soft">
                 <Mail size={16} />
                 <input
                   type="email"
@@ -230,7 +230,7 @@ export function AuthFlow({
               <div className="-mt-1.5 mb-3 text-xs text-[#a14b36]">{error}</div>
             )}
             <button
-              className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+              className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
               style={{ width: "100%", marginTop: 6 }}
               disabled={busy}
               onClick={() => void sendReset()}
@@ -238,7 +238,7 @@ export function AuthFlow({
               Send nulstillingslink
             </button>
             <button
-              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-[var(--blue)]"
+              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
               type="button"
               onClick={() => setStep("login")}
             >
@@ -250,13 +250,13 @@ export function AuthFlow({
         {step === "glemt-sendt" && (
           <>
             <div
-              className="mb-0.5 font-[family-name:var(--font-display)] text-[28px] font-semibold"
+              className="mb-0.5 font-display text-[28px] font-semibold"
               style={{ textAlign: "center" }}
             >
               Tjek din email
             </div>
             <p
-              className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]"
+              className="mb-3.5 text-[13px] leading-normal text-ink-soft"
               style={{ textAlign: "center" }}
             >
               Hvis {resetEmail || "din email"} findes i vores system, har vi
@@ -264,18 +264,18 @@ export function AuthFlow({
               60 minutter.
             </p>
             {import.meta.env.DEV && resetToken && (
-              <div className="my-[18px] mb-1.5 rounded-xl border-[1.5px] border-dashed border-[var(--border)] p-3.5">
-                <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+              <div className="my-4.5 mb-1.5 rounded-xl border-[1.5px] border-dashed border-border p-3.5">
+                <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink-soft">
                   Kun i udvikling
                 </div>
                 <p
-                  className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]"
+                  className="mb-3.5 text-[13px] leading-normal text-ink-soft"
                   style={{ margin: "6px 0 10px" }}
                 >
                   SMTP er ikke konfigureret — brug token direkte:
                 </p>
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   style={{ width: "100%" }}
                   onClick={() => setStep("glemt-nyt")}
                 >
@@ -284,7 +284,7 @@ export function AuthFlow({
               </div>
             )}
             <button
-              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-[var(--blue)]"
+              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
               type="button"
               onClick={() => setStep("login")}
             >
@@ -296,19 +296,19 @@ export function AuthFlow({
         {step === "glemt-nyt" && (
           <>
             <div
-              className="mb-0.5 font-[family-name:var(--font-display)] text-[28px] font-semibold"
+              className="mb-0.5 font-display text-[28px] font-semibold"
               style={{ textAlign: "center" }}
             >
               Vælg ny adgangskode
             </div>
             <div
-              className="text-[13px] text-[var(--ink-soft)]"
+              className="text-[13px] text-ink-soft"
               style={{ textAlign: "center", marginBottom: 24 }}
             >
               Mindst 8 tegn.
             </div>
             <Field label="Ny adgangskode">
-              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 text-[var(--ink-soft)]">
+              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 text-ink-soft">
                 <KeyRound size={16} />
                 <input
                   type="password"
@@ -319,7 +319,7 @@ export function AuthFlow({
               </div>
             </Field>
             <Field label="Gentag ny adgangskode">
-              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 text-[var(--ink-soft)]">
+              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 text-ink-soft">
                 <KeyRound size={16} />
                 <input
                   type="password"
@@ -333,7 +333,7 @@ export function AuthFlow({
               <div className="-mt-1.5 mb-3 text-xs text-[#a14b36]">{error}</div>
             )}
             <button
-              className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+              className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
               style={{ width: "100%", marginTop: 6 }}
               disabled={busy}
               onClick={() => void saveNewPassword()}
@@ -345,31 +345,31 @@ export function AuthFlow({
 
         {step === "glemt-succes" && (
           <>
-            <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--terracotta)] text-[#fafaf7]">
+            <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-terracotta text-card">
               <Check size={22} />
             </div>
             <div
-              className="mb-0.5 font-[family-name:var(--font-display)] text-[28px] font-semibold"
+              className="mb-0.5 font-display text-[28px] font-semibold"
               style={{ textAlign: "center" }}
             >
               Adgangskode opdateret
             </div>
             <p
-              className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]"
+              className="mb-3.5 text-[13px] leading-normal text-ink-soft"
               style={{ textAlign: "center" }}
             >
               Du kan nu logge ind med din nye adgangskode. Er det din første
               gang, kan du med fordel installere appen på din telefon først.
             </p>
             <button
-              className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+              className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
               style={{ width: "100%", marginTop: 6 }}
               onClick={() => setStep("installer")}
             >
               Installer appen
             </button>
             <button
-              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-[var(--blue)]"
+              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
               type="button"
               onClick={() => setStep("login")}
             >
@@ -381,25 +381,25 @@ export function AuthFlow({
         {step === "installer" && (
           <>
             <div
-              className="mb-0.5 font-[family-name:var(--font-display)] text-[28px] font-semibold"
+              className="mb-0.5 font-display text-[28px] font-semibold"
               style={{ textAlign: "center" }}
             >
               Installer appen
             </div>
             <p
-              className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]"
+              className="mb-3.5 text-[13px] leading-normal text-ink-soft"
               style={{ textAlign: "center" }}
             >
               Så ligger <AppTitle /> klar på din hjemmeskærm, ligesom enhver
               anden app.
             </p>
 
-            <div className="mb-[18px]">
-              <div className="mb-2.5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.06em] text-[var(--blue)]">
+            <div className="mb-4.5">
+              <div className="mb-2.5 font-mono text-[11px] uppercase tracking-[0.06em] text-blue">
                 iPhone · Safari
               </div>
               <div className="mb-2 flex items-start gap-2.5 text-[13px] leading-normal">
-                <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--ink)] font-[family-name:var(--font-mono)] text-[11px] font-semibold text-[var(--card)]">
+                <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink font-mono text-[11px] font-semibold text-card">
                   1
                 </span>
                 <span>
@@ -408,37 +408,37 @@ export function AuthFlow({
                 </span>
               </div>
               <div className="mb-2 flex items-start gap-2.5 text-[13px] leading-normal">
-                <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--ink)] font-[family-name:var(--font-mono)] text-[11px] font-semibold text-[var(--card)]">
+                <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink font-mono text-[11px] font-semibold text-card">
                   2
                 </span>
                 <span>Tryk på Del-ikonet nederst på skærmen.</span>
               </div>
               <div className="mb-2 flex items-start gap-2.5 text-[13px] leading-normal">
-                <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--ink)] font-[family-name:var(--font-mono)] text-[11px] font-semibold text-[var(--card)]">
+                <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink font-mono text-[11px] font-semibold text-card">
                   3
                 </span>
                 <span>Vælg &quot;Føj til hjemmeskærm&quot;.</span>
               </div>
             </div>
 
-            <div className="mb-[18px]">
-              <div className="mb-2.5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.06em] text-[var(--blue)]">
+            <div className="mb-4.5">
+              <div className="mb-2.5 font-mono text-[11px] uppercase tracking-[0.06em] text-blue">
                 Android · Chrome
               </div>
               <div className="mb-2 flex items-start gap-2.5 text-[13px] leading-normal">
-                <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--ink)] font-[family-name:var(--font-mono)] text-[11px] font-semibold text-[var(--card)]">
+                <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink font-mono text-[11px] font-semibold text-card">
                   1
                 </span>
                 <span>Åbn appens link i Chrome.</span>
               </div>
               <div className="mb-2 flex items-start gap-2.5 text-[13px] leading-normal">
-                <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--ink)] font-[family-name:var(--font-mono)] text-[11px] font-semibold text-[var(--card)]">
+                <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink font-mono text-[11px] font-semibold text-card">
                   2
                 </span>
                 <span>Tryk på menuen (⋮) øverst til højre.</span>
               </div>
               <div className="mb-2 flex items-start gap-2.5 text-[13px] leading-normal">
-                <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--ink)] font-[family-name:var(--font-mono)] text-[11px] font-semibold text-[var(--card)]">
+                <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink font-mono text-[11px] font-semibold text-card">
                   3
                 </span>
                 <span>
@@ -449,7 +449,7 @@ export function AuthFlow({
             </div>
 
             <p
-              className="mt-1 block text-[11px] text-[var(--ink-soft)]"
+              className="mt-1 block text-[11px] text-ink-soft"
               style={{ margin: "4px 0 20px" }}
             >
               Herefter åbner du appen direkte fra ikonet på din hjemmeskærm,
@@ -458,7 +458,7 @@ export function AuthFlow({
             </p>
 
             <button
-              className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+              className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
               style={{ width: "100%" }}
               onClick={() => setStep("login")}
             >

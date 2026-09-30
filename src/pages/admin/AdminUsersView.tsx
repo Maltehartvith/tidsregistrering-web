@@ -21,14 +21,12 @@ import { BrandLogo } from "../../components/brand/Brand";
 import { AdminTabs } from "./AdminTabs";
 import { routes } from "@/routes";
 import { useNavigate } from "react-router-dom";
-import { LogEventArgs } from "@/types/log";
 import { AdminRoleKey, AdminUser } from "@/types/user";
+import { useAuditLogs } from "@/context/AuditLogsContext";
 
-type AdminUsersViewProps = {
-  onLog: (log: LogEventArgs) => void;
-};
-export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
+export const AdminUsersView = () => {
   const navigate = useNavigate();
+  const { logEvent: onLog } = useAuditLogs();
   const { programs } = useCatalog();
   const { courses } = useCourses();
   const { adminUsers, createUser, updateUser, deleteUser, resendInvite } =
@@ -43,7 +41,9 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
   const [toast, setToast] = useState("");
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editRole, setEditRole] = useState<AdminRoleKey>("underviser" as AdminRoleKey);
+  const [editRole, setEditRole] = useState<AdminRoleKey>(
+    "underviser" as AdminRoleKey,
+  );
   const [editAllCourses, setEditAllCourses] = useState(false);
   const [editCourseIds, setEditCourseIds] = useState<string[]>([]);
   const [editError, setEditError] = useState("");
@@ -188,25 +188,25 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
   };
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-[430px] flex-col bg-[var(--paper)] font-sans text-[var(--ink)] md:my-10 md:min-h-[calc(100vh-80px)] md:max-w-[900px] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
-      <div className="px-5 pb-[18px] pt-[26px]">
+    <div className="relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:max-w-225 md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
+      <div className="px-5 pb-4.5 pt-6.5">
         <div className="flex items-center gap-2.5">
-          <BrandLogo className="h-[26px] w-auto max-w-[140px] shrink-0 object-contain" />
-          <div className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+          <BrandLogo className="h-6.5 w-auto max-w-35 shrink-0 object-contain" />
+          <div className="font-mono text-[11px] uppercase tracking-widest text-ink-soft">
             Administrator
           </div>
         </div>
         <div className="mt-2 flex items-start justify-between">
           <div>
-            <div className="mb-0.5 font-[family-name:var(--font-display)] text-[28px] font-semibold">
+            <div className="mb-0.5 font-display text-[28px] font-semibold">
               Administratorer
             </div>
-            <div className="text-[13px] text-[var(--ink-soft)]">
+            <div className="text-[13px] text-ink-soft">
               Inviter og administrer administratorer og undervisere
             </div>
           </div>
           <button
-            className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
             onClick={() => navigate(routes.adminStudents)}
             title="Kursistvisning"
           >
@@ -214,7 +214,7 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
           </button>
         </div>
         <div className="mt-4 flex items-center gap-2">
-          <span className="h-3 w-0.5 shrink-0 rounded-sm bg-[var(--surplus)]" />
+          <span className="h-3 w-0.5 shrink-0 rounded-sm bg-surplus" />
           <span className="stitch-line" />
         </div>
       </div>
@@ -222,27 +222,27 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
       <div className="flex-1 overflow-y-auto px-5 pb-25 pt-1">
         <AdminTabs />
 
-        <p className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]">
+        <p className="mb-3.5 text-[13px] leading-normal text-ink-soft">
           <strong>Administrator</strong>:{" "}
           {ADMIN_ROLES.administrator.description}
         </p>
         <p
-          className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]"
+          className="mb-3.5 text-[13px] leading-normal text-ink-soft"
           style={{ marginTop: -8 }}
         >
           <strong>Underviser</strong>: {ADMIN_ROLES.underviser.description}
         </p>
 
-        <div className="mt-[22px] flex items-center justify-between">
+        <div className="mt-5.5 flex items-center justify-between">
           <div
-            className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]"
+            className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
             style={{ margin: 0 }}
           >
             Brugere
           </div>
           {!showInvite && (
             <button
-              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
               onClick={() => {
                 setShowInvite(true);
                 resetForm();
@@ -254,9 +254,9 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
         </div>
 
         {showInvite && (
-          <div className="mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--card)]">
+          <div className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card">
             <div
-              className="border-t border-[var(--border)] px-4 pb-4 pt-3.5"
+              className="border-t border-border px-4 pb-4 pt-3.5"
               style={{ borderTop: "none", paddingTop: 16 }}
             >
               <div className="flex gap-3">
@@ -288,7 +288,7 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
                   </select>
                   <ChevronDown
                     size={16}
-                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
                   />
                 </div>
               </Field>
@@ -302,15 +302,15 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
                     className={`switch ${allCourses ? "on" : ""}`}
                     onClick={() => setAllHolds(!allCourses)}
                   >
-                    <span className="absolute top-[3px] left-[3px] h-[18px] w-[18px] rounded-full bg-[var(--card)] transition-[left] duration-150" />
+                    <span className="absolute top-0.75 left-0.75 h-4.5 w-4.5 rounded-full bg-card transition-[left] duration-150" />
                   </span>
                 </label>
                 {!allCourses && (
-                  <div className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 py-2.5">
+                  <div className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5">
                     {Object.values(courses).map((course) => (
                       <label
                         key={course.id}
-                        className="flex cursor-pointer items-center gap-2 text-[13px] text-[var(--ink)]"
+                        className="flex cursor-pointer items-center gap-2 text-[13px] text-ink"
                       >
                         <input
                           type="checkbox"
@@ -333,9 +333,9 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
                   {formError}
                 </div>
               )}
-              <div className="mt-[18px] flex gap-2.5">
+              <div className="mt-4.5 flex gap-2.5">
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={() => {
                     setShowInvite(false);
                     resetForm();
@@ -344,7 +344,7 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
                   Annuller
                 </button>
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={sendInvite}
                 >
                   Send invitation
@@ -356,24 +356,22 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
 
         {adminUsers.map((u) => (
           <div
-            className="mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--card)]"
+            className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card"
             key={u.id}
           >
             <div
-              className="border-t border-[var(--border)] px-4 pb-4 pt-3.5"
+              className="border-t border-border px-4 pb-4 pt-3.5"
               style={{ borderTop: "none" }}
             >
               <div
-                className="flex items-center justify-between gap-2.5 border-b border-[var(--border)] py-2.5 last:border-b-0"
+                className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0"
                 style={{ paddingTop: 0 }}
               >
                 <div>
                   <div className="text-sm font-semibold">{u.name}</div>
-                  <div className="mt-px text-xs text-[var(--ink-soft)]">
-                    {u.email}
-                  </div>
+                  <div className="mt-px text-xs text-ink-soft">{u.email}</div>
                   <div
-                    className="mt-px text-xs text-[var(--ink-soft)]"
+                    className="mt-px text-xs text-ink-soft"
                     style={{ marginTop: 4 }}
                   >
                     {u.allCourses
@@ -391,19 +389,19 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
                     gap: 6,
                   }}
                 >
-                  <span className="shrink-0 rounded-full border border-[var(--blue)] px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.04em] text-[var(--blue)]">
+                  <span className="shrink-0 rounded-full border border-blue px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-blue">
                     {ADMIN_ROLES[u.role]?.label || u.role}
                   </span>
                   {u.status === "active" ? (
                     <span
-                      className="flex items-center gap-1 font-[family-name:var(--font-mono)] text-[11px] font-semibold"
+                      className="flex items-center gap-1 font-mono text-[11px] font-semibold"
                       style={{ color: "var(--surplus)" }}
                     >
                       <Check size={12} /> Aktiv
                     </span>
                   ) : (
                     <span
-                      className="flex items-center gap-1 font-[family-name:var(--font-mono)] text-[11px] font-semibold"
+                      className="flex items-center gap-1 font-mono text-[11px] font-semibold"
                       style={{ color: "var(--ink-soft)" }}
                     >
                       <Mail size={12} /> Invitation sendt
@@ -414,7 +412,7 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
 
               {u.status === "invited" && (
                 <button
-                  className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+                  className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
                   style={{ marginTop: 10 }}
                   type="button"
                   onClick={() => void resendUserInvite(u.id)}
@@ -425,7 +423,7 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
 
               {editingId === u.id && (
                 <div
-                  className="border-t border-[var(--border)] px-4 pb-4 pt-3.5"
+                  className="border-t border-border px-4 pb-4 pt-3.5"
                   style={{
                     borderTop: "1px solid var(--border)",
                     marginTop: 10,
@@ -439,14 +437,16 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
                     <div className="relative">
                       <select
                         value={editRole}
-                        onChange={(e) => setEditRole(e.target.value as AdminRoleKey)}
+                        onChange={(e) =>
+                          setEditRole(e.target.value as AdminRoleKey)
+                        }
                       >
                         <option value="underviser">Underviser</option>
                         <option value="administrator">Administrator</option>
                       </select>
                       <ChevronDown
                         size={16}
-                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
                       />
                     </div>
                   </Field>
@@ -460,15 +460,15 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
                         className={`switch ${editAllCourses ? "on" : ""}`}
                         onClick={() => setEditAllCourses(!editAllCourses)}
                       >
-                        <span className="absolute top-[3px] left-[3px] h-[18px] w-[18px] rounded-full bg-[var(--card)] transition-[left] duration-150" />
+                        <span className="absolute top-0.75 left-0.75 h-4.5 w-4.5 rounded-full bg-card transition-[left] duration-150" />
                       </span>
                     </label>
                     {!editAllCourses && (
-                      <div className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 py-2.5">
+                      <div className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5">
                         {Object.values(courses).map((course) => (
                           <label
                             key={course.id}
-                            className="flex cursor-pointer items-center gap-2 text-[13px] text-[var(--ink)]"
+                            className="flex cursor-pointer items-center gap-2 text-[13px] text-ink"
                           >
                             <input
                               type="checkbox"
@@ -491,15 +491,15 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
                       {editError}
                     </div>
                   )}
-                  <div className="mt-[18px] flex gap-2.5">
+                  <div className="mt-4.5 flex gap-2.5">
                     <button
-                      className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                      className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                       onClick={() => setEditingId(null)}
                     >
                       Annuller
                     </button>
                     <button
-                      className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                      className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                       onClick={() => saveEditUser(u.id)}
                     >
                       Gem ændringer
@@ -515,13 +515,13 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
                 >
                   <span>Fjern adgang?</span>
                   <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                     onClick={() => removeUser(u.id)}
                   >
                     <Check size={14} />
                   </button>
                   <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                     onClick={() => setConfirmRemoveId(null)}
                   >
                     <X size={14} />
@@ -537,14 +537,14 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
                   }}
                 >
                   <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                     onClick={() => startEditUser(u)}
                     title="Rediger rolle og hold"
                   >
                     <Pencil size={14} />
                   </button>
                   <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                     onClick={() => setConfirmRemoveId(u.id)}
                     title="Fjern adgang"
                   >
@@ -558,7 +558,7 @@ export const AdminUsersView = ({ onLog }: AdminUsersViewProps) => {
       </div>
 
       {toast && (
-        <div className="fixed bottom-[84px] left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--ink)] px-[18px] py-2.5 text-[13px] text-[var(--card)] shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
+        <div className="fixed bottom-21 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-ink px-4.5 py-2.5 text-[13px] text-card shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
           <Check size={14} /> {toast}
         </div>
       )}

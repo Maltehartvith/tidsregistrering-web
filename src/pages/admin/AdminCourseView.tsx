@@ -30,18 +30,15 @@ import { Field } from "../../components/ui/Field";
 
 import { AdminTabs } from "./AdminTabs";
 import { Program, ProgramDraft } from "@/types/domain";
-import { LogEventArgs } from "@/types/log";
 import { BrandLogo } from "@/components/brand/Brand";
 import { useNavigate } from "react-router-dom";
 import { routes } from "@/routes";
 import { Student } from "@/types/user";
+import { useAuditLogs } from "@/context/AuditLogsContext";
 
-type AdminCourseViewProps = {
-  onLog: (log: LogEventArgs) => void;
-};
-
-export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
+export const AdminCourseView = () => {
   const navigate = useNavigate();
+  const { logEvent: onLog } = useAuditLogs();
   const {
     CATEGORIES,
     LEARNING_GOALS,
@@ -596,25 +593,25 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
   };
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-[430px] flex-col bg-[var(--paper)] font-sans text-[var(--ink)] md:my-10 md:min-h-[calc(100vh-80px)] md:max-w-[900px] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
-      <div className="px-5 pb-[18px] pt-[26px]">
+    <div className="relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:max-w-225 md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
+      <div className="px-5 pb-4.5 pt-6.5">
         <div className="flex items-center gap-2.5">
-          <BrandLogo className="h-[26px] w-auto max-w-[140px] shrink-0 object-contain" />
-          <div className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+          <BrandLogo className="h-6.5 w-auto max-w-35 shrink-0 object-contain" />
+          <div className="font-mono text-[11px] uppercase tracking-widest text-ink-soft">
             Administrator
           </div>
         </div>
         <div className="mt-2 flex items-start justify-between">
           <div>
-            <div className="mb-0.5 font-[family-name:var(--font-display)] text-[28px] font-semibold">
+            <div className="mb-0.5 font-display text-[28px] font-semibold">
               Hold-administration
             </div>
-            <div className="text-[13px] text-[var(--ink-soft)]">
+            <div className="text-[13px] text-ink-soft">
               Opret hold, tilføj kursister og overfør timer
             </div>
           </div>
           <button
-            className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
             onClick={() => navigate(routes.adminStudents)}
             title="Kursistvisning"
           >
@@ -622,7 +619,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
           </button>
         </div>
         <div className="mt-4 flex items-center gap-2">
-          <span className="h-3 w-0.5 shrink-0 rounded-sm bg-[var(--surplus)]" />
+          <span className="h-3 w-0.5 shrink-0 rounded-sm bg-surplus" />
           <span className="stitch-line" />
         </div>
       </div>
@@ -631,18 +628,18 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
         <AdminTabs />
 
         <div
-          className="mt-[22px] flex items-center justify-between"
+          className="mt-5.5 flex items-center justify-between"
           style={{ marginTop: 0 }}
         >
           <div
-            className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]"
+            className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
             style={{ margin: 0 }}
           >
             Uddannelser
           </div>
           {!showCreateProgram && (
             <button
-              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
               onClick={() => {
                 setShowCreateProgram(true);
                 setCreateProgramError("");
@@ -654,9 +651,9 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
         </div>
 
         {showCreateProgram && (
-          <div className="mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--card)]">
+          <div className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card">
             <div
-              className="border-t border-[var(--border)] px-4 pb-4 pt-3.5"
+              className="border-t border-border px-4 pb-4 pt-3.5"
               style={{ borderTop: "none", paddingTop: 16 }}
             >
               <Field
@@ -678,7 +675,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   {Object.values(CATEGORIES).map((c) => (
                     <div key={c.key} style={{ flex: 1 }}>
                       <label
-                        className="mt-1 block text-[11px] text-[var(--ink-soft)]"
+                        className="mt-1 block text-[11px] text-ink-soft"
                         style={{ display: "block", marginBottom: 4 }}
                       >
                         {c.short}
@@ -702,15 +699,15 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   {createProgramError}
                 </div>
               )}
-              <div className="mt-[18px] flex gap-2.5">
+              <div className="mt-4.5 flex gap-2.5">
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={() => setShowCreateProgram(false)}
                 >
                   Annuller
                 </button>
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={submitNewProgram}
                 >
                   Opret uddannelse
@@ -726,20 +723,20 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
           const isBlocked = coursesUsingProgram.length > 0;
           return (
             <div
-              className="mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--card)]"
+              className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card"
               key={p.id}
             >
               <div
-                className="border-t border-[var(--border)] px-4 pb-4 pt-3.5"
+                className="border-t border-border px-4 pb-4 pt-3.5"
                 style={{ borderTop: "none" }}
               >
                 <div
-                  className="flex items-center justify-between gap-2.5 border-b border-[var(--border)] py-2.5 last:border-b-0"
+                  className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0"
                   style={{ paddingTop: 0 }}
                 >
                   <div>
                     <div className="text-sm font-semibold">{p.name}</div>
-                    <div className="mt-px text-xs text-[var(--ink-soft)]">
+                    <div className="mt-px text-xs text-ink-soft">
                       Totalmål: {formatTargets(p.targets, CATEGORIES)} timer ·{" "}
                       {coursesUsingProgram.length} hold
                     </div>
@@ -749,13 +746,13 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                     <div className="flex items-center gap-1.5 text-xs">
                       <span>Slet?</span>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                         onClick={() => deleteProgram(p.id)}
                       >
                         <Check size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                         onClick={() => setConfirmDeleteProgramId(null)}
                       >
                         <X size={14} />
@@ -764,7 +761,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   ) : (
                     <div className="flex shrink-0 gap-1.5">
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                         disabled={editingProgramId !== null}
                         onClick={() => startEditProgram(p)}
                         title="Redigér uddannelse"
@@ -772,7 +769,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                         <Pencil size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                         disabled={editingProgramId !== null}
                         onClick={() =>
                           setConfirmDeleteProgramId(
@@ -808,7 +805,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                         {Object.values(CATEGORIES).map((c) => (
                           <div key={c.key} style={{ flex: 1 }}>
                             <label
-                              className="mt-1 block text-[11px] text-[var(--ink-soft)]"
+                              className="mt-1 block text-[11px] text-ink-soft"
                               style={{ display: "block", marginBottom: 4 }}
                             >
                               {c.short}
@@ -832,18 +829,18 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                       </div>
                     </Field>
                     <div
-                      className="mb-1.5 block text-xs font-semibold text-[var(--ink-soft)]"
+                      className="mb-1.5 block text-xs font-semibold text-ink-soft"
                       style={{ marginBottom: 6 }}
                     >
                       Hold under uddannelsen og deres delmål
                     </div>
                     {coursesUsingProgram.length === 0 ? (
-                      <p className="mt-1 block text-[11px] text-[var(--ink-soft)]">
+                      <p className="mt-1 block text-[11px] text-ink-soft">
                         Ingen hold bruger uddannelsen endnu.
                       </p>
                     ) : (
                       <div
-                        className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 py-2.5"
+                        className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5"
                         style={{ marginBottom: 6 }}
                       >
                         {[...coursesUsingProgram]
@@ -858,7 +855,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                               className="flex flex-wrap items-baseline justify-between gap-2.5"
                             >
                               <button
-                                className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-[var(--blue)]"
+                                className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
                                 style={{ margin: 0, textAlign: "left" }}
                                 onClick={() => {
                                   if (openCourseId !== h.id) openCourse(h.id);
@@ -877,7 +874,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                               >
                                 {h.label}
                               </button>
-                              <span className="mt-px text-xs text-[var(--ink-soft)]">
+                              <span className="mt-px text-xs text-ink-soft">
                                 Start {h.startYear} · delmål{" "}
                                 {formatTargets(h.targets, CATEGORIES)}
                               </span>
@@ -885,7 +882,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                           ))}
                       </div>
                     )}
-                    <p className="mt-1 block text-[11px] text-[var(--ink-soft)]">
+                    <p className="mt-1 block text-[11px] text-ink-soft">
                       Parallelle årgange har hver deres fulde delmål, mens
                       flerårige forløb deler totalmålet mellem årene. Klik på et
                       hold for at rette dets delmål.
@@ -895,9 +892,9 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                         {programError}
                       </div>
                     )}
-                    <div className="mt-[18px] flex gap-2.5">
+                    <div className="mt-4.5 flex gap-2.5">
                       <button
-                        className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                        className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                         onClick={() => {
                           setEditingProgramId(null);
                           setProgramDraft(null);
@@ -907,7 +904,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                         Annuller
                       </button>
                       <button
-                        className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                        className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                         onClick={() => saveProgramEdit(p.id)}
                       >
                         Gem uddannelse
@@ -917,20 +914,20 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                 )}
                 {isBlocked && confirmDeleteProgramId === p.id && (
                   <div className="mb-1" style={{ marginTop: 10 }}>
-                    <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-[var(--terracotta)]">
+                    <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
                       <AlertTriangle size={14} />
                       Kan ikke slettes — bruges stadig af{" "}
                       {coursesUsingProgram.length} hold. Flyt eller slet dem
                       først:
                     </div>
                     <div
-                      className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 py-2.5"
+                      className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5"
                       style={{ marginTop: 8 }}
                     >
                       {coursesUsingProgram.map((h) => (
                         <button
                           key={h.id}
-                          className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-[var(--blue)]"
+                          className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
                           style={{ margin: 0, textAlign: "left" }}
                           onClick={() => {
                             setConfirmDeleteProgramId(null);
@@ -955,16 +952,16 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
           <span className="stitch-line" />
         </div>
 
-        <div className="mt-[22px] flex items-center justify-between">
+        <div className="mt-5.5 flex items-center justify-between">
           <div
-            className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]"
+            className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
             style={{ margin: 0 }}
           >
             Hold
           </div>
           {!showCreate && (
             <button
-              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
               onClick={() => {
                 setShowCreate(true);
                 setOpenCourseId(null);
@@ -976,9 +973,9 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
         </div>
 
         {showCreate && (
-          <div className="mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--card)]">
+          <div className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card">
             <div
-              className="border-t border-[var(--border)] px-4 pb-4 pt-3.5"
+              className="border-t border-border px-4 pb-4 pt-3.5"
               style={{ borderTop: "none", paddingTop: 16 }}
             >
               <div className="flex gap-3">
@@ -1016,7 +1013,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   </select>
                   <ChevronDown
                     size={16}
-                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
                   />
                 </div>
               </Field>
@@ -1038,7 +1035,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   {Object.values(CATEGORIES).map((c) => (
                     <div key={c.key} style={{ flex: 1 }}>
                       <label
-                        className="mt-1 block text-[11px] text-[var(--ink-soft)]"
+                        className="mt-1 block text-[11px] text-ink-soft"
                         style={{ display: "block", marginBottom: 4 }}
                       >
                         {c.short}
@@ -1062,9 +1059,9 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   {createError}
                 </div>
               )}
-              <div className="mt-[18px] flex gap-2.5">
+              <div className="mt-4.5 flex gap-2.5">
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={() => {
                     setShowCreate(false);
                     setCreateError("");
@@ -1073,7 +1070,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   Annuller
                 </button>
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={createCourse}
                 >
                   Opret hold
@@ -1083,7 +1080,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
           </div>
         )}
 
-        <p className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]">
+        <p className="mb-3.5 text-[13px] leading-normal text-ink-soft">
           Når en hel årgang fortsætter under et nyt holdnavn, kan I her overføre
           timer for alle kursister i holdet på én gang, i stedet for at gøre det
           enkeltvis. Kun hold oprettet inden for 5 år vises som kilde, da
@@ -1101,7 +1098,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
           const windowCourses = coursesWithinTransferWindow(h.id, courses);
           return (
             <div
-              className="mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--card)]"
+              className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card"
               key={h.id}
               id={`hold-card-${h.id}`}
             >
@@ -1111,7 +1108,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
               >
                 <div>
                   <div className="text-sm font-semibold">{h.label}</div>
-                  <div className="mt-px text-xs text-[var(--ink-soft)]">
+                  <div className="mt-px text-xs text-ink-soft">
                     {programName(h, programs)
                       ? `${programName(h, programs)} · `
                       : ""}
@@ -1120,7 +1117,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                 </div>
                 {onCount > 0 && (
                   <span
-                    className="flex items-center gap-1 font-[family-name:var(--font-mono)] text-[11px] font-semibold"
+                    className="flex items-center gap-1 font-mono text-[11px] font-semibold"
                     style={{ color: "var(--terracotta)" }}
                   >
                     <ArrowRightLeft size={12} /> {onCount}/{members.length}{" "}
@@ -1129,12 +1126,12 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                 )}
                 <ChevronDown
                   size={16}
-                  className={`shrink-0 text-[var(--ink-soft)] transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
+                  className={`shrink-0 text-ink-soft transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
                 />
               </button>
 
               {isOpen && (
-                <div className="border-t border-[var(--border)] px-4 pb-4 pt-3.5">
+                <div className="border-t border-border px-4 pb-4 pt-3.5">
                   <Field
                     label="Uddannelse"
                     hint="Hvilken uddannelse hører dette hold under?"
@@ -1152,7 +1149,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                       </select>
                       <ChevronDown
                         size={16}
-                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
                       />
                     </div>
                   </Field>
@@ -1164,7 +1161,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                       {Object.values(CATEGORIES).map((c) => (
                         <div key={c.key} style={{ flex: 1 }}>
                           <label
-                            className="mt-1 block text-[11px] text-[var(--ink-soft)]"
+                            className="mt-1 block text-[11px] text-ink-soft"
                             style={{ display: "block", marginBottom: 4 }}
                           >
                             {c.short}
@@ -1184,7 +1181,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                     </div>
                   </Field>
                   <button
-                    className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+                    className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
                     style={{ marginBottom: 16 }}
                     onClick={() => saveCourseProgram(h.id)}
                   >
@@ -1192,7 +1189,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   </button>
 
                   <div
-                    className="mb-1.5 block text-xs font-semibold text-[var(--ink-soft)]"
+                    className="mb-1.5 block text-xs font-semibold text-ink-soft"
                     style={{ marginBottom: 8 }}
                   >
                     Administratorer og undervisere på dette hold
@@ -1203,7 +1200,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                     )
                     .map((u) => (
                       <div
-                        className="flex items-center justify-between gap-2.5 border-b border-[var(--border)] py-2.5 last:border-b-0"
+                        className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0"
                         key={u.id}
                       >
                         <div>
@@ -1213,18 +1210,18 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                           >
                             {u.name}
                           </div>
-                          <div className="mt-px text-xs text-[var(--ink-soft)]">
+                          <div className="mt-px text-xs text-ink-soft">
                             {ADMIN_ROLES[u.role]?.label || u.role}
                             {u.allCourses ? " · Alle hold" : ""}
                           </div>
                         </div>
                         {u.allCourses ? (
-                          <span className="shrink-0 rounded-full border border-[var(--blue)] px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.04em] text-[var(--blue)]">
+                          <span className="shrink-0 rounded-full border border-blue px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-blue">
                             Alle hold
                           </span>
                         ) : (
                           <button
-                            className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                             onClick={() => removeUserFromCourse(h.id, u.id)}
                             title="Fjern adgang til dette hold"
                           >
@@ -1237,7 +1234,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                     (u) => u.allCourses || (u.courseIds || []).includes(h.id),
                   ).length === 0 && (
                     <p
-                      className="mt-1 block text-[11px] text-[var(--ink-soft)]"
+                      className="mt-1 block text-[11px] text-ink-soft"
                       style={{ marginBottom: 10 }}
                     >
                       Ingen administratorer eller undervisere har adgang til
@@ -1271,11 +1268,11 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                         </select>
                         <ChevronDown
                           size={16}
-                          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+                          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
                         />
                       </div>
                       <button
-                        className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+                        className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
                         onClick={() => addUserToCourse(h.id)}
                       >
                         <PlusCircle size={14} /> Giv adgang
@@ -1290,13 +1287,13 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   </div>
 
                   <div
-                    className="mb-1.5 block text-xs font-semibold text-[var(--ink-soft)]"
+                    className="mb-1.5 block text-xs font-semibold text-ink-soft"
                     style={{ marginBottom: 4 }}
                   >
                     Overfør kursister fra et andet hold
                   </div>
                   <p
-                    className="mt-1 block text-[11px] text-[var(--ink-soft)]"
+                    className="mt-1 block text-[11px] text-ink-soft"
                     style={{ marginBottom: 10 }}
                   >
                     Til når en hel årgang rykker videre til dette hold (fx fra
@@ -1327,13 +1324,13 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                     </select>
                     <ChevronDown
                       size={16}
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
                     />
                   </div>
                   {transferSourceId &&
                     (confirmTransferRoster ? (
                       <div className="mb-1">
-                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-[var(--terracotta)]">
+                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
                           <AlertTriangle size={14} />
                           {
                             students.filter(
@@ -1347,17 +1344,17 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                           tælle.
                         </div>
                         <div
-                          className="mt-[18px] flex gap-2.5"
+                          className="mt-4.5 flex gap-2.5"
                           style={{ marginTop: 10 }}
                         >
                           <button
-                            className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                            className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                             onClick={() => setConfirmTransferRoster(false)}
                           >
                             Annuller
                           </button>
                           <button
-                            className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                            className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                             onClick={() => transferRoster(h.id)}
                           >
                             Ja, overfør kursisterne
@@ -1366,7 +1363,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                       </div>
                     ) : (
                       <button
-                        className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                        className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                         style={{ width: "100%", marginBottom: 16 }}
                         onClick={() => setConfirmTransferRoster(true)}
                         disabled={
@@ -1393,7 +1390,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   </div>
 
                   <div
-                    className="mb-1.5 block text-xs font-semibold text-[var(--ink-soft)]"
+                    className="mb-1.5 block text-xs font-semibold text-ink-soft"
                     style={{ marginBottom: 8 }}
                   >
                     Tilføj en enkelt kursist
@@ -1417,7 +1414,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                     </Field>
                   </div>
                   <button
-                    className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+                    className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
                     onClick={() => addSingleStudent(h.id)}
                   >
                     <User size={14} /> Tilføj kursist
@@ -1426,12 +1423,12 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   {addResult && (
                     <div className="mb-1">
                       {addResult.error && (
-                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-[var(--terracotta)]">
+                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
                           <AlertTriangle size={14} /> {addResult.error}
                         </div>
                       )}
                       {addResult.duplicate && (
-                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-[var(--terracotta)]">
+                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
                           <AlertTriangle size={14} />{" "}
                           {addResult.duplicate?.name ||
                             addResult.duplicate?.email}{" "}
@@ -1440,7 +1437,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                         </div>
                       )}
                       {addResult.added && (
-                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-[var(--ink)]">
+                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-ink">
                           <Check size={14} /> {addResult.added?.name} tilføjet
                           til {h.label}.
                         </div>
@@ -1456,12 +1453,12 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   </div>
 
                   <div
-                    className="mb-1.5 block text-xs font-semibold text-[var(--ink-soft)]"
+                    className="mb-1.5 block text-xs font-semibold text-ink-soft"
                     style={{ marginBottom: 8 }}
                   >
                     Tilføj flere kursister
                   </div>
-                  <label className="inline-flex w-auto flex-none cursor-pointer items-center gap-2 flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45">
+                  <label className="inline-flex w-auto flex-none cursor-pointer items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45">
                     <Upload size={14} />
                     {importingCourseId === h.id
                       ? "Importerer..."
@@ -1474,7 +1471,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                     />
                   </label>
                   <p
-                    className="mt-1 block text-[11px] text-[var(--ink-soft)]"
+                    className="mt-1 block text-[11px] text-ink-soft"
                     style={{ margin: "6px 0 16px" }}
                   >
                     Filen skal have kolonnerne "Navn" og "Email". Kursister der
@@ -1484,20 +1481,20 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   {importResult && importResult.courseId === h.id && (
                     <div className="mb-1">
                       {importResult.error ? (
-                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-[var(--terracotta)]">
+                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
                           <AlertTriangle size={14} /> Kunne ikke læse "
                           {importResult.fileName}". Tjek at filen er en gyldig
                           Excel- eller CSV-fil.
                         </div>
                       ) : (
                         <>
-                          <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-[var(--ink)]">
+                          <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-ink">
                             <FileSpreadsheet size={14} />{" "}
                             {importResult.added?.length ?? 0} kursister
                             importeret fra "{importResult.fileName}".
                           </div>
                           {(importResult.duplicates?.length ?? 0) > 0 && (
-                            <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-[var(--terracotta)]">
+                            <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
                               <AlertTriangle size={14} />
                               {importResult.duplicates?.length ?? 0} findes
                               allerede og blev ikke oprettet:{" "}
@@ -1507,7 +1504,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                             </div>
                           )}
                           {(importResult.skipped?.length ?? 0) > 0 && (
-                            <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-[var(--terracotta)]">
+                            <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
                               <AlertTriangle size={14} />
                               {importResult.skipped?.length ?? 0} rækker
                               manglede navn eller email og blev sprunget over.
@@ -1531,7 +1528,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                       className={`switch ${draftOn ? "on" : ""}`}
                       onClick={() => setDraftOn(!draftOn)}
                     >
-                      <span className="absolute top-[3px] left-[3px] h-[18px] w-[18px] rounded-full bg-[var(--card)] transition-[left] duration-150" />
+                      <span className="absolute top-0.75 left-0.75 h-4.5 w-4.5 rounded-full bg-card transition-[left] duration-150" />
                     </span>
                   </label>
                   {draftOn && (
@@ -1556,17 +1553,17 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                         </select>
                         <ChevronDown
                           size={16}
-                          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-soft)]"
+                          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
                         />
                       </div>
                     </Field>
                   )}
-                  <p className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]">
+                  <p className="mb-3.5 text-[13px] leading-normal text-ink-soft">
                     Denne indstilling anvendes på alle {members.length}{" "}
                     kursister i {h.label}.
                   </p>
                   <button
-                    className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                    className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                     style={{ width: "100%" }}
                     onClick={() => applyToCourse(h.id)}
                   >
@@ -1581,7 +1578,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                     ) &&
                     (confirmRemoveCourseId === draftFrom ? (
                       <div className="mb-1">
-                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-[var(--terracotta)]">
+                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
                           <AlertTriangle size={14} />
                           Sikker på at overførslen fra{" "}
                           {courses[draftFrom]?.label || draftFrom} skal fjernes
@@ -1589,17 +1586,17 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                           af regnskabet igen for alle berørte kursister.
                         </div>
                         <div
-                          className="mt-[18px] flex gap-2.5"
+                          className="mt-4.5 flex gap-2.5"
                           style={{ marginTop: 10 }}
                         >
                           <button
-                            className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                            className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                             onClick={() => setConfirmRemoveCourseId(null)}
                           >
                             Annuller
                           </button>
                           <button
-                            className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                            className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                             onClick={() => removeFromCourse(h.id, draftFrom)}
                           >
                             Ja, fjern helt
@@ -1608,7 +1605,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                       </div>
                     ) : (
                       <button
-                        className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                        className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                         style={{
                           width: "100%",
                           marginTop: 10,
@@ -1633,7 +1630,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   </div>
 
                   <div
-                    className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]"
+                    className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
                     style={{ color: "var(--terracotta)", marginTop: 0 }}
                   >
                     <AlertTriangle
@@ -1646,7 +1643,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                   {members.length > 0 ? (
                     <>
                       <p
-                        className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]"
+                        className="mb-3.5 text-[13px] leading-normal text-ink-soft"
                         style={{ marginTop: -6 }}
                       >
                         Holdet kan ikke slettes, så længe der er{" "}
@@ -1656,13 +1653,13 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                         at gå direkte dertil.
                       </p>
                       <div
-                        className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 py-2.5"
+                        className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5"
                         style={{ marginBottom: 12 }}
                       >
                         {members.map((m) => (
                           <button
                             key={m.id}
-                            className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-[var(--blue)]"
+                            className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
                             style={{ margin: 0, textAlign: "left" }}
                             onClick={() => navigate(routes.adminStudent(m.id))}
                           >
@@ -1672,15 +1669,15 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                       </div>
                     </>
                   ) : confirmDeleteCourseId === h.id ? (
-                    <div className="my-[18px] mb-1.5 rounded-xl border-[1.5px] border-dashed border-[var(--border)] p-3.5">
+                    <div className="my-4.5 mb-1.5 rounded-xl border-[1.5px] border-dashed border-border p-3.5">
                       <div
-                        className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.08em] text-[var(--ink-soft)]"
+                        className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink-soft"
                         style={{ color: "var(--terracotta)" }}
                       >
                         Bekræft sletning
                       </div>
                       <p
-                        className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]"
+                        className="mb-3.5 text-[13px] leading-normal text-ink-soft"
                         style={{ margin: "6px 0 10px" }}
                       >
                         {h.label} slettes permanent. Kursister, der historisk
@@ -1688,15 +1685,15 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                         hold, beholder deres timer — holdnavnet vises blot som
                         "(slettet)" i deres historik.
                       </p>
-                      <div className="mt-[18px] flex gap-2.5">
+                      <div className="mt-4.5 flex gap-2.5">
                         <button
-                          className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                          className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                           onClick={() => setConfirmDeleteCourseId(null)}
                         >
                           Annuller
                         </button>
                         <button
-                          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                           style={{
                             background: "var(--terracotta)",
                             borderColor: "var(--terracotta)",
@@ -1709,7 +1706,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
                     </div>
                   ) : (
                     <button
-                      className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                      className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                       style={{
                         width: "100%",
                         color: "var(--terracotta)",
@@ -1728,7 +1725,7 @@ export const AdminCourseView = ({ onLog }: AdminCourseViewProps) => {
       </div>
 
       {toast && (
-        <div className="fixed bottom-[84px] left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--ink)] px-[18px] py-2.5 text-[13px] text-[var(--card)] shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
+        <div className="fixed bottom-21 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-ink px-4.5 py-2.5 text-[13px] text-card shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
           <Check size={14} /> {toast}
         </div>
       )}

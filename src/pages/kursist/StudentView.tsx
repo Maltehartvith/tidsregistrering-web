@@ -34,24 +34,23 @@ import { viewPrefClasses } from "../../theme/viewPrefs";
 import { ViewSettingsPanel } from "./ViewSettingsPanel";
 import { Student } from "@/types/user";
 import { Entry, TimeEntry } from "@/types/entry";
-import { LogEventArgs } from "@/types/log";
 import { ViewPrefs } from "@/types/ui";
+import { useAuditLogs } from "@/context/AuditLogsContext";
 
 type StudentViewProps = {
   student: Student;
-  onLog: (log: LogEventArgs) => void;
   viewPrefs: ViewPrefs;
   setViewPrefs: (viewPrefs: ViewPrefs) => void;
 };
 export const StudentView = ({
   student,
-  onLog,
   viewPrefs,
   setViewPrefs,
 }: StudentViewProps) => {
   const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS, programs } = useCatalog();
   const { courses } = useCourses();
   const { entries, createEntry, updateEntry, deleteEntry } = useEntries();
+  const { logEvent } = useAuditLogs();
   const [tab, setTab] = useState("oversigt");
   const [showView, setShowView] = useState(false);
   const [scope, setScope] = useState("uddannelse");
@@ -102,7 +101,7 @@ export const StudentView = ({
       courseId: student.courseId,
       hours: Number(form.hours),
     });
-    onLog({
+    void logEvent({
       actor: "Kursist",
       studentId: student.id,
       description: `${student.name} registrerede ${form.hours} timer (${categoryOf(ALL_CATEGORIES, form.category).label})`,
@@ -124,7 +123,7 @@ export const StudentView = ({
       ...editForm,
       hours: Number(editForm.hours),
     });
-    onLog({
+    void logEvent({
       actor: "Kursist",
       studentId: student.id,
       description: `${student.name} rettede en registrering (${categoryOf(ALL_CATEGORIES, editForm.category).label})`,
@@ -137,7 +136,7 @@ export const StudentView = ({
     const removed = entries.find((e) => e.id === id);
     await deleteEntry(id);
     if (removed) {
-      onLog({
+      void logEvent({
         actor: "Kursist",
         studentId: student.id,
         description: `${student.name} slettede en registrering på ${removed.hours} timer (${categoryOf(ALL_CATEGORIES, removed.category).label})`,
@@ -175,21 +174,21 @@ export const StudentView = ({
 
   return (
     <div
-      className={`relative mx-auto flex min-h-screen max-w-[430px] flex-col bg-[var(--paper)] font-sans text-[var(--ink)] md:my-10 md:min-h-[calc(100vh-80px)] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)] ${viewPrefClasses(viewPrefs)}`}
+      className={`relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)] ${viewPrefClasses(viewPrefs)}`}
     >
-      <div className="px-5 pb-[18px] pt-[26px]">
+      <div className="px-5 pb-4.5 pt-6.5">
         <div className="flex items-center gap-2.5">
-          <BrandLogo className="h-[26px] w-auto max-w-[140px] shrink-0 object-contain" />
-          <div className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+          <BrandLogo className="h-6.5 w-auto max-w-35 shrink-0 object-contain" />
+          <div className="font-mono text-[11px] uppercase tracking-widest text-ink-soft">
             <BrandName />
           </div>
         </div>
         <div className="mt-2 flex items-start justify-between">
           <div>
-            <div className="mb-0.5 font-[family-name:var(--font-display)] text-[28px] font-semibold">
+            <div className="mb-0.5 font-display text-[28px] font-semibold">
               <AppTitle />
             </div>
-            <div className="text-[13px] text-[var(--ink-soft)]">
+            <div className="text-[13px] text-ink-soft">
               {student.name} ·{" "}
               {programName(courses[student.courseId], programs)
                 ? `${programName(courses[student.courseId], programs)} · `
@@ -199,7 +198,7 @@ export const StudentView = ({
           </div>
           <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
             <button
-              className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+              className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
               onClick={() => setShowView(!showView)}
               title="Visning og tilgængelighed"
               aria-label="Visning og tilgængelighed"
@@ -209,7 +208,7 @@ export const StudentView = ({
             </button>
             {/*          {onGoAdmin && (
               <button
-                className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                 onClick={onGoAdmin}
                 title="Administrator"
               >
@@ -226,7 +225,7 @@ export const StudentView = ({
           />
         )}
         <div className="mt-4 flex items-center gap-2">
-          <span className="h-3 w-0.5 shrink-0 rounded-sm bg-[var(--surplus)]" />
+          <span className="h-3 w-0.5 shrink-0 rounded-sm bg-surplus" />
           <span className="stitch-line" />
         </div>
       </div>
@@ -234,11 +233,11 @@ export const StudentView = ({
       <div className="flex-1 overflow-y-auto px-5 pb-25 pt-1">
         {tab === "oversigt" && (
           <>
-            <div className="mb-4 rounded-[14px] border border-[var(--border)] bg-[var(--card)] px-[18px] py-3.5">
+            <div className="mb-4 rounded-[14px] border border-border bg-card px-4.5 py-3.5">
               <div className="flex items-start justify-between gap-2.5">
                 <div>
                   <div
-                    className="mb-1.5 block text-xs font-semibold text-[var(--ink-soft)]"
+                    className="mb-1.5 block text-xs font-semibold text-ink-soft"
                     style={{ marginBottom: 4 }}
                   >
                     Mit hold
@@ -251,14 +250,14 @@ export const StudentView = ({
                     {courses[student.courseId].startYear}
                   </div>
                   {programName(courses[student.courseId], programs) && (
-                    <div className="mt-px text-xs text-[var(--ink-soft)]">
+                    <div className="mt-px text-xs text-ink-soft">
                       {programName(courses[student.courseId], programs)}
                     </div>
                   )}
                 </div>
               </div>
               {includedLinks.length > 0 && (
-                <div className="mt-2.5 text-xs leading-normal text-[var(--ink-soft)]">
+                <div className="mt-2.5 text-xs leading-normal text-ink-soft">
                   Timer fra{" "}
                   {includedLinks
                     .map((l) => holdLabel(l.courseId, courses))
@@ -268,7 +267,7 @@ export const StudentView = ({
               )}
               {brand.contactEmail && (
                 <a
-                  className="mt-2.5 inline-block text-xs text-[var(--ink-soft)] underline underline-offset-2 hover:text-[var(--ink)]"
+                  className="mt-2.5 inline-block text-xs text-ink-soft underline underline-offset-2 hover:text-ink"
                   href={contactHref}
                 >
                   Er noget forkert? Kontakt os
@@ -316,11 +315,11 @@ export const StudentView = ({
               />
             ))}
 
-            <div className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]">
+            <div className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink">
               Seneste registreringer
             </div>
             {recentEntries.length === 0 && (
-              <div className="px-2.5 py-10 text-center text-[13px] text-[var(--ink-soft)]">
+              <div className="px-2.5 py-10 text-center text-[13px] text-ink-soft">
                 Ingen registreringer endnu.
               </div>
             )}
@@ -328,7 +327,7 @@ export const StudentView = ({
               const cat = categoryOf(ALL_CATEGORIES, e.category);
               return (
                 <div
-                  className="flex items-center gap-2.5 border-b border-[var(--border)] py-2.5 text-[13px] last:border-b-0"
+                  className="flex items-center gap-2.5 border-b border-border py-2.5 text-[13px] last:border-b-0"
                   key={e.id}
                 >
                   <span
@@ -336,10 +335,10 @@ export const StudentView = ({
                     style={{ background: cat.color }}
                   />
                   <span>{cat.short}</span>
-                  <span className="font-[family-name:var(--font-mono)] text-[11px] text-[var(--ink-soft)]">
+                  <span className="font-mono text-[11px] text-ink-soft">
                     {e.date}
                   </span>
-                  <span className="ml-auto font-[family-name:var(--font-mono)] font-semibold">
+                  <span className="ml-auto font-mono font-semibold">
                     {e.hours}t
                   </span>
                 </div>
@@ -350,7 +349,7 @@ export const StudentView = ({
 
         {tab === "registrer" && (
           <>
-            <div className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]">
+            <div className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink">
               Registrér timer
             </div>
             <EntryForm
@@ -364,7 +363,7 @@ export const StudentView = ({
 
         {tab === "historik" && (
           <>
-            <div className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]">
+            <div className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink">
               Historik
             </div>
 
@@ -423,7 +422,7 @@ export const StudentView = ({
               </div>
             )}
 
-            <div className="mb-4 flex items-center gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 py-2 text-[var(--ink-soft)]">
+            <div className="mb-4 flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-ink-soft">
               <Search size={15} />
               <input
                 type="text"
@@ -434,7 +433,7 @@ export const StudentView = ({
             </div>
 
             {filteredEntries.length === 0 && (
-              <div className="px-2.5 py-10 text-center text-[13px] text-[var(--ink-soft)]">
+              <div className="px-2.5 py-10 text-center text-[13px] text-ink-soft">
                 Ingen registreringer fundet.
               </div>
             )}
@@ -444,7 +443,7 @@ export const StudentView = ({
               if (editingId === e.id) {
                 return (
                   <div
-                    className="mb-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3"
+                    className="mb-2.5 rounded-xl border border-border bg-card px-3.5 py-3"
                     key={e.id}
                   >
                     <EntryForm
@@ -459,7 +458,7 @@ export const StudentView = ({
               }
               return (
                 <div
-                  className="mb-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3"
+                  className="mb-2.5 rounded-xl border border-border bg-card px-3.5 py-3"
                   key={e.id}
                 >
                   <div className="flex items-center gap-2">
@@ -473,22 +472,22 @@ export const StudentView = ({
                     >
                       {cat.label}
                     </span>
-                    <span className="ml-auto font-[family-name:var(--font-mono)] text-[11px] text-[var(--ink-soft)]">
+                    <span className="ml-auto font-mono text-[11px] text-ink-soft">
                       {e.date}
                     </span>
                   </div>
                   <div className="mt-1.5 flex items-end justify-between">
                     <div>
-                      <div className="font-[family-name:var(--font-mono)] text-xl font-semibold">
+                      <div className="font-mono text-xl font-semibold">
                         {e.hours} timer
                       </div>
                       {e.therapist && (
-                        <div className="mt-0.5 text-xs text-[var(--ink-soft)]">
+                        <div className="mt-0.5 text-xs text-ink-soft">
                           Terapeut: {e.therapist}
                         </div>
                       )}
                       {e.courseId !== student.courseId && (
-                        <div className="mt-0.5 text-xs text-[var(--ink-soft)]">
+                        <div className="mt-0.5 text-xs text-ink-soft">
                           Overført fra {holdLabel(e.courseId, courses)}
                         </div>
                       )}
@@ -497,13 +496,13 @@ export const StudentView = ({
                       <div className="flex items-center gap-1.5 text-xs">
                         <span>Slet?</span>
                         <button
-                          className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                          className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                           onClick={() => removeEntry(e.id ?? "")}
                         >
                           <Check size={14} />
                         </button>
                         <button
-                          className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                          className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                           onClick={() => setConfirmId(null)}
                         >
                           <X size={14} />
@@ -512,13 +511,13 @@ export const StudentView = ({
                     ) : (
                       <div className="flex gap-1.5">
                         <button
-                          className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                          className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                           onClick={() => startEdit(e)}
                         >
                           <Pencil size={14} />
                         </button>
                         <button
-                          className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                          className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                           onClick={() => setConfirmId(e.id ?? "")}
                         >
                           <Trash2 size={14} />
@@ -526,11 +525,11 @@ export const StudentView = ({
                       </div>
                     )}
                   </div>
-                  <div className="mt-1.5 text-xs leading-snug text-[var(--ink-soft)]">
+                  <div className="mt-1.5 text-xs leading-snug text-ink-soft">
                     {e.learningGoal}
                   </div>
                   {e.notes && (
-                    <div className="mt-1.5 text-xs leading-snug text-[var(--ink-soft)]">
+                    <div className="mt-1.5 text-xs leading-snug text-ink-soft">
                       {e.notes}
                     </div>
                   )}
@@ -542,28 +541,28 @@ export const StudentView = ({
       </div>
 
       {toast && (
-        <div className="fixed bottom-[84px] left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--ink)] px-[18px] py-2.5 text-[13px] text-[var(--card)] shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
+        <div className="fixed bottom-21 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-ink px-4.5 py-2.5 text-[13px] text-card shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
           <Check size={14} /> {toast}
         </div>
       )}
 
-      <div className="sticky bottom-0 mx-auto flex w-full max-w-[430px] border-t border-[var(--border)] bg-[var(--card)]">
+      <div className="sticky bottom-0 mx-auto flex w-full max-w-107.5 border-t border-border bg-card">
         <button
-          className={`flex flex-1 cursor-pointer flex-col items-center gap-1 border-0 bg-transparent pb-3.5 pt-3 font-sans text-[11px] font-semibold ${tab === "oversigt" ? "text-[var(--blue)]" : "text-[var(--ink-soft)]"}`}
+          className={`flex flex-1 cursor-pointer flex-col items-center gap-1 border-0 bg-transparent pb-3.5 pt-3 font-sans text-[11px] font-semibold ${tab === "oversigt" ? "text-blue" : "text-ink-soft"}`}
           onClick={() => setTab("oversigt")}
         >
           <Home size={19} />
           Oversigt
         </button>
         <button
-          className={`flex flex-1 cursor-pointer flex-col items-center gap-1 border-0 bg-transparent pb-3.5 pt-3 font-sans text-[11px] font-semibold ${tab === "registrer" ? "text-[var(--blue)]" : "text-[var(--ink-soft)]"}`}
+          className={`flex flex-1 cursor-pointer flex-col items-center gap-1 border-0 bg-transparent pb-3.5 pt-3 font-sans text-[11px] font-semibold ${tab === "registrer" ? "text-blue" : "text-ink-soft"}`}
           onClick={() => setTab("registrer")}
         >
           <PlusCircle size={19} />
           Registrér
         </button>
         <button
-          className={`flex flex-1 cursor-pointer flex-col items-center gap-1 border-0 bg-transparent pb-3.5 pt-3 font-sans text-[11px] font-semibold ${tab === "historik" ? "text-[var(--blue)]" : "text-[var(--ink-soft)]"}`}
+          className={`flex flex-1 cursor-pointer flex-col items-center gap-1 border-0 bg-transparent pb-3.5 pt-3 font-sans text-[11px] font-semibold ${tab === "historik" ? "text-blue" : "text-ink-soft"}`}
           onClick={() => setTab("historik")}
         >
           <ListChecks size={19} />

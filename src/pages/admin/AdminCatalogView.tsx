@@ -23,16 +23,13 @@ import { BrandLogo } from "../../components/brand/Brand";
 
 import { AdminTabs } from "./AdminTabs";
 import { Category } from "@/types/domain";
-import { LogEventArgs } from "@/types/log";
 import { routes } from "@/routes";
 import { useNavigate } from "react-router-dom";
+import { useAuditLogs } from "@/context/AuditLogsContext";
 
-type AdminCatalogViewProps = {
-  onLog: (log: LogEventArgs) => void;
-};
-
-export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
+export const AdminCatalogView = () => {
   const navigate = useNavigate();
+  const { logEvent: onLog } = useAuditLogs();
   const {
     ALL_CATEGORIES: CATEGORIES,
     LEARNING_GOALS,
@@ -237,7 +234,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
 
   const catForm = categoryDraft && (
     <div
-      className="border-t border-[var(--border)] px-4 pb-4 pt-3.5"
+      className="border-t border-border px-4 pb-4 pt-3.5"
       style={{ borderTop: "none", paddingTop: 16 }}
     >
       <div className="flex gap-3">
@@ -282,7 +279,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
         />
       </Field>
       <div className="mb-3.5 block">
-        <span className="mb-1.5 block text-xs font-semibold text-[var(--ink-soft)]">
+        <span className="mb-1.5 block text-xs font-semibold text-ink-soft">
           Farve
         </span>
         <div className="swatch-row">
@@ -317,11 +314,11 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
         <span
           className={`switch ${categoryDraft.requiresTherapist ? "on" : ""}`}
         >
-          <span className="absolute top-[3px] left-[3px] h-[18px] w-[18px] rounded-full bg-[var(--card)] transition-[left] duration-150" />
+          <span className="absolute top-0.75 left-0.75 h-4.5 w-4.5 rounded-full bg-card transition-[left] duration-150" />
         </span>
       </div>
       <div className="mb-3.5 block" style={{ marginTop: 12 }}>
-        <span className="mb-1.5 block text-xs font-semibold text-[var(--ink-soft)]">
+        <span className="mb-1.5 block text-xs font-semibold text-ink-soft">
           Sådan ser knappen ud for kursisten
         </span>
         <div className="flex flex-wrap gap-2" style={{ marginTop: 6 }}>
@@ -351,7 +348,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
       </div>
       {editingCatKey === "__new__" && (
         <p
-          className="mt-1 block text-[11px] text-[var(--ink-soft)]"
+          className="mt-1 block text-[11px] text-ink-soft"
           style={{ marginTop: 10 }}
         >
           Eksisterende hold og uddannelser får delmål 0 i den nye kategori,
@@ -361,15 +358,15 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
       {catError && (
         <div className="-mt-1.5 mb-3 text-xs text-[#a14b36]">{catError}</div>
       )}
-      <div className="mt-[18px] flex gap-2.5">
+      <div className="mt-4.5 flex gap-2.5">
         <button
-          className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+          className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
           onClick={cancelCat}
         >
           Annuller
         </button>
         <button
-          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
           onClick={saveCat}
         >
           {editingCatKey === "__new__" ? "Opret kategori" : "Gem kategori"}
@@ -463,25 +460,25 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
   };
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-[430px] flex-col bg-[var(--paper)] font-sans text-[var(--ink)] md:my-10 md:min-h-[calc(100vh-80px)] md:max-w-[900px] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
-      <div className="px-5 pb-[18px] pt-[26px]">
+    <div className="relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:max-w-225 md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
+      <div className="px-5 pb-4.5 pt-6.5">
         <div className="flex items-center gap-2.5">
-          <BrandLogo className="h-[26px] w-auto max-w-[140px] shrink-0 object-contain" />
-          <div className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+          <BrandLogo className="h-6.5 w-auto max-w-35 shrink-0 object-contain" />
+          <div className="font-mono text-[11px] uppercase tracking-widest text-ink-soft">
             Administrator
           </div>
         </div>
         <div className="mt-2 flex items-start justify-between">
           <div>
-            <div className="mb-0.5 font-[family-name:var(--font-display)] text-[28px] font-semibold">
+            <div className="mb-0.5 font-display text-[28px] font-semibold">
               Kategorier &amp; læringsmål
             </div>
-            <div className="text-[13px] text-[var(--ink-soft)]">
+            <div className="text-[13px] text-ink-soft">
               Tilpas timekategorier og læringsmål til jeres uddannelser
             </div>
           </div>
           <button
-            className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
             onClick={() => navigate(routes.adminStudents)}
             title="Kursistvisning"
           >
@@ -489,7 +486,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
           </button>
         </div>
         <div className="mt-4 flex items-center gap-2">
-          <span className="h-3 w-0.5 shrink-0 rounded-sm bg-[var(--surplus)]" />
+          <span className="h-3 w-0.5 shrink-0 rounded-sm bg-surplus" />
           <span className="stitch-line" />
         </div>
       </div>
@@ -498,18 +495,18 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
         <AdminTabs />
 
         <div
-          className="mt-[22px] flex items-center justify-between"
+          className="mt-5.5 flex items-center justify-between"
           style={{ marginTop: 0 }}
         >
           <div
-            className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]"
+            className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
             style={{ margin: 0 }}
           >
             Timekategorier
           </div>
           {editingCatKey === null && (
             <button
-              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
               onClick={startNewCat}
             >
               <PlusCircle size={14} /> Tilføj kategori
@@ -517,7 +514,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
           )}
         </div>
         <p
-          className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]"
+          className="mb-3.5 text-[13px] leading-normal text-ink-soft"
           style={{ marginTop: 0 }}
         >
           Kategorierne er de timetyper, kursisterne registrerer, og som hvert
@@ -534,18 +531,18 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
               : null;
           return (
             <div
-              className="mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--card)]"
+              className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card"
               key={c.key}
             >
               {editingCatKey === c.key ? (
                 catForm
               ) : (
                 <div
-                  className="border-t border-[var(--border)] px-4 pb-4 pt-3.5"
+                  className="border-t border-border px-4 pb-4 pt-3.5"
                   style={{ borderTop: "none" }}
                 >
                   <div
-                    className="flex items-center justify-between gap-2.5 border-b border-[var(--border)] py-2.5 last:border-b-0"
+                    className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0"
                     style={{ paddingTop: 0 }}
                   >
                     <div
@@ -568,7 +565,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                       />
                       <div>
                         <div className="text-sm font-semibold">{c.label}</div>
-                        <div className="mt-px text-xs text-[var(--ink-soft)]">
+                        <div className="mt-px text-xs text-ink-soft">
                           Kort navn: {c.short} · Standard-delmål{" "}
                           {c.defaultTarget} t
                           {c.requiresTherapist ? " · Kræver terapeut" : ""} ·{" "}
@@ -578,7 +575,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                     </div>
                     <div className="flex shrink-0 gap-1.5">
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                         disabled={idx === 0 || editingCatKey !== null}
                         onClick={() => moveCat(c.key, -1)}
                         title="Flyt op"
@@ -586,7 +583,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                         <ArrowUp size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                         disabled={
                           idx === activeCats.length - 1 ||
                           editingCatKey !== null
@@ -597,7 +594,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                         <ArrowDown size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                         disabled={editingCatKey !== null}
                         onClick={() => startEditCat(c)}
                         title="Redigér"
@@ -606,7 +603,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                       </button>
                       {count === 0 ? (
                         <button
-                          className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                          className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                           disabled={
                             editingCatKey !== null || activeCats.length <= 1
                           }
@@ -619,7 +616,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                         </button>
                       ) : (
                         <button
-                          className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                          className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                           disabled={
                             editingCatKey !== null || activeCats.length <= 1
                           }
@@ -635,7 +632,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                   </div>
                   {confirming && (
                     <div className="mb-1" style={{ marginTop: 10 }}>
-                      <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-[var(--terracotta)]">
+                      <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
                         <AlertTriangle size={14} />
                         {confirming === "delete" ? (
                           <span>
@@ -653,17 +650,17 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                         )}
                       </div>
                       <div
-                        className="mt-[18px] flex gap-2.5"
+                        className="mt-4.5 flex gap-2.5"
                         style={{ marginTop: 10 }}
                       >
                         <button
-                          className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                          className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                           onClick={() => setConfirmCatAction(null)}
                         >
                           Annuller
                         </button>
                         <button
-                          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                           onClick={() =>
                             confirming === "delete"
                               ? deleteCat(c.key)
@@ -681,7 +678,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
           );
         })}
         {editingCatKey === "__new__" && (
-          <div className="mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--card)]">
+          <div className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card">
             {catForm}
           </div>
         )}
@@ -689,23 +686,23 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
         {archivedCats.length > 0 && (
           <>
             <div
-              className="mb-1.5 block text-xs font-semibold text-[var(--ink-soft)]"
+              className="mb-1.5 block text-xs font-semibold text-ink-soft"
               style={{ margin: "18px 0 8px" }}
             >
               Arkiverede kategorier
             </div>
             {archivedCats.map((c) => (
               <div
-                className="mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--card)]"
+                className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card"
                 key={c.key}
                 style={{ opacity: 0.85 }}
               >
                 <div
-                  className="border-t border-[var(--border)] px-4 pb-4 pt-3.5"
+                  className="border-t border-border px-4 pb-4 pt-3.5"
                   style={{ borderTop: "none" }}
                 >
                   <div
-                    className="flex items-center justify-between gap-2.5 border-b border-[var(--border)] py-2.5 last:border-b-0"
+                    className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0"
                     style={{ paddingTop: 0 }}
                   >
                     <div
@@ -729,14 +726,14 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                       />
                       <div>
                         <div className="text-sm font-semibold">{c.label}</div>
-                        <div className="mt-px text-xs text-[var(--ink-soft)]">
+                        <div className="mt-px text-xs text-ink-soft">
                           {countFor(c.key)} registreringer bevares · tæller ikke
                           med i regnskabet
                         </div>
                       </div>
                     </div>
                     <button
-                      className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+                      className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
                       disabled={editingCatKey !== null}
                       onClick={() => setArchived(c.key, false)}
                     >
@@ -757,13 +754,13 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
         </div>
 
         <div
-          className="mb-2.5 mt-[22px] font-[family-name:var(--font-display)] text-[15px] font-semibold text-[var(--ink)]"
+          className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
           style={{ marginTop: 0 }}
         >
           Læringsmål
         </div>
         <p
-          className="mb-3.5 text-[13px] leading-normal text-[var(--ink-soft)]"
+          className="mb-3.5 text-[13px] leading-normal text-ink-soft"
           style={{ marginTop: 0 }}
         >
           Kursisten vælger ét læringsmål pr. registrering. Retter I teksten på
@@ -773,11 +770,11 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
 
         {LEARNING_GOALS.map((g, i) => (
           <div
-            className="mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--card)]"
+            className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card"
             key={g}
           >
             <div
-              className="border-t border-[var(--border)] px-4 pb-4 pt-3.5"
+              className="border-t border-border px-4 pb-4 pt-3.5"
               style={{ borderTop: "none" }}
             >
               {editingGoalIndex === i ? (
@@ -789,11 +786,11 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                     style={{ width: "100%" }}
                   />
                   <div
-                    className="mt-[18px] flex gap-2.5"
+                    className="mt-4.5 flex gap-2.5"
                     style={{ marginTop: 8 }}
                   >
                     <button
-                      className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-[var(--border)] bg-transparent px-4 py-3 font-sans text-sm font-semibold text-[var(--ink-soft)] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                      className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                       onClick={() => {
                         setEditingGoalIndex(null);
                         setGoalError("");
@@ -802,7 +799,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                       Annuller
                     </button>
                     <button
-                      className="flex-1 cursor-pointer rounded-[10px] border-0 bg-[var(--blue)] px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                      className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                       onClick={() => saveGoal(i)}
                     >
                       Gem
@@ -811,23 +808,23 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                 </>
               ) : (
                 <div
-                  className="flex items-center justify-between gap-2.5 border-b border-[var(--border)] py-2.5 last:border-b-0"
+                  className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0"
                   style={{ paddingTop: 0 }}
                 >
-                  <div className="text-[13px] leading-snug text-[var(--ink)]">
+                  <div className="text-[13px] leading-snug text-ink">
                     {g}
                   </div>
                   {confirmDeleteGoal === i ? (
                     <div className="flex items-center gap-1.5 text-xs">
                       <span>Fjern?</span>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                         onClick={() => deleteGoal(i)}
                       >
                         <Check size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                         onClick={() => setConfirmDeleteGoal(null)}
                       >
                         <X size={14} />
@@ -836,7 +833,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                   ) : (
                     <div className="flex shrink-0 gap-1.5">
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                         disabled={i === 0}
                         onClick={() => moveGoal(i, -1)}
                         title="Flyt op"
@@ -844,7 +841,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                         <ArrowUp size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                         disabled={i === LEARNING_GOALS.length - 1}
                         onClick={() => moveGoal(i, 1)}
                         title="Flyt ned"
@@ -852,14 +849,14 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
                         <ArrowDown size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                         onClick={() => startEditGoal(i)}
                         title="Ret tekst"
                       >
                         <Pencil size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
                         onClick={() => {
                           setConfirmDeleteGoal(i);
                           setEditingGoalIndex(null);
@@ -891,7 +888,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
             style={{ flex: 1 }}
           />
           <button
-            className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
+            className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
             onClick={addGoal}
           >
             <PlusCircle size={14} /> Tilføj
@@ -908,7 +905,7 @@ export const AdminCatalogView = ({ onLog }: AdminCatalogViewProps) => {
       </div>
 
       {toast && (
-        <div className="fixed bottom-[84px] left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--ink)] px-[18px] py-2.5 text-[13px] text-[var(--card)] shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
+        <div className="fixed bottom-21 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-ink px-4.5 py-2.5 text-[13px] text-card shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
           <Check size={14} /> {toast}
         </div>
       )}

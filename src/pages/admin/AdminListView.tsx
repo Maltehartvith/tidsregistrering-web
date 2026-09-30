@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import * as XLSX from "xlsx";
 import {
   Search,
@@ -24,20 +24,12 @@ import { AdminTabs } from "./AdminTabs";
 import { routes } from "@/routes";
 import { useNavigate } from "react-router-dom";
 
-type AdminListViewProps = {
-  onSelect: (id: string) => void;
-  embedded: boolean;
-  selectedId: string | null;
-};
-export const AdminListView = ({
-  onSelect,
-  embedded,
-  selectedId,
-}: AdminListViewProps) => {
+type AdminListViewProps = {};
+export const AdminListView = ({}: AdminListViewProps) => {
   const navigate = useNavigate();
-  const { CATEGORIES, LEARNING_GOALS, programs } = useCatalog();
+  const { CATEGORIES } = useCatalog();
   const { courses } = useCourses();
-  const { students } = useStudents();
+  const { students, selectedStudent, setSelectedStudent } = useStudents();
   const { entries } = useEntries();
   const [holdFilter, setHoldFilter] = useState("alle");
   const [query, setQuery] = useState("");
@@ -97,7 +89,7 @@ export const AdminListView = ({
 
   const listBody = (
     <>
-      {!embedded && <AdminTabs />}
+      <AdminTabs />
 
       <div className="mb-3.5 flex flex-wrap gap-2">
         <button
@@ -127,7 +119,7 @@ export const AdminListView = ({
         ))}
       </div>
 
-      <div className="mb-4 flex items-center gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 py-2 text-[var(--ink-soft)]">
+      <div className="mb-4 flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-ink-soft">
         <Search size={15} />
         <input
           type="text"
@@ -145,19 +137,19 @@ export const AdminListView = ({
         }}
       >
         <button
-          className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-[var(--blue-soft)] px-3 py-1.5 font-sans text-xs font-semibold text-[var(--blue)]"
-      /* TODO: Implement export to Excel    onClick={exportToExcel} */
+          className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+          /* TODO: Implement export to Excel    onClick={exportToExcel} */
           //disabled={filtered.length === 0}
           disabled={true}
         >
           <FileSpreadsheet size={14} /> Eksporter{" "}
-          {holdFilter === "alle" ? "alle hold" : courses?.[holdFilter]?.label} til
-          Excel
+          {holdFilter === "alle" ? "alle hold" : courses?.[holdFilter]?.label}{" "}
+          til Excel
         </button>
       </div>
 
       {filtered.length === 0 && (
-        <div className="px-2.5 py-10 text-center text-[13px] text-[var(--ink-soft)]">
+        <div className="px-2.5 py-10 text-center text-[13px] text-ink-soft">
           Ingen kursister fundet.
         </div>
       )}
@@ -168,12 +160,12 @@ export const AdminListView = ({
         return (
           <button
             key={s.id}
-            className={`mb-2.5 flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3 text-left font-sans hover:border-[var(--blue)] ${embedded && selectedId === s.id ? "rounded-xl bg-[var(--blue-soft)]" : ""}`}
-            onClick={() => onSelect(s.id)}
+            className={`mb-2.5 flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-border bg-card px-3.5 py-3 text-left font-sans hover:border-blue ${selectedStudent?.id === s.id ? "rounded-xl bg-blue-soft" : ""}`}
+            onClick={() => setSelectedStudent(s)}
           >
             <div className="min-w-0 flex-1">
               <div className="text-sm font-semibold">{s.name}</div>
-              <div className="mt-px text-xs text-[var(--ink-soft)]">
+              <div className="mt-px text-xs text-ink-soft">
                 {s.email} · {courses?.[s.courseId]?.label || s.courseId}
               </div>
               <div className="mt-2 flex flex-wrap gap-3">
@@ -182,7 +174,7 @@ export const AdminListView = ({
                   return (
                     <span
                       key={c.key}
-                      className="flex items-center gap-1 font-[family-name:var(--font-mono)] text-[11px] font-semibold"
+                      className="flex items-center gap-1 font-mono text-[11px] font-semibold"
                       style={{
                         color: diff < 0 ? "var(--deficit)" : "var(--surplus)",
                       }}
@@ -200,48 +192,37 @@ export const AdminListView = ({
             {(s.courseLinks || []).some((l) => l.included) && (
               <ArrowRightLeft
                 size={14}
-                className="shrink-0 text-[var(--terracotta)]"
+                className="shrink-0 text-terracotta"
                 aria-label="Timeoverførsel aktiv"
               />
             )}
-            <ChevronRight
-              size={18}
-              className="shrink-0 text-[var(--ink-soft)]"
-            />
+            <ChevronRight size={18} className="shrink-0 text-ink-soft" />
           </button>
         );
       })}
     </>
   );
 
-  if (embedded) {
-    return (
-      <div className="w-[360px] shrink-0 overflow-y-auto border-r border-[var(--border)] px-4 pb-10 pt-1 -body">
-        {listBody}
-      </div>
-    );
-  }
-
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-[430px] flex-col bg-[var(--paper)] font-sans text-[var(--ink)] md:my-10 md:min-h-[calc(100vh-80px)] md:max-w-[900px] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
-      <div className="px-5 pb-[18px] pt-[26px]">
+    <div className="relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:max-w-225 md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
+      <div className="px-5 pb-4.5 pt-6.5">
         <div className="flex items-center gap-2.5">
-          <BrandLogo className="h-[26px] w-auto max-w-[140px] shrink-0 object-contain" />
-          <div className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+          <BrandLogo className="h-6.5 w-auto max-w-35 shrink-0 object-contain" />
+          <div className="font-mono text-[11px] uppercase tracking-widest text-ink-soft">
             Administrator
           </div>
         </div>
         <div className="mt-2 flex items-start justify-between">
           <div>
-            <div className="mb-0.5 font-[family-name:var(--font-display)] text-[28px] font-semibold">
+            <div className="mb-0.5 font-display text-[28px] font-semibold">
               Kursister
             </div>
-            <div className="text-[13px] text-[var(--ink-soft)]">
+            <div className="text-[13px] text-ink-soft">
               {students.length} kursister på tværs af holdene
             </div>
           </div>
           <button
-            className="flex cursor-pointer rounded-lg border-[1.5px] border-[var(--border)] bg-[var(--paper)] p-1.5 text-[var(--ink-soft)] hover:border-[var(--blue)] hover:text-[var(--blue)] disabled:cursor-default disabled:opacity-35"
+            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
             onClick={() => navigate(routes.adminStudents)}
             title="Kursistvisning"
           >
@@ -249,7 +230,7 @@ export const AdminListView = ({
           </button>
         </div>
         <div className="mt-4 flex items-center gap-2">
-          <span className="h-3 w-0.5 shrink-0 rounded-sm bg-[var(--surplus)]" />
+          <span className="h-3 w-0.5 shrink-0 rounded-sm bg-surplus" />
           <span className="stitch-line" />
         </div>
       </div>
@@ -258,4 +239,3 @@ export const AdminListView = ({
     </div>
   );
 };
-
