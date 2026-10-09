@@ -1,7 +1,9 @@
 import type { Organization } from "@/types/organization";
 import type { OrganizationPreset } from "@/types/ui";
 import type { AdminRoleMeta } from "@/types/user";
-import { LOGO_SRC } from "./logo";
+
+/** App icon used when an organization has no custom logo. */
+export const APP_ICON_SRC = "/android-chrome-192x192.png";
 
 /** Years between course start years for “transfer window” eligibility. */
 export const TRANSFER_WINDOW_YEARS = 5;
@@ -37,7 +39,7 @@ export const DEFAULT_BRANDING: Organization = {
   orgName: "Narrative efteruddannelser",
   appTitle: "Timeregnskab",
   contactEmail: "",
-  logo: LOGO_SRC,
+  logo: APP_ICON_SRC,
   primary: "#12394A",
   accent: "#C25A4C",
   background: "#ECEEEA",

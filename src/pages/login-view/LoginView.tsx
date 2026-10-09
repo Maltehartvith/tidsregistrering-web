@@ -71,7 +71,7 @@ export function LoginView({
   return (
     <div className="relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
       <div className="mx-auto mt-15 flex max-w-85 flex-col px-6">
-        <BrandLogo className="mx-auto mb-5 h-12 w-auto max-w-55 object-contain" />
+        <BrandLogo className="mx-auto h-24 w-auto  max-w-55 object-contain" />
 
         {step === "login" && (
           <LoginPage onLoggedIn={onLoggedIn} goToStep={goToStep} />

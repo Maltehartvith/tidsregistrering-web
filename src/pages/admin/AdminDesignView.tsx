@@ -2,7 +2,11 @@ import { useState } from "react";
 import { Users2, Upload, AlertTriangle } from "lucide-react";
 import { useBranding } from "../../context/BrandingContext";
 
-import { BRAND_PRESETS, DEFAULT_BRANDING } from "@/data/constants";
+import {
+  APP_ICON_SRC,
+  BRAND_PRESETS,
+  DEFAULT_BRANDING,
+} from "@/data/constants";
 import { Field } from "../../components/ui/Field";
 import { BrandLogo } from "../../components/brand/Brand";
 import { themeVars, isValidHex, brandWarnings } from "../../theme/colors";
@@ -240,7 +244,11 @@ export const AdminDesignView = () => {
             </div>
             <div className="mb-1.5 flex items-center gap-3.5">
               <div className="flex h-18 w-27.5 items-center justify-center rounded-xl border border-dashed border-border bg-card p-2">
-                <img src={draft.logo} alt="Logo" />
+                <img
+                  src={draft.logo?.trim() || APP_ICON_SRC}
+                  alt="Logo"
+                  className="max-h-full max-w-full object-contain"
+                />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <label
@@ -255,15 +263,13 @@ export const AdminDesignView = () => {
                     style={{ display: "none" }}
                   />
                 </label>
-                {draft.logo !== DEFAULT_BRANDING.logo && (
+                {draft.logo?.trim() && draft.logo !== APP_ICON_SRC && (
                   <button
                     className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-primary"
                     style={{ margin: 0, textAlign: "left" }}
-                    onClick={() =>
-                      setDraft({ ...draft, logo: DEFAULT_BRANDING.logo })
-                    }
+                    onClick={() => setDraft({ ...draft, logo: "" })}
                   >
-                    Gendan standardlogo
+                    Brug app-ikon
                   </button>
                 )}
               </div>
@@ -358,7 +364,7 @@ export const AdminDesignView = () => {
               >
                 <div className="flex items-center gap-2.5">
                   <img
-                    src={draft.logo}
+                    src={draft.logo?.trim() || APP_ICON_SRC}
                     alt=""
                     className="h-6.5 w-auto max-w-35 shrink-0 object-contain"
                   />
