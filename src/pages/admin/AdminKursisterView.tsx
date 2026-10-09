@@ -6,14 +6,18 @@ import { AdminListView } from "./AdminListView";
 import { AdminDetailView } from "./AdminDetailView";
 import { useNavigate } from "react-router-dom";
 import { routes } from "@/routes";
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/AuthContext";
 
-type AdminKursisterViewProps = {
-};
-export const AdminKursisterView = ({
-}: AdminKursisterViewProps) => {
+type AdminKursisterViewProps = {};
+export const AdminKursisterView = ({}: AdminKursisterViewProps) => {
   const navigate = useNavigate();
   const { students, selectedStudent } = useStudents();
-
+  const { logout } = useAuth();
+  const handleLogout = async () => {
+    await logout();
+    navigate(routes.login, { replace: true });
+  };
   return (
     <div className="relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:max-w-225 md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
       <div className="px-5 pb-4.5 pt-6.5">
@@ -40,6 +44,7 @@ export const AdminKursisterView = ({
             <Users2 size={16} />
           </button>
         </div>
+        <Button onClick={() => handleLogout()}>Log ud</Button>
         <div className="mt-4 flex items-center gap-2">
           <span className="h-3 w-0.5 shrink-0 rounded-sm bg-surplus" />
           <span className="stitch-line" />
