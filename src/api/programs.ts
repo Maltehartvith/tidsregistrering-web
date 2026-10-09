@@ -1,5 +1,9 @@
-import type { Program } from "../types/domain";
+import type { Program, ProgramsMap } from "../types/domain";
 import { request } from "./request";
+
+export async function listPrograms(): Promise<ProgramsMap> {
+  return request<ProgramsMap>("/programs");
+}
 
 export async function createProgram(
   program: Omit<Program, "id"> & { id?: string },

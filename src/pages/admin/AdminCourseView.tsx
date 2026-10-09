@@ -25,20 +25,23 @@ import {
   formatTargets,
 } from "../../domain/catalog";
 import { coursesWithinTransferWindow, programName } from "../../domain/totals";
-import { ADMIN_ROLES } from "../../data/seed";
+import { ADMIN_ROLES } from "@/data/constants";
 import { Field } from "../../components/ui/Field";
+import ToggleButton from "../../components/ui/ToggleButton";
 
-import { AdminTabs } from "./AdminTabs";
+import { AdminTabs } from "@/components/nav/AdminTabs";
 import { Program, ProgramDraft } from "@/types/domain";
 import { BrandLogo } from "@/components/brand/Brand";
 import { useNavigate } from "react-router-dom";
 import { routes } from "@/routes";
 import { Student } from "@/types/user";
 import { useAuditLogs } from "@/context/AuditLogsContext";
+import { useToast } from "@/components/ui/Toast";
 
 export const AdminCourseView = () => {
   const navigate = useNavigate();
   const { logEvent: onLog } = useAuditLogs();
+  const { showToast } = useToast();
   const {
     CATEGORIES,
     LEARNING_GOALS,
@@ -59,7 +62,6 @@ export const AdminCourseView = () => {
   const [openCourseId, setOpenCourseId] = useState<string | null>(null);
   const [draftOn, setDraftOn] = useState(false);
   const [draftFrom, setDraftFrom] = useState("");
-  const [toast, setToast] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [newCourseId, setNewCourseId] = useState("");
   const [newCourseYear, setNewCourseYear] = useState(
@@ -114,11 +116,6 @@ export const AdminCourseView = () => {
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [programDraft, setProgramDraft] = useState<ProgramDraft | null>(null);
   const [programError, setProgramError] = useState("");
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 2600);
-  };
 
   const openCourse = (courseId: string) => {
     if (openCourseId === courseId) {
@@ -611,7 +608,7 @@ export const AdminCourseView = () => {
             </div>
           </div>
           <button
-            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
             onClick={() => navigate(routes.adminStudents)}
             title="Kursistvisning"
           >
@@ -639,7 +636,7 @@ export const AdminCourseView = () => {
           </div>
           {!showCreateProgram && (
             <button
-              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
               onClick={() => {
                 setShowCreateProgram(true);
                 setCreateProgramError("");
@@ -707,7 +704,7 @@ export const AdminCourseView = () => {
                   Annuller
                 </button>
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={submitNewProgram}
                 >
                   Opret uddannelse
@@ -746,13 +743,13 @@ export const AdminCourseView = () => {
                     <div className="flex items-center gap-1.5 text-xs">
                       <span>Slet?</span>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                         onClick={() => deleteProgram(p.id)}
                       >
                         <Check size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                         onClick={() => setConfirmDeleteProgramId(null)}
                       >
                         <X size={14} />
@@ -761,7 +758,7 @@ export const AdminCourseView = () => {
                   ) : (
                     <div className="flex shrink-0 gap-1.5">
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                         disabled={editingProgramId !== null}
                         onClick={() => startEditProgram(p)}
                         title="Redigér uddannelse"
@@ -769,7 +766,7 @@ export const AdminCourseView = () => {
                         <Pencil size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                         disabled={editingProgramId !== null}
                         onClick={() =>
                           setConfirmDeleteProgramId(
@@ -855,7 +852,7 @@ export const AdminCourseView = () => {
                               className="flex flex-wrap items-baseline justify-between gap-2.5"
                             >
                               <button
-                                className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
+                                className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-primary"
                                 style={{ margin: 0, textAlign: "left" }}
                                 onClick={() => {
                                   if (openCourseId !== h.id) openCourse(h.id);
@@ -904,7 +901,7 @@ export const AdminCourseView = () => {
                         Annuller
                       </button>
                       <button
-                        className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                        className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                         onClick={() => saveProgramEdit(p.id)}
                       >
                         Gem uddannelse
@@ -914,7 +911,7 @@ export const AdminCourseView = () => {
                 )}
                 {isBlocked && confirmDeleteProgramId === p.id && (
                   <div className="mb-1" style={{ marginTop: 10 }}>
-                    <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
+                    <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
                       <AlertTriangle size={14} />
                       Kan ikke slettes — bruges stadig af{" "}
                       {coursesUsingProgram.length} hold. Flyt eller slet dem
@@ -927,7 +924,7 @@ export const AdminCourseView = () => {
                       {coursesUsingProgram.map((h) => (
                         <button
                           key={h.id}
-                          className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
+                          className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-primary"
                           style={{ margin: 0, textAlign: "left" }}
                           onClick={() => {
                             setConfirmDeleteProgramId(null);
@@ -961,7 +958,7 @@ export const AdminCourseView = () => {
           </div>
           {!showCreate && (
             <button
-              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
               onClick={() => {
                 setShowCreate(true);
                 setOpenCourseId(null);
@@ -1070,7 +1067,7 @@ export const AdminCourseView = () => {
                   Annuller
                 </button>
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={createCourse}
                 >
                   Opret hold
@@ -1118,7 +1115,7 @@ export const AdminCourseView = () => {
                 {onCount > 0 && (
                   <span
                     className="flex items-center gap-1 font-mono text-[11px] font-semibold"
-                    style={{ color: "var(--terracotta)" }}
+                    style={{ color: "var(--secondary)" }}
                   >
                     <ArrowRightLeft size={12} /> {onCount}/{members.length}{" "}
                     overfører
@@ -1181,7 +1178,7 @@ export const AdminCourseView = () => {
                     </div>
                   </Field>
                   <button
-                    className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+                    className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
                     style={{ marginBottom: 16 }}
                     onClick={() => saveCourseProgram(h.id)}
                   >
@@ -1216,12 +1213,12 @@ export const AdminCourseView = () => {
                           </div>
                         </div>
                         {u.allCourses ? (
-                          <span className="shrink-0 rounded-full border border-blue px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-blue">
+                          <span className="shrink-0 rounded-full border border-primary px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-primary">
                             Alle hold
                           </span>
                         ) : (
                           <button
-                            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                             onClick={() => removeUserFromCourse(h.id, u.id)}
                             title="Fjern adgang til dette hold"
                           >
@@ -1272,7 +1269,7 @@ export const AdminCourseView = () => {
                         />
                       </div>
                       <button
-                        className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+                        className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
                         onClick={() => addUserToCourse(h.id)}
                       >
                         <PlusCircle size={14} /> Giv adgang
@@ -1330,7 +1327,7 @@ export const AdminCourseView = () => {
                   {transferSourceId &&
                     (confirmTransferRoster ? (
                       <div className="mb-1">
-                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
+                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
                           <AlertTriangle size={14} />
                           {
                             students.filter(
@@ -1354,7 +1351,7 @@ export const AdminCourseView = () => {
                             Annuller
                           </button>
                           <button
-                            className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                            className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                             onClick={() => transferRoster(h.id)}
                           >
                             Ja, overfør kursisterne
@@ -1363,7 +1360,7 @@ export const AdminCourseView = () => {
                       </div>
                     ) : (
                       <button
-                        className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                        className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                         style={{ width: "100%", marginBottom: 16 }}
                         onClick={() => setConfirmTransferRoster(true)}
                         disabled={
@@ -1414,7 +1411,7 @@ export const AdminCourseView = () => {
                     </Field>
                   </div>
                   <button
-                    className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+                    className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
                     onClick={() => addSingleStudent(h.id)}
                   >
                     <User size={14} /> Tilføj kursist
@@ -1423,12 +1420,12 @@ export const AdminCourseView = () => {
                   {addResult && (
                     <div className="mb-1">
                       {addResult.error && (
-                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
+                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
                           <AlertTriangle size={14} /> {addResult.error}
                         </div>
                       )}
                       {addResult.duplicate && (
-                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
+                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
                           <AlertTriangle size={14} />{" "}
                           {addResult.duplicate?.name ||
                             addResult.duplicate?.email}{" "}
@@ -1481,7 +1478,7 @@ export const AdminCourseView = () => {
                   {importResult && importResult.courseId === h.id && (
                     <div className="mb-1">
                       {importResult.error ? (
-                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
+                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
                           <AlertTriangle size={14} /> Kunne ikke læse "
                           {importResult.fileName}". Tjek at filen er en gyldig
                           Excel- eller CSV-fil.
@@ -1494,7 +1491,7 @@ export const AdminCourseView = () => {
                             importeret fra "{importResult.fileName}".
                           </div>
                           {(importResult.duplicates?.length ?? 0) > 0 && (
-                            <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
+                            <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
                               <AlertTriangle size={14} />
                               {importResult.duplicates?.length ?? 0} findes
                               allerede og blev ikke oprettet:{" "}
@@ -1504,7 +1501,7 @@ export const AdminCourseView = () => {
                             </div>
                           )}
                           {(importResult.skipped?.length ?? 0) > 0 && (
-                            <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
+                            <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
                               <AlertTriangle size={14} />
                               {importResult.skipped?.length ?? 0} rækker
                               manglede navn eller email og blev sprunget over.
@@ -1522,15 +1519,11 @@ export const AdminCourseView = () => {
                     <span className="stitch-line" />
                   </div>
 
-                  <label className="mb-1 flex cursor-pointer items-center justify-between text-[13px] font-semibold">
-                    <span>Overfør timer fra andet hold for hele holdet</span>
-                    <span
-                      className={`switch ${draftOn ? "on" : ""}`}
-                      onClick={() => setDraftOn(!draftOn)}
-                    >
-                      <span className="absolute top-0.75 left-0.75 h-4.5 w-4.5 rounded-full bg-card transition-[left] duration-150" />
-                    </span>
-                  </label>
+                  <ToggleButton
+                    label="Overfør timer fra andet hold for hele holdet"
+                    checked={draftOn}
+                    onChange={setDraftOn}
+                  />
                   {draftOn && (
                     <Field
                       label="Overfør fra hold"
@@ -1563,7 +1556,7 @@ export const AdminCourseView = () => {
                     kursister i {h.label}.
                   </p>
                   <button
-                    className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                    className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                     style={{ width: "100%" }}
                     onClick={() => applyToCourse(h.id)}
                   >
@@ -1578,7 +1571,7 @@ export const AdminCourseView = () => {
                     ) &&
                     (confirmRemoveCourseId === draftFrom ? (
                       <div className="mb-1">
-                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
+                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
                           <AlertTriangle size={14} />
                           Sikker på at overførslen fra{" "}
                           {courses[draftFrom]?.label || draftFrom} skal fjernes
@@ -1596,7 +1589,7 @@ export const AdminCourseView = () => {
                             Annuller
                           </button>
                           <button
-                            className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                            className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                             onClick={() => removeFromCourse(h.id, draftFrom)}
                           >
                             Ja, fjern helt
@@ -1609,8 +1602,8 @@ export const AdminCourseView = () => {
                         style={{
                           width: "100%",
                           marginTop: 10,
-                          color: "var(--terracotta)",
-                          borderColor: "var(--terracotta)",
+                          color: "var(--secondary)",
+                          borderColor: "var(--secondary)",
                         }}
                         onClick={() =>
                           setConfirmRemoveCourseId(draftFrom as string)
@@ -1631,7 +1624,7 @@ export const AdminCourseView = () => {
 
                   <div
                     className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
-                    style={{ color: "var(--terracotta)", marginTop: 0 }}
+                    style={{ color: "var(--secondary)", marginTop: 0 }}
                   >
                     <AlertTriangle
                       size={14}
@@ -1659,7 +1652,7 @@ export const AdminCourseView = () => {
                         {members.map((m) => (
                           <button
                             key={m.id}
-                            className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
+                            className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-primary"
                             style={{ margin: 0, textAlign: "left" }}
                             onClick={() => navigate(routes.adminStudent(m.id))}
                           >
@@ -1672,7 +1665,7 @@ export const AdminCourseView = () => {
                     <div className="my-4.5 mb-1.5 rounded-xl border-[1.5px] border-dashed border-border p-3.5">
                       <div
                         className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink-soft"
-                        style={{ color: "var(--terracotta)" }}
+                        style={{ color: "var(--secondary)" }}
                       >
                         Bekræft sletning
                       </div>
@@ -1693,10 +1686,10 @@ export const AdminCourseView = () => {
                           Annuller
                         </button>
                         <button
-                          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-[#fafaf7] transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                           style={{
-                            background: "var(--terracotta)",
-                            borderColor: "var(--terracotta)",
+                            background: "var(--secondary)",
+                            borderColor: "var(--secondary)",
                           }}
                           onClick={() => deleteCourse(h.id)}
                         >
@@ -1709,8 +1702,8 @@ export const AdminCourseView = () => {
                       className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                       style={{
                         width: "100%",
-                        color: "var(--terracotta)",
-                        borderColor: "var(--terracotta)",
+                        color: "var(--secondary)",
+                        borderColor: "var(--secondary)",
                       }}
                       onClick={() => setConfirmDeleteCourseId(h.id)}
                     >
@@ -1724,11 +1717,6 @@ export const AdminCourseView = () => {
         })}
       </div>
 
-      {toast && (
-        <div className="fixed bottom-21 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-ink px-4.5 py-2.5 text-[13px] text-card shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
-          <Check size={14} /> {toast}
-        </div>
-      )}
     </div>
   );
 };

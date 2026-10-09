@@ -4,26 +4,26 @@ import { useAuth } from "../../context/AuthContext.tsx";
 import type { UserRole } from "../../types/user.ts";
 import { homeForRole, isStaffRole } from "../../api/queryKeys.ts";
 import { routes } from "../../routes.ts";
+import Spinner from "@/components/ui/Spinner.tsx";
 
 function LoadingScreen() {
   return (
+    //todo: kom tilbage når vi har lavet en ordenlig wrapper om siden
     <div className="relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
-      <div className="mx-auto mt-15 flex max-w-85 flex-col px-6">
-        <div className="text-center text-[13px] text-ink-soft">
-          Indlæser…
-        </div>
+      <div className="mx-auto my-auto flex max-w-85 flex-row gap-2 px-6 py-10 items-center">
+        <div className="text-center text-xl text-ink-soft">Indlæser…</div>
+        <Spinner size={10} />
       </div>
     </div>
   );
 }
 
-/** Requires a session (or demo mode). */
+/** Requires a session. */
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { user, loading, demoMode } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
 
   if (loading) return <LoadingScreen />;
-  if (demoMode) return children;
   if (!user) {
     return (
       <Navigate to={routes.login} replace state={{ from: location.pathname }} />
@@ -32,7 +32,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return children;
 }
 
-/** Requires one of the given roles (demo mode bypasses). */
+/** Requires one of the given roles. */
 export function RequireRole({
   roles,
   children,
@@ -40,11 +40,10 @@ export function RequireRole({
   roles: UserRole[];
   children: ReactNode;
 }) {
-  const { user, loading, demoMode } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
 
   if (loading) return <LoadingScreen />;
-  if (demoMode) return children;
   if (!user) {
     return (
       <Navigate to={routes.login} replace state={{ from: location.pathname }} />
@@ -67,21 +66,16 @@ export function RequireStaff({ children }: { children: ReactNode }) {
 
 /** Guest-only login page — redirect signed-in users home. */
 export function RequireGuest({ children }: { children: ReactNode }) {
-  const { user, loading, demoMode } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) return <LoadingScreen />;
-  if (demoMode) return children;
   if (user) {
     return <Navigate to={homeForRole(user.role)} replace />;
   }
   return children;
 }
 
-export function defaultPathForUser(
-  role: UserRole | undefined,
-  demoMode: boolean,
-): string {
-  if (demoMode) return routes.student;
+export function defaultPathForUser(role: UserRole | undefined): string {
   if (!role) return routes.login;
   return homeForRole(role);
 }

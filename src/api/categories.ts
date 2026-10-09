@@ -1,6 +1,10 @@
 import type { Category, CategoriesMap } from "../types/domain";
 import { request } from "./request";
 
+export async function listCategories(): Promise<CategoriesMap> {
+  return request<CategoriesMap>("/categories");
+}
+
 export async function createCategory(
   category: Omit<Category, "key"> & { key?: string },
 ): Promise<Category> {

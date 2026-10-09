@@ -2,7 +2,7 @@ import type { CategoriesMap, ProgramsMap } from "../types/domain";
 import { TimeEntry } from "@/types/entry";
 import type { Course, CourseMap } from "../types/course";
 import type { Student } from "../types/user";
-import { CATEGORIES_INITIAL, TRANSFER_WINDOW_YEARS } from "../data/seed";
+import { TRANSFER_WINDOW_YEARS } from "../data/constants";
 
 export function eligibleCourseIdsForStudent(student: Student): string[] {
   return [
@@ -19,7 +19,7 @@ export const eligibleHoldIdsForStudent = eligibleCourseIdsForStudent;
 export function totalsForStudent(
   student: Student,
   entries: TimeEntry[],
-  categories: CategoriesMap = CATEGORIES_INITIAL,
+  categories: CategoriesMap,
 ): Record<string, number> {
   const eligibleCourseIds = eligibleCourseIdsForStudent(student);
   return Object.fromEntries(
@@ -41,7 +41,7 @@ export function totalsForStudentOnHold(
   student: Student,
   entries: TimeEntry[],
   courseId: string,
-  categories: CategoriesMap = CATEGORIES_INITIAL,
+  categories: CategoriesMap,
 ): Record<string, number> {
   return Object.fromEntries(
     Object.keys(categories).map((catKey) => [
@@ -61,7 +61,7 @@ export function totalsForStudentOnHold(
 export function targetsForStudent(
   student: Student,
   courses: CourseMap | undefined,
-  categories: CategoriesMap = CATEGORIES_INITIAL,
+  categories: CategoriesMap,
 ): Record<string, number> {
   const courseMap = courses ?? {};
   const eligibleCourseIds = eligibleCourseIdsForStudent(student);

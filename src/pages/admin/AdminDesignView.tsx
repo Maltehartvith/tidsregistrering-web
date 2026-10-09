@@ -1,29 +1,38 @@
 import { useState } from "react";
-import { Check, Users2, Upload, AlertTriangle } from "lucide-react";
+import { Users2, Upload, AlertTriangle } from "lucide-react";
 import { useBranding } from "../../context/BrandingContext";
 
-import { BRANDING_INITIAL, BRAND_PRESETS } from "../../data/seed";
+import { BRAND_PRESETS, DEFAULT_BRANDING } from "@/data/constants";
 import { Field } from "../../components/ui/Field";
 import { BrandLogo } from "../../components/brand/Brand";
 import { themeVars, isValidHex, brandWarnings } from "../../theme/colors";
-import { AdminTabs } from "./AdminTabs";
+import { AdminTabs } from "@/components/nav/AdminTabs";
 import { routes } from "@/routes";
 import { useNavigate } from "react-router-dom";
 import { useAuditLogs } from "@/context/AuditLogsContext";
+import { useToast } from "@/components/ui/Toast";
 
 export const AdminDesignView = () => {
   const navigate = useNavigate();
   const { logEvent: onLog } = useAuditLogs();
-  const { setBranding, saveBranding, ...branding } = useBranding();
-  const [draft, setDraft] = useState(branding);
+  const { showToast } = useToast();
+  const {
+    setBranding,
+    saveBranding,
+    isLoading: _brandingLoading,
+    ...branding
+  } = useBranding();
+  const [draft, setDraft] = useState({
+    orgName: branding.orgName,
+    appTitle: branding.appTitle,
+    contactEmail: branding.contactEmail,
+    logo: branding.logo,
+    primary: branding.primary,
+    accent: branding.accent,
+    background: branding.background,
+  });
   const [logoError, setLogoError] = useState("");
   const [formError, setFormError] = useState("");
-  const [toast, setToast] = useState("");
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 2600);
-  };
 
   const warnings = brandWarnings(draft);
   const dirty = JSON.stringify(draft) !== JSON.stringify(branding);
@@ -106,7 +115,7 @@ export const AdminDesignView = () => {
   };
 
   const resetAll = () => {
-    setDraft(BRANDING_INITIAL);
+    setDraft(DEFAULT_BRANDING);
     setFormError("");
     setLogoError("");
   };
@@ -164,7 +173,7 @@ export const AdminDesignView = () => {
             </div>
           </div>
           <button
-            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
             onClick={() => navigate(routes.adminStudents)}
             title="Kursistvisning"
           >
@@ -235,7 +244,7 @@ export const AdminDesignView = () => {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <label
-                  className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+                  className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
                   style={{ cursor: "pointer" }}
                 >
                   <Upload size={14} /> Upload logo
@@ -246,12 +255,12 @@ export const AdminDesignView = () => {
                     style={{ display: "none" }}
                   />
                 </label>
-                {draft.logo !== BRANDING_INITIAL.logo && (
+                {draft.logo !== DEFAULT_BRANDING.logo && (
                   <button
-                    className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
+                    className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-primary"
                     style={{ margin: 0, textAlign: "left" }}
                     onClick={() =>
-                      setDraft({ ...draft, logo: BRANDING_INITIAL.logo })
+                      setDraft({ ...draft, logo: DEFAULT_BRANDING.logo })
                     }
                   >
                     Gendan standardlogo
@@ -264,7 +273,7 @@ export const AdminDesignView = () => {
               baggrund ser pænest ud.
             </p>
             {logoError && (
-              <div className="-mt-1.5 mb-3 text-xs text-terracotta">
+              <div className="-mt-1.5 mb-3 text-xs text-secondary">
                 {logoError}
               </div>
             )}
@@ -411,7 +420,7 @@ export const AdminDesignView = () => {
                   </button>
                 </div>
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-paper transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   style={{ width: "100%" }}
                 >
                   Gem registrering
@@ -424,7 +433,7 @@ export const AdminDesignView = () => {
             )}
             {warnings.map((w) => (
               <div
-                className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta"
+                className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary"
                 key={w}
                 style={{ marginTop: 10 }}
               >
@@ -436,7 +445,7 @@ export const AdminDesignView = () => {
 
         {formError && (
           <div
-            className="-mt-1.5 mb-3 text-xs text-terracotta"
+            className="-mt-1.5 mb-3 text-xs text-secondary"
             style={{ marginTop: 12 }}
           >
             {formError}
@@ -461,7 +470,7 @@ export const AdminDesignView = () => {
             Fortryd
           </button>
           <button
-            className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-paper transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+            className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
             disabled={!dirty}
             onClick={save}
           >
@@ -470,11 +479,6 @@ export const AdminDesignView = () => {
         </div>
       </div>
 
-      {toast && (
-        <div className="fixed bottom-21 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-ink px-4.5 py-2.5 text-[13px] text-card shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
-          <Check size={14} /> {toast}
-        </div>
-      )}
     </div>
   );
 };

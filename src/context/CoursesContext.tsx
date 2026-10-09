@@ -1,18 +1,22 @@
 import {
   createContext,
-  useCallback,
   useContext,
   type ReactNode,
   type Dispatch,
   type SetStateAction,
 } from "react";
 import type { Course, CourseMap } from "../types/course";
-import { useAuth } from "./AuthContext";
-import { useRefreshBootstrap } from "../api/refresh";
-import * as coursesApi from "../api/courses";
+import {
+  useCoursesQuery,
+  useCoursesSetter,
+  useCreateCourse,
+  useDeleteCourse,
+  useUpdateCourse,
+} from "../hooks/courses";
 
 export interface CoursesContextValue {
   courses: CourseMap;
+  isLoading: boolean;
   setCourses: Dispatch<SetStateAction<CourseMap>>;
   createCourse: (course: Omit<Course, "id"> & { id?: string }) => Promise<Course>;
   updateCourse: (id: string, course: Partial<Course>) => Promise<Course>;
@@ -21,71 +25,23 @@ export interface CoursesContextValue {
 
 const CoursesContext = createContext<CoursesContextValue | null>(null);
 
-export function CoursesProvider({
-  courses,
-  setCourses,
-  children,
-}: {
-  courses: CourseMap;
-  setCourses: Dispatch<SetStateAction<CourseMap>>;
-  children: ReactNode;
-}) {
-  const { demoMode } = useAuth();
-  const refresh = useRefreshBootstrap();
-
-  const createCourse = useCallback(
-    async (course: Omit<Course, "id"> & { id?: string }) => {
-      if (demoMode) {
-        const id = course.id || `h${Date.now().toString(36)}`;
-        const created = { ...course, id };
-        setCourses((prev) => ({ ...prev, [id]: created }));
-        return created;
-      }
-      const created = await coursesApi.createCourse(course);
-      await refresh();
-      return created;
-    },
-    [demoMode, refresh, setCourses],
-  );
-
-  const updateCourse = useCallback(
-    async (id: string, course: Partial<Course>) => {
-      if (demoMode) {
-        const updated = { ...courses[id], ...course, id };
-        setCourses((prev) => ({ ...prev, [id]: updated }));
-        return updated;
-      }
-      const updated = await coursesApi.updateCourse(id, course);
-      await refresh();
-      return updated;
-    },
-    [courses, demoMode, refresh, setCourses],
-  );
-
-  const deleteCourseFn = useCallback(
-    async (id: string) => {
-      if (demoMode) {
-        setCourses((prev) => {
-          const next = { ...prev };
-          delete next[id];
-          return next;
-        });
-        return;
-      }
-      await coursesApi.deleteCourse(id);
-      await refresh();
-    },
-    [demoMode, refresh, setCourses],
-  );
+export function CoursesProvider({ children }: { children: ReactNode }) {
+  const { data: courses, isLoading } = useCoursesQuery();
+  const setCourses = useCoursesSetter();
+  const createMutation = useCreateCourse();
+  const updateMutation = useUpdateCourse();
+  const deleteMutation = useDeleteCourse();
 
   return (
     <CoursesContext.Provider
       value={{
         courses,
+        isLoading,
         setCourses,
-        createCourse,
-        updateCourse,
-        deleteCourse: deleteCourseFn,
+        createCourse: (course) => createMutation.mutateAsync(course),
+        updateCourse: (id, course) =>
+          updateMutation.mutateAsync({ id, course }),
+        deleteCourse: (id) => deleteMutation.mutateAsync(id),
       }}
     >
       {children}

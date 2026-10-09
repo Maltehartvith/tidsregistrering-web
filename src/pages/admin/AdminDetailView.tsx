@@ -29,16 +29,22 @@ import { formatLogTime } from "../../domain/format";
 import { emptyForm } from "../../domain/entryForm";
 
 import { Field } from "../../components/ui/Field";
+import ToggleButton from "../../components/ui/ToggleButton";
 import { CategoryCard } from "../../components/ui/CategoryCard";
 import { EntryForm } from "../../components/ui/EntryForm";
 import { Student } from "@/types/user";
 import { TimeEntry } from "@/types/entry";
 import { useNavigate } from "react-router-dom";
 import { routes } from "@/routes";
+import { useToast } from "@/components/ui/Toast";
+import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Selector } from "@/components/ui/Selector";
 
 type AdminDetailViewProps = {};
 export const AdminDetailView = ({}: AdminDetailViewProps) => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS, programs } = useCatalog();
   const { courses } = useCourses();
   const {
@@ -71,17 +77,11 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
   const [editName, setEditName] = useState(selectedStudent?.name || "");
   const [editEmail, setEditEmail] = useState(selectedStudent?.email || "");
   const [profileError, setProfileError] = useState("");
-  const [toast, setToast] = useState("");
   const [addcourseId, setAddcourseId] = useState("");
 
   if (!selectedStudent) {
     return <div>Kursist ikke fundet</div>;
   }
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 2200);
-  };
 
   const totalsWholeProgram = totalsForStudent(
     selectedStudent,
@@ -269,16 +269,7 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
   };
 
   const handleDeleteStudent = async () => {
-    const entryCount = entries.filter(
-      (e) => e.studentId === selectedStudent.id,
-    ).length;
     await removeStudentApi(selectedStudent.id);
-    void logEvent({
-      actor: "Administrator",
-      studentId: selectedStudent.id,
-      description: `Administrator slettede kursisten ${selectedStudent.name} (${selectedStudent.email}) permanent, inkl. ${entryCount} registreringer — jf. GDPR`,
-    });
-    navigate(-1);
   };
 
   const startEdit = (entry: TimeEntry) => {
@@ -351,14 +342,14 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
             <div style={{ flex: 1 }}>
               <div className="flex gap-3">
                 <Field label="Navn">
-                  <input
+                  <Input
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                   />
                 </Field>
                 <Field label="Email">
-                  <input
+                  <Input
                     type="email"
                     value={editEmail}
                     onChange={(e) => setEditEmail(e.target.value)}
@@ -366,23 +357,23 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
                 </Field>
               </div>
               {profileError && (
-                <div className="-mt-1.5 mb-3 text-xs text-terracotta">
+                <div className="-mt-1.5 mb-3 text-xs text-secondary">
                   {profileError}
                 </div>
               )}
               <div className="mt-6 flex gap-2.5">
-                <button
+                <Button
                   className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={() => setEditingProfile(false)}
                 >
                   Annuller
-                </button>
-                <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-paper transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                </Button>
+                <Button
+                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={saveProfile}
                 >
                   Gem
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
@@ -399,13 +390,13 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
                   {courses[selectedStudent.courseId].label}
                 </div>
               </div>
-              <button
-                className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+              <Button
+                className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                 onClick={startEditProfile}
                 title="Ret navn eller email"
               >
                 <Pencil size={16} />
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -443,7 +434,7 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
                 Nuværende hold · tæller altid med
               </div>
             </div>
-            <span className="shrink-0 rounded-full border border-blue px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-blue">
+            <span className="shrink-0 rounded-full border border-primary px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-primary">
               Nuværende
             </span>
           </div>
@@ -460,45 +451,26 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
                 label="Flyt til hold"
                 hint="Fx hvis kursisten ved en fejl er blevet tilknyttet det forkerte hold."
               >
-                <div className="relative">
-                  <select
-                    value={moveTargetId}
-                    onChange={(e) => setMoveTargetId(e.target.value)}
-                  >
-                    <option value="">Vælg hold…</option>
-                    {Object.values(courses)
-                      .filter((h) => h.id !== selectedStudent.courseId)
-                      .map((h) => (
-                        <option key={h.id} value={h.id}>
-                          {h.label} · {h.startYear}
-                        </option>
-                      ))}
-                  </select>
-                  <ChevronDown
-                    size={16}
-                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
-                  />
-                </div>
+                <Selector
+                  value={moveTargetId}
+                  onChange={(e) => setMoveTargetId(e.target.value)}
+                  options={Object.values(courses)
+                    .filter((h) => h.id !== selectedStudent.courseId)
+                    .map((h) => h.id)}
+                  placeholder="Vælg hold…"
+                />
               </Field>
-              <label
-                className="mb-1 flex cursor-pointer items-center justify-between text-[13px] font-semibold"
-                style={{ marginTop: 4 }}
-              >
-                <span>
-                  Behold {courses[selectedStudent.courseId].label} som tidligere
-                  hold (timer tæller stadig med)
-                </span>
-                <span
-                  className={`switch switch-sm ${moveKeepAsLink ? "on" : ""}`}
-                  onClick={() => setMoveKeepAsLink(!moveKeepAsLink)}
-                >
-                  <span className="absolute top-0.75 left-0.75 h-5 w-5 rounded-full bg-card transition-[left] duration-150" />
-                </span>
-              </label>
+              <ToggleButton
+                label={`Behold ${courses[selectedStudent.courseId].label} som tidligere hold (timer tæller stadig med)`}
+                checked={moveKeepAsLink}
+                onChange={setMoveKeepAsLink}
+                size="sm"
+                className="mt-1 mb-1 flex cursor-pointer items-center justify-between text-[13px] font-semibold"
+              />
               {!moveKeepAsLink && (
                 <p
                   className="mt-1 block text-[11px] text-ink-soft"
-                  style={{ color: "var(--terracotta)" }}
+                  style={{ color: "var(--secondary)" }}
                 >
                   {courses[selectedStudent.courseId].label} fjernes helt fra{" "}
                   {selectedStudent.name}s historik — brug kun dette, hvis
@@ -506,7 +478,7 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
                 </p>
               )}
               <div className="mt-6 flex gap-2.5" style={{ marginTop: 10 }}>
-                <button
+                <Button
                   className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={() => {
                     setShowMoveHold(false);
@@ -515,24 +487,24 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
                   }}
                 >
                   Annuller
-                </button>
-                <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-paper transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                </Button>
+                <Button
+                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={moveToHold}
                   disabled={!moveTargetId}
                 >
                   Flyt kursisten
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
-            <button
-              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-blue"
+            <Button
+              className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-primary"
               style={{ marginTop: -6, marginBottom: 16 }}
               onClick={() => setShowMoveHold(true)}
             >
               Forkert hold tilknyttet? Flyt kursisten til et andet hold
-            </button>
+            </Button>
           )}
 
           {(selectedStudent.courseLinks || []).map((link) => (
@@ -557,34 +529,33 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
               {confirmRemoveCourseId === link.courseId ? (
                 <div className="flex items-center gap-1.5 text-xs">
                   <span>Fjern helt?</span>
-                  <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                  <Button
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                     onClick={() => removeHoldLink(link.courseId)}
                   >
                     <Check size={14} />
-                  </button>
-                  <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                  </Button>
+                  <Button
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                     onClick={() => setConfirmRemoveCourseId(null)}
                   >
                     <X size={14} />
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span
-                    className={`switch switch-sm ${link.included ? "on" : ""}`}
-                    onClick={() => toggleHoldLink(link.courseId)}
-                  >
-                    <span className="absolute top-0.75 left-0.75 h-5 w-5 rounded-full bg-card transition-[left] duration-150" />
-                  </span>
-                  <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                  <ToggleButton
+                    checked={link.included}
+                    onChange={() => toggleHoldLink(link.courseId)}
+                    size="sm"
+                  />
+                  <Button
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                     onClick={() => setConfirmRemoveCourseId(link.courseId)}
                     title="Fjern hold helt (fx hvis forkert hold blev tilknyttet)"
                   >
                     <X size={14} />
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -608,12 +579,12 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
                   className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
                 />
               </div>
-              <button
-                className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+              <Button
+                className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
                 onClick={addHoldLink}
               >
                 <PlusCircle size={14} /> Tilføj eksisterende hold
-              </button>
+              </Button>
             </div>
           ) : (
             <p
@@ -627,7 +598,7 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
 
         {includedLinks.length > 0 && (
           <div className="flex flex-wrap gap-2" style={{ marginBottom: 12 }}>
-            <button
+            <Button
               className="cursor-pointer rounded-full border-[1.5px] px-3.5 py-2 text-[13px] font-semibold transition-all"
               style={{
                 background:
@@ -637,8 +608,8 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
               onClick={() => setScope("uddannelse")}
             >
               Hele uddannelsen
-            </button>
-            <button
+            </Button>
+            <Button
               className="cursor-pointer rounded-full border-[1.5px] px-3.5 py-2 text-[13px] font-semibold transition-all"
               style={{
                 background: scope === "hold" ? "var(--ink)" : "var(--card)",
@@ -647,7 +618,7 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
               onClick={() => setScope("hold")}
             >
               Dette hold
-            </button>
+            </Button>
           </div>
         )}
 
@@ -671,8 +642,8 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
             Registreringer
           </div>
           {!addingNew && (
-            <button
-              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+            <Button
+              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
               onClick={() => {
                 setAddingNew(true);
                 setEditingId(null);
@@ -686,7 +657,7 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
               }}
             >
               <PlusCircle size={14} /> Tilføj
-            </button>
+            </Button>
           )}
         </div>
 
@@ -767,33 +738,33 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
                 {confirmId === e.id ? (
                   <div className="flex items-center gap-1.5 text-xs">
                     <span>Slet?</span>
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                    <Button
+                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                       onClick={() => removeEntry(e.id ?? "")}
                     >
                       <Check size={14} />
-                    </button>
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                    </Button>
+                    <Button
+                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                       onClick={() => setConfirmId(null)}
                     >
                       <X size={14} />
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <div className="flex gap-1.5">
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                    <Button
+                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                       onClick={() => startEdit(e)}
                     >
                       <Pencil size={14} />
-                    </button>
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                    </Button>
+                    <Button
+                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                       onClick={() => setConfirmId(e.id ?? "")}
                     >
                       <Trash2 size={14} />
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -831,13 +802,11 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
             key={log.id}
           >
             <span
-              className={`shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.04em] ${log.actor === "Administrator" ? "border-terracotta text-terracotta" : "border-border text-ink-soft"}`}
+              className={`shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.04em] ${log.actor === "Administrator" ? "border-secondary text-secondary" : "border-border text-ink-soft"}`}
             >
               {log.actor}
             </span>
-            <span className="min-w-35 flex-1 text-ink">
-              {log.description}
-            </span>
+            <span className="min-w-35 flex-1 text-ink">{log.description}</span>
             <span className="w-full font-mono text-[11px] text-ink-soft">
               {formatLogTime(log.at)}
             </span>
@@ -853,7 +822,7 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
 
         <div
           className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
-          style={{ color: "var(--terracotta)" }}
+          style={{ color: "var(--secondary)" }}
         >
           <AlertTriangle
             size={14}
@@ -865,7 +834,7 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
           <div className="my-6 mb-1.5 rounded-xl border-[1.5px] border-dashed border-border p-3.5">
             <div
               className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink-soft"
-              style={{ color: "var(--terracotta)" }}
+              style={{ color: "var(--secondary)" }}
             >
               Bekræft sletning
             </div>
@@ -877,43 +846,37 @@ export const AdminDetailView = ({}: AdminDetailViewProps) => {
               registreringer slettes permanent. Dette kan ikke fortrydes.
             </p>
             <div className="mt-6 flex gap-2.5">
-              <button
+              <Button
                 className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                 onClick={() => setConfirmDeleteStudent(false)}
               >
                 Annuller
-              </button>
-              <button
-                className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-paper transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+              </Button>
+              <Button
+                className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                 style={{
-                  background: "terracotta",
-                  borderColor: "terracotta",
+                  background: "var(--secondary)",
+                  borderColor: "var(--secondary)",
                 }}
                 onClick={handleDeleteStudent}
               >
                 Ja, slet permanent
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
-          <button
+          <Button
             className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
             style={{
-              color: "var(--terracotta)",
-              borderColor: "var(--terracotta)",
+              color: "var(--secondary)",
+              borderColor: "var(--secondary)",
             }}
             onClick={() => setConfirmDeleteStudent(true)}
           >
             <Trash2 size={14} /> Slet kursist permanent (GDPR)
-          </button>
+          </Button>
         )}
       </div>
-
-      {toast && (
-        <div className="fixed bottom-21 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-ink px-4.5 py-2.5 text-[13px] text-card shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
-          <Check size={14} /> {toast}
-        </div>
-      )}
     </>
   );
 

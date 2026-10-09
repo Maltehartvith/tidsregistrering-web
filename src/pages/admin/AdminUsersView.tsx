@@ -10,23 +10,26 @@ import {
   Users2,
 } from "lucide-react";
 import { programName } from "../../domain/totals";
-import { ADMIN_ROLES } from "../../data/seed";
+import { ADMIN_ROLES } from "@/data/constants";
 import { Field } from "../../components/ui/Field";
+import ToggleButton from "../../components/ui/ToggleButton";
 import { useCatalog } from "../../context/CatalogContext";
 import { useCourses } from "../../context/CoursesContext";
 import { useUsers } from "../../context/UsersContext";
 
 import { BrandLogo } from "../../components/brand/Brand";
 
-import { AdminTabs } from "./AdminTabs";
+import { AdminTabs } from "@/components/nav/AdminTabs";
 import { routes } from "@/routes";
 import { useNavigate } from "react-router-dom";
 import { AdminRoleKey, AdminUser } from "@/types/user";
 import { useAuditLogs } from "@/context/AuditLogsContext";
+import { useToast } from "@/components/ui/Toast";
 
 export const AdminUsersView = () => {
   const navigate = useNavigate();
   const { logEvent: onLog } = useAuditLogs();
+  const { showToast } = useToast();
   const { programs } = useCatalog();
   const { courses } = useCourses();
   const { adminUsers, createUser, updateUser, deleteUser, resendInvite } =
@@ -38,7 +41,6 @@ export const AdminUsersView = () => {
   const [allCourses, setAllHolds] = useState(false);
   const [courseIds, setHoldIds] = useState<string[]>([]);
   const [formError, setFormError] = useState("");
-  const [toast, setToast] = useState("");
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<AdminRoleKey>(
@@ -47,11 +49,6 @@ export const AdminUsersView = () => {
   const [editAllCourses, setEditAllCourses] = useState(false);
   const [editCourseIds, setEditCourseIds] = useState<string[]>([]);
   const [editError, setEditError] = useState("");
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 2600);
-  };
 
   const resetForm = () => {
     setName("");
@@ -206,7 +203,7 @@ export const AdminUsersView = () => {
             </div>
           </div>
           <button
-            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
             onClick={() => navigate(routes.adminStudents)}
             title="Kursistvisning"
           >
@@ -242,7 +239,7 @@ export const AdminUsersView = () => {
           </div>
           {!showInvite && (
             <button
-              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
               onClick={() => {
                 setShowInvite(true);
                 resetForm();
@@ -293,18 +290,12 @@ export const AdminUsersView = () => {
                 </div>
               </Field>
               <Field label="Adgang til hold">
-                <label
-                  className="mb-1 flex cursor-pointer items-center justify-between text-[13px] font-semibold"
-                  style={{ marginBottom: allCourses ? 0 : 10 }}
-                >
-                  <span>Alle hold (nuværende og fremtidige)</span>
-                  <span
-                    className={`switch ${allCourses ? "on" : ""}`}
-                    onClick={() => setAllHolds(!allCourses)}
-                  >
-                    <span className="absolute top-0.75 left-0.75 h-4.5 w-4.5 rounded-full bg-card transition-[left] duration-150" />
-                  </span>
-                </label>
+                <ToggleButton
+                  label="Alle hold (nuværende og fremtidige)"
+                  checked={allCourses}
+                  onChange={setAllHolds}
+                  className={`flex cursor-pointer items-center justify-between text-[13px] font-semibold ${allCourses ? "mb-0" : "mb-2.5"}`}
+                />
                 {!allCourses && (
                   <div className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5">
                     {Object.values(courses).map((course) => (
@@ -344,7 +335,7 @@ export const AdminUsersView = () => {
                   Annuller
                 </button>
                 <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                   onClick={sendInvite}
                 >
                   Send invitation
@@ -389,7 +380,7 @@ export const AdminUsersView = () => {
                     gap: 6,
                   }}
                 >
-                  <span className="shrink-0 rounded-full border border-blue px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-blue">
+                  <span className="shrink-0 rounded-full border border-primary px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-primary">
                     {ADMIN_ROLES[u.role]?.label || u.role}
                   </span>
                   {u.status === "active" ? (
@@ -412,7 +403,7 @@ export const AdminUsersView = () => {
 
               {u.status === "invited" && (
                 <button
-                  className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+                  className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
                   style={{ marginTop: 10 }}
                   type="button"
                   onClick={() => void resendUserInvite(u.id)}
@@ -451,18 +442,12 @@ export const AdminUsersView = () => {
                     </div>
                   </Field>
                   <Field label="Adgang til hold">
-                    <label
-                      className="mb-1 flex cursor-pointer items-center justify-between text-[13px] font-semibold"
-                      style={{ marginBottom: editAllCourses ? 0 : 10 }}
-                    >
-                      <span>Alle hold (nuværende og fremtidige)</span>
-                      <span
-                        className={`switch ${editAllCourses ? "on" : ""}`}
-                        onClick={() => setEditAllCourses(!editAllCourses)}
-                      >
-                        <span className="absolute top-0.75 left-0.75 h-4.5 w-4.5 rounded-full bg-card transition-[left] duration-150" />
-                      </span>
-                    </label>
+                    <ToggleButton
+                      label="Alle hold (nuværende og fremtidige)"
+                      checked={editAllCourses}
+                      onChange={setEditAllCourses}
+                      className={`flex cursor-pointer items-center justify-between text-[13px] font-semibold ${editAllCourses ? "mb-0" : "mb-2.5"}`}
+                    />
                     {!editAllCourses && (
                       <div className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5">
                         {Object.values(courses).map((course) => (
@@ -499,7 +484,7 @@ export const AdminUsersView = () => {
                       Annuller
                     </button>
                     <button
-                      className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                      className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                       onClick={() => saveEditUser(u.id)}
                     >
                       Gem ændringer
@@ -515,13 +500,13 @@ export const AdminUsersView = () => {
                 >
                   <span>Fjern adgang?</span>
                   <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                     onClick={() => removeUser(u.id)}
                   >
                     <Check size={14} />
                   </button>
                   <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                     onClick={() => setConfirmRemoveId(null)}
                   >
                     <X size={14} />
@@ -537,14 +522,14 @@ export const AdminUsersView = () => {
                   }}
                 >
                   <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                     onClick={() => startEditUser(u)}
                     title="Rediger rolle og hold"
                   >
                     <Pencil size={14} />
                   </button>
                   <button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                     onClick={() => setConfirmRemoveId(u.id)}
                     title="Fjern adgang"
                   >
@@ -557,11 +542,6 @@ export const AdminUsersView = () => {
         ))}
       </div>
 
-      {toast && (
-        <div className="fixed bottom-21 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-ink px-4.5 py-2.5 text-[13px] text-card shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
-          <Check size={14} /> {toast}
-        </div>
-      )}
     </div>
   );
 };
