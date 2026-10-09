@@ -1,11 +1,25 @@
 import type { ReactNode } from "react";
 
-export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
+export function Field({
+  label,
+  children,
+  hint,
+}: {
+  label: string;
+  children: ReactNode;
+  hint?: string;
+}) {
   return (
     <label className="mb-3.5 block">
-      <span className="mb-1.5 block text-xs font-semibold text-[var(--ink-soft)]">{label}</span>
+      <span className="mb-1.5 block text-xs font-semibold text-ink-soft">
+        {label}
+      </span>
       {children}
-      {hint && <span className="mt-1 block text-[11px] text-[var(--ink-soft)]">{hint}</span>}
+      {hint && (
+        <span className="mt-1 block text-[11px] text-ink-soft">
+          {hint}
+        </span>
+      )}
     </label>
   );
 }
@@ -31,5 +45,9 @@ export function InputWithIcon({ children }: { children: ReactNode }) {
 }
 
 export function SelectWrap({ children }: { children: ReactNode }) {
-  return <div className="relative [&_select]:appearance-none [&_select]:pr-[34px]">{children}</div>;
+  return (
+    <div className="relative [&_select]:appearance-none [&_select]:pr-[34px]">
+      {children}
+    </div>
+  );
 }

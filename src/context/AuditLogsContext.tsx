@@ -21,40 +21,25 @@ export interface AuditLogsContextValue {
 const AuditLogsContext = createContext<AuditLogsContextValue | null>(null);
 
 export function AuditLogsProvider({ children }: { children: ReactNode }) {
-  const { demoMode, user } = useAuth();
+  const { user } = useAuth();
   const [auditLogs, setAuditLogs] = useState<AuditEvent[]>([]);
-  const canReadLogs = demoMode || isStaffRole(user?.role);
+  const canReadLogs = isStaffRole(user?.role);
 
   const refreshAuditLogs = useCallback(async () => {
-    if (demoMode) return;
     if (!isStaffRole(user?.role)) return;
     const logs = await auditLogsApi.listAuditLogs();
     setAuditLogs(logs);
-  }, [demoMode, user?.role]);
+  }, [user?.role]);
 
   useEffect(() => {
-    if (!canReadLogs || demoMode) return;
+    if (!canReadLogs) return;
     void refreshAuditLogs().catch(() => {
       /* ignore — aktivitetslog er ikke kritisk for app-start */
     });
-  }, [canReadLogs, demoMode, refreshAuditLogs]);
+  }, [canReadLogs, refreshAuditLogs]);
 
   const logEvent = useCallback(
     async ({ actor, studentId, courseId, description }: LogEventArgs) => {
-      if (demoMode) {
-        setAuditLogs((prev) => [
-          {
-            id: `log${Math.random().toString(36).slice(2, 9)}`,
-            at: new Date(),
-            actor,
-            studentId: studentId || null,
-            courseId: courseId || null,
-            description,
-          },
-          ...prev,
-        ]);
-        return;
-      }
       try {
         const created = await auditLogsApi.createAuditLog({
           actor,
@@ -67,7 +52,7 @@ export function AuditLogsProvider({ children }: { children: ReactNode }) {
         /* logging must not block the primary action */
       }
     },
-    [demoMode],
+    [],
   );
 
   return (

@@ -1,0 +1,170 @@
+/*
+  High contrast mode — same idea as .dark.
+  Class "hc" on <html> swaps the full palette to black/white (brand off).
+*/
+
+@custom-variant hc (&:where(.hc, .hc *));
+
+.hc {
+  color-scheme: light;
+
+  /*
+    !important so this mode always wins over brand :root rules and
+    Tailwind @layer theme — same reliability as a dedicated dark theme.
+  */
+  --ink: #000000 !important;
+  --ink-soft: #1f1f1f !important;
+  --primary: #000000 !important;
+  --primary-soft: #ffffff !important;
+  --on-primary: #ffffff !important;
+  --secondary: #a4221a !important;
+  --secondary-soft: #ffffff !important;
+  --on-secondary: #ffffff !important;
+  --deficit: #000000 !important;
+  --surplus: #a4221a !important;
+  --paper: #ffffff !important;
+  --card: #ffffff !important;
+  --border: #000000 !important;
+  --blue: #000000 !important;
+  --blue-soft: #ffffff !important;
+  --terracotta: #a4221a !important;
+
+  --primary-50: #ffffff !important;
+  --primary-100: #ffffff !important;
+  --primary-200: #e8e8e8 !important;
+  --primary-300: #a8a8a8 !important;
+  --primary-400: #6e6e6e !important;
+  --primary-500: #1f1f1f !important;
+  --primary-600: #141414 !important;
+  --primary-700: #0a0a0a !important;
+  --primary-800: #000000 !important;
+  --primary-900: #000000 !important;
+  --primary-950: #000000 !important;
+
+  --secondary-50: #ffffff !important;
+  --secondary-100: #ffffff !important;
+  --secondary-200: #f0d9d6 !important;
+  --secondary-300: #c9847c !important;
+  --secondary-400: #b84d42 !important;
+  --secondary-500: #a4221a !important;
+  --secondary-600: #8f1d16 !important;
+  --secondary-700: #7a1913 !important;
+  --secondary-800: #5c130e !important;
+  --secondary-900: #3d0c09 !important;
+  --secondary-950: #1f0605 !important;
+
+  --paper-50: #ffffff !important;
+  --paper-100: #ffffff !important;
+  --paper-200: #ffffff !important;
+  --paper-300: #e0e0e0 !important;
+  --paper-400: #c0c0c0 !important;
+  --paper-500: #9a9a9a !important;
+  --paper-600: #6e6e6e !important;
+  --paper-700: #404040 !important;
+  --paper-800: #1a1a1a !important;
+  --paper-900: #0a0a0a !important;
+  --paper-950: #000000 !important;
+
+  --card-50: #ffffff !important;
+  --card-100: #ffffff !important;
+  --card-200: #ffffff !important;
+  --card-300: #e0e0e0 !important;
+  --card-400: #c0c0c0 !important;
+  --card-500: #9a9a9a !important;
+  --card-600: #6e6e6e !important;
+  --card-700: #404040 !important;
+  --card-800: #1a1a1a !important;
+  --card-900: #0a0a0a !important;
+  --card-950: #000000 !important;
+
+  --color-primary: #000000 !important;
+  --color-primary-soft: #ffffff !important;
+  --color-primary-50: #ffffff !important;
+  --color-primary-100: #ffffff !important;
+  --color-primary-200: #e8e8e8 !important;
+  --color-primary-900: #000000 !important;
+  --color-on-primary: #ffffff !important;
+  --color-secondary: #a4221a !important;
+  --color-secondary-soft: #ffffff !important;
+  --color-on-secondary: #ffffff !important;
+  --color-ink: #000000 !important;
+  --color-ink-soft: #1f1f1f !important;
+  --color-deficit: #000000 !important;
+  --color-surplus: #a4221a !important;
+  --color-accent: #a4221a !important;
+  --color-paper: #ffffff !important;
+  --color-paper-200: #ffffff !important;
+  --color-card: #ffffff !important;
+  --color-border: #000000 !important;
+  --color-blue: #000000 !important;
+  --color-blue-soft: #ffffff !important;
+  --color-terracotta: #a4221a !important;
+  --color-background: #ffffff !important;
+}
+
+.hc,
+.hc body {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Thicker chrome like the legacy app */
+.hc input,
+.hc select,
+.hc textarea,
+.hc .view-panel,
+.hc .cat-card {
+  border-width: 2px;
+}
+
+.hc :focus-visible {
+  outline: 3px solid #000;
+  outline-offset: 2px;
+}
+
+/* Category accents → black text; pills → B/W */
+.hc .cat-eyebrow {
+  color: #000000 !important;
+}
+
+.hc .cat-pill {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+}
+
+.hc .cat-pill[aria-pressed="true"] {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Progress track: bold black dashes */
+.hc .thread-track {
+  background-image: repeating-linear-gradient(
+    to right,
+    #000000 0 5px,
+    transparent 5px 9px
+  );
+}
+
+/* Soft/secondary fills become white + black border inversion */
+.hc .bg-primary-soft {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: inset 0 0 0 1.5px #000000;
+}
+
+.hc .hover\:bg-primary-200:hover {
+  background-color: #e8e8e8 !important;
+}
+
+/* Brand logo: force high-contrast rendering */
+.hc img {
+  filter: grayscale(1) contrast(1.25);
+}
+
+@media (min-width: 860px) {
+  .hc body {
+    background: #ffffff !important;
+  }
+}

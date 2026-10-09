@@ -2,19 +2,16 @@ import {
   createContext,
   useCallback,
   useContext,
-  useState,
   type ReactNode,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { SessionUser } from "../types/user.ts";
 import * as api from "../api/auth.ts";
-import { queryKeys } from "../api/queryKeys.ts";
+import { domainQueryKeys, queryKeys } from "../api/queryKeys.ts";
 
 interface AuthContextValue {
   user: SessionUser | null;
   loading: boolean;
-  demoMode: boolean;
-  setDemoMode: (value: boolean) => void;
   login: (
     email: string,
     password: string,
@@ -27,8 +24,6 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: true,
-  demoMode: false,
-  setDemoMode: () => {},
   login: async () => {
     throw new Error("AuthProvider missing");
   },
@@ -38,7 +33,6 @@ const AuthContext = createContext<AuthContextValue>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const [demoMode, setDemoMode] = useState(false);
 
   const meQuery = useQuery({
     queryKey: queryKeys.me,
@@ -50,7 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (email: string, password: string, rememberMe = true) => {
       const user = await api.login(email, password, rememberMe);
-      setDemoMode(false);
       queryClient.setQueryData(queryKeys.me, user);
       return user;
     },
@@ -61,9 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api.logout();
     } finally {
-      setDemoMode(false);
       queryClient.setQueryData(queryKeys.me, null);
-      queryClient.removeQueries({ queryKey: queryKeys.bootstrap });
+      for (const key of domainQueryKeys) {
+        queryClient.removeQueries({ queryKey: key });
+      }
     }
   }, [queryClient]);
 
@@ -71,15 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await queryClient.invalidateQueries({ queryKey: queryKeys.me });
   }, [queryClient]);
 
-  const user = meQuery.data ?? null;
-
   return (
     <AuthContext.Provider
       value={{
-        user: demoMode ? null : user,
+        user: meQuery.data ?? null,
         loading: meQuery.isLoading,
-        demoMode,
-        setDemoMode,
         login,
         logout,
         refresh,

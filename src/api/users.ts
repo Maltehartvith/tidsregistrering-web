@@ -1,6 +1,10 @@
 import type { AdminUser, AdminRoleKey, UserStatus } from "../types/user";
 import { request } from "./request";
 
+export async function listUsers(): Promise<AdminUser[]> {
+  return request<AdminUser[]>("/users");
+}
+
 export async function createUser(input: {
   name: string;
   email: string;

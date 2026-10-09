@@ -1,6 +1,10 @@
 import { TimeEntry } from "@/types/entry";
 import { request } from "./request";
 
+export async function listEntries(): Promise<TimeEntry[]> {
+  return request<TimeEntry[]>("/entries");
+}
+
 export async function createEntry(
   entry: Omit<TimeEntry, "id"> & { id?: string },
 ): Promise<TimeEntry> {

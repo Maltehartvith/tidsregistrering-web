@@ -16,20 +16,23 @@ import { useCatalog } from "../../context/CatalogContext";
 import { useCourses } from "../../context/CoursesContext";
 import { useEntries } from "../../context/EntriesContext";
 import { categoryKeyFromLabel } from "../../domain/catalog";
-import { CATEGORY_PALETTE } from "../../data/seed";
+import { CATEGORY_PALETTE } from "@/data/constants";
 import { Field } from "../../components/ui/Field";
+import ToggleButton from "../../components/ui/ToggleButton";
 import { CategoryPill } from "../../components/ui/CategoryPill";
 import { BrandLogo } from "../../components/brand/Brand";
 
-import { AdminTabs } from "./AdminTabs";
+import { AdminTabs } from "@/components/nav/AdminTabs";
 import { Category } from "@/types/domain";
 import { routes } from "@/routes";
 import { useNavigate } from "react-router-dom";
 import { useAuditLogs } from "@/context/AuditLogsContext";
+import { useToast } from "@/components/ui/Toast";
 
 export const AdminCatalogView = () => {
   const navigate = useNavigate();
   const { logEvent: onLog } = useAuditLogs();
+  const { showToast } = useToast();
   const {
     ALL_CATEGORIES: CATEGORIES,
     LEARNING_GOALS,
@@ -45,7 +48,6 @@ export const AdminCatalogView = () => {
   } = useCatalog();
   const { courses } = useCourses();
   const { entries } = useEntries();
-  const [toast, setToast] = useState("");
   const [editingCatKey, setEditingCatKey] = useState<string | null>(null); // en kategori-nøgle, "__new__" eller null
   const [categoryDraft, setCategoryDraft] = useState<Category | null>(null);
   const [catError, setCatError] = useState("");
@@ -66,11 +68,6 @@ export const AdminCatalogView = () => {
   const archivedCats = catList.filter((c) => c.archived);
   const countFor = (key: string) =>
     entries.filter((e) => e.category === key).length;
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 2600);
-  };
 
   /* ---------- kategorier ---------- */
 
@@ -301,22 +298,13 @@ export const AdminCatalogView = () => {
           ))}
         </div>
       </div>
-      <div
-        className="mb-1 flex cursor-pointer items-center justify-between text-[13px] font-semibold"
-        onClick={() =>
-          setCategoryDraft({
-            ...categoryDraft,
-            requiresTherapist: !categoryDraft.requiresTherapist,
-          })
+      <ToggleButton
+        label='Kræver "Navn på terapeut" ved registrering'
+        checked={categoryDraft.requiresTherapist}
+        onChange={(requiresTherapist) =>
+          setCategoryDraft({ ...categoryDraft, requiresTherapist })
         }
-      >
-        <span>Kræver "Navn på terapeut" ved registrering</span>
-        <span
-          className={`switch ${categoryDraft.requiresTherapist ? "on" : ""}`}
-        >
-          <span className="absolute top-0.75 left-0.75 h-4.5 w-4.5 rounded-full bg-card transition-[left] duration-150" />
-        </span>
-      </div>
+      />
       <div className="mb-3.5 block" style={{ marginTop: 12 }}>
         <span className="mb-1.5 block text-xs font-semibold text-ink-soft">
           Sådan ser knappen ud for kursisten
@@ -366,7 +354,7 @@ export const AdminCatalogView = () => {
           Annuller
         </button>
         <button
-          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
           onClick={saveCat}
         >
           {editingCatKey === "__new__" ? "Opret kategori" : "Gem kategori"}
@@ -478,7 +466,7 @@ export const AdminCatalogView = () => {
             </div>
           </div>
           <button
-            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
             onClick={() => navigate(routes.adminStudents)}
             title="Kursistvisning"
           >
@@ -506,7 +494,7 @@ export const AdminCatalogView = () => {
           </div>
           {editingCatKey === null && (
             <button
-              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+              className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
               onClick={startNewCat}
             >
               <PlusCircle size={14} /> Tilføj kategori
@@ -575,7 +563,7 @@ export const AdminCatalogView = () => {
                     </div>
                     <div className="flex shrink-0 gap-1.5">
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                         disabled={idx === 0 || editingCatKey !== null}
                         onClick={() => moveCat(c.key, -1)}
                         title="Flyt op"
@@ -583,7 +571,7 @@ export const AdminCatalogView = () => {
                         <ArrowUp size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                         disabled={
                           idx === activeCats.length - 1 ||
                           editingCatKey !== null
@@ -594,7 +582,7 @@ export const AdminCatalogView = () => {
                         <ArrowDown size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                         disabled={editingCatKey !== null}
                         onClick={() => startEditCat(c)}
                         title="Redigér"
@@ -603,7 +591,7 @@ export const AdminCatalogView = () => {
                       </button>
                       {count === 0 ? (
                         <button
-                          className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                          className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                           disabled={
                             editingCatKey !== null || activeCats.length <= 1
                           }
@@ -616,7 +604,7 @@ export const AdminCatalogView = () => {
                         </button>
                       ) : (
                         <button
-                          className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                          className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                           disabled={
                             editingCatKey !== null || activeCats.length <= 1
                           }
@@ -632,7 +620,7 @@ export const AdminCatalogView = () => {
                   </div>
                   {confirming && (
                     <div className="mb-1" style={{ marginTop: 10 }}>
-                      <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-terracotta">
+                      <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
                         <AlertTriangle size={14} />
                         {confirming === "delete" ? (
                           <span>
@@ -660,7 +648,7 @@ export const AdminCatalogView = () => {
                           Annuller
                         </button>
                         <button
-                          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                           onClick={() =>
                             confirming === "delete"
                               ? deleteCat(c.key)
@@ -733,7 +721,7 @@ export const AdminCatalogView = () => {
                       </div>
                     </div>
                     <button
-                      className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+                      className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
                       disabled={editingCatKey !== null}
                       onClick={() => setArchived(c.key, false)}
                     >
@@ -799,7 +787,7 @@ export const AdminCatalogView = () => {
                       Annuller
                     </button>
                     <button
-                      className="flex-1 cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                      className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                       onClick={() => saveGoal(i)}
                     >
                       Gem
@@ -818,13 +806,13 @@ export const AdminCatalogView = () => {
                     <div className="flex items-center gap-1.5 text-xs">
                       <span>Fjern?</span>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                         onClick={() => deleteGoal(i)}
                       >
                         <Check size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                         onClick={() => setConfirmDeleteGoal(null)}
                       >
                         <X size={14} />
@@ -833,7 +821,7 @@ export const AdminCatalogView = () => {
                   ) : (
                     <div className="flex shrink-0 gap-1.5">
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                         disabled={i === 0}
                         onClick={() => moveGoal(i, -1)}
                         title="Flyt op"
@@ -841,7 +829,7 @@ export const AdminCatalogView = () => {
                         <ArrowUp size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                         disabled={i === LEARNING_GOALS.length - 1}
                         onClick={() => moveGoal(i, 1)}
                         title="Flyt ned"
@@ -849,14 +837,14 @@ export const AdminCatalogView = () => {
                         <ArrowDown size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                         onClick={() => startEditGoal(i)}
                         title="Ret tekst"
                       >
                         <Pencil size={14} />
                       </button>
                       <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
                         onClick={() => {
                           setConfirmDeleteGoal(i);
                           setEditingGoalIndex(null);
@@ -888,7 +876,7 @@ export const AdminCatalogView = () => {
             style={{ flex: 1 }}
           />
           <button
-            className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+            className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
             onClick={addGoal}
           >
             <PlusCircle size={14} /> Tilføj
@@ -904,11 +892,6 @@ export const AdminCatalogView = () => {
         )}
       </div>
 
-      {toast && (
-        <div className="fixed bottom-21 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-ink px-4.5 py-2.5 text-[13px] text-card shadow-[0_6px_18px_rgba(0,0,0,0.18)]">
-          <Check size={14} /> {toast}
-        </div>
-      )}
     </div>
   );
 };

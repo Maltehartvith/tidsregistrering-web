@@ -2,6 +2,10 @@ import type { Student } from "../types/user";
 import type { CourseLink } from "../types/course";
 import { request } from "./request";
 
+export async function listStudents(): Promise<Student[]> {
+  return request<Student[]>("/students");
+}
+
 export async function createStudent(input: {
   id?: string;
   name: string;

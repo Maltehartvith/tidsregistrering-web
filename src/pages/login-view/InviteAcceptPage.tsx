@@ -4,8 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Field } from "../../components/ui/Field";
 import { BrandLogo } from "../../components/brand/Brand";
 import * as api from "../../api/auth";
-import { useAuth } from "../../context/AuthContext";
-import { queryKeys, homeForRole } from "../../api/queryKeys";
+import { domainQueryKeys, queryKeys, homeForRole } from "../../api/queryKeys";
 import { useQueryClient } from "@tanstack/react-query";
 import { routes } from "@/routes";
 
@@ -13,7 +12,6 @@ export function InviteAcceptPage() {
   const [params] = useSearchParams();
   const token = params.get("token") || "";
   const navigate = useNavigate();
-  const { setDemoMode } = useAuth();
   const queryClient = useQueryClient();
 
   const [loading, setLoading] = useState(true);
@@ -77,9 +75,10 @@ export function InviteAcceptPage() {
         name: trimmed,
         password,
       });
-      setDemoMode(false);
       queryClient.setQueryData(queryKeys.me, user);
-      queryClient.removeQueries({ queryKey: queryKeys.bootstrap });
+      for (const key of domainQueryKeys) {
+        queryClient.removeQueries({ queryKey: key });
+      }
       setDone(true);
       navigate(homeForRole(user.role), { replace: true });
     } catch (e) {
@@ -112,7 +111,7 @@ export function InviteAcceptPage() {
             </p>
             <button
               type="button"
-              className="cursor-pointer rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card"
+              className="cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary"
               onClick={() => navigate(routes.login)}
             >
               Gå til login
@@ -183,7 +182,7 @@ export function InviteAcceptPage() {
 
             <button
               type="button"
-              className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-blue px-4 py-3 font-sans text-sm font-semibold text-card disabled:opacity-45"
+              className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary disabled:opacity-45"
               disabled={busy}
               onClick={() => void submit()}
             >

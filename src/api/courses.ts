@@ -1,5 +1,9 @@
-import type { Course } from "../types/course";
+import type { Course, CourseMap } from "../types/course";
 import { request } from "./request";
+
+export async function listCourses(): Promise<CourseMap> {
+  return request<CourseMap>("/courses");
+}
 
 export async function createCourse(
   course: Omit<Course, "id"> & { id?: string },

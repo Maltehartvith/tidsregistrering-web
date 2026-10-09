@@ -1,5 +1,9 @@
 import { request } from "./request";
 
+export async function listLearningGoals(): Promise<string[]> {
+  return request<string[]>("/learning-goals");
+}
+
 export async function createLearningGoal(text: string): Promise<string[]> {
   return request<string[]>("/learning-goals", {
     method: "POST",

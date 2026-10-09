@@ -1,6 +1,5 @@
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
   type ReactNode,
@@ -8,55 +7,76 @@ import {
   type SetStateAction,
 } from "react";
 import type { Organization } from "../types/organization";
-import { themeVars, mixHex } from "../theme/colors";
-import { useAuth } from "./AuthContext";
-import { updateBranding as updateBrandingApi } from "../api/branding";
+import { themeVars } from "../theme/colors";
+import { HC_CLASS } from "../theme/viewPrefs";
+import {
+  useBrandingQuery,
+  useBrandingSetter,
+  useSaveBranding,
+} from "../hooks/branding";
 
 export type BrandingContextValue = Organization & {
+  isLoading: boolean;
   setBranding: Dispatch<SetStateAction<Organization>>;
   saveBranding: (branding: Organization) => Promise<Organization>;
 };
 
 const BrandingContext = createContext<BrandingContextValue | null>(null);
 
-export function BrandingProvider({
-  branding,
-  setBranding,
-  children,
-}: {
-  branding: Organization;
-  setBranding: Dispatch<SetStateAction<Organization>>;
-  children: ReactNode;
-}) {
-  const { demoMode } = useAuth();
+const BRAND_STYLE_ID = "brand-theme";
+
+/**
+ * Org brand as a stylesheet on :root, skipped while .hc is active
+ * (high-contrast mode replaces the whole palette, like .dark).
+ */
+function applyBrandStylesheet(branding: Organization) {
+  const vars = themeVars(branding);
+  let styleEl = document.getElementById(
+    BRAND_STYLE_ID,
+  ) as HTMLStyleElement | null;
+  if (!styleEl) {
+    styleEl = document.createElement("style");
+    styleEl.id = BRAND_STYLE_ID;
+    document.head.appendChild(styleEl);
+  }
+  const declarations = Object.entries(vars)
+    .map(([key, value]) => `  ${key}: ${value};`)
+    .join("\n");
+  styleEl.textContent = `:root:not(.${HC_CLASS}) {\n${declarations}\n}`;
+
+  const root = document.documentElement;
+  for (const key of Object.keys(vars)) {
+    root.style.removeProperty(key);
+  }
+  document.body.style.removeProperty("background");
+
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    meta.setAttribute(
+      "content",
+      root.classList.contains(HC_CLASS) ? "#000000" : branding.primary,
+    );
+  }
+}
+
+export function BrandingProvider({ children }: { children: ReactNode }) {
+  const { data: branding, isLoading } = useBrandingQuery();
+  const setBranding = useBrandingSetter();
+  const saveMutation = useSaveBranding();
 
   useEffect(() => {
-    const vars = themeVars(branding);
-    const root = document.documentElement;
-    for (const [key, value] of Object.entries(vars)) {
-      root.style.setProperty(key, value);
-    }
-    root.style.setProperty("--terracotta", branding.accent);
-    document.body.style.background = mixHex(branding.background, "#000000", 0.07);
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", branding.primary);
+    applyBrandStylesheet(branding);
   }, [branding]);
 
-  const saveBranding = useCallback(
-    async (next: Organization) => {
-      if (demoMode) {
-        setBranding(next);
-        return next;
-      }
-      const saved = await updateBrandingApi(next);
-      setBranding(saved);
-      return saved;
-    },
-    [demoMode, setBranding],
-  );
-
   return (
-    <BrandingContext.Provider value={{ ...branding, setBranding, saveBranding }}>
+    <BrandingContext.Provider
+      value={{
+        ...branding,
+        isLoading,
+        setBranding,
+        saveBranding: (next) => saveMutation.mutateAsync(next),
+      }}
+    >
       {children}
     </BrandingContext.Provider>
   );

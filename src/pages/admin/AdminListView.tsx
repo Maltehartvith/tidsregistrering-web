@@ -1,5 +1,4 @@
-import { Dispatch, SetStateAction, useState } from "react";
-import * as XLSX from "xlsx";
+import { useState } from "react";
 import {
   Search,
   ChevronRight,
@@ -12,15 +11,11 @@ import { useCourses } from "../../context/CoursesContext";
 import { useStudents } from "../../context/StudentsContext";
 import { useEntries } from "../../context/EntriesContext";
 
-import {
-  totalsForStudent,
-  targetsForStudent,
-  programName,
-} from "../../domain/totals";
+import { totalsForStudent, targetsForStudent } from "../../domain/totals";
 import { formatDiff } from "../../domain/format";
 import { BrandLogo } from "../../components/brand/Brand";
 
-import { AdminTabs } from "./AdminTabs";
+import { AdminTabs } from "@/components/nav/AdminTabs";
 import { routes } from "@/routes";
 import { useNavigate } from "react-router-dom";
 
@@ -137,7 +132,7 @@ export const AdminListView = ({}: AdminListViewProps) => {
         }}
       >
         <button
-          className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-blue-soft px-3 py-1.5 font-sans text-xs font-semibold text-blue"
+          className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
           /* TODO: Implement export to Excel    onClick={exportToExcel} */
           //disabled={filtered.length === 0}
           disabled={true}
@@ -160,7 +155,7 @@ export const AdminListView = ({}: AdminListViewProps) => {
         return (
           <button
             key={s.id}
-            className={`mb-2.5 flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-border bg-card px-3.5 py-3 text-left font-sans hover:border-blue ${selectedStudent?.id === s.id ? "rounded-xl bg-blue-soft" : ""}`}
+            className={`mb-2.5 flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-border bg-card px-3.5 py-3 text-left font-sans hover:border-primary ${selectedStudent?.id === s.id ? "rounded-xl bg-primary-soft" : ""}`}
             onClick={() => setSelectedStudent(s)}
           >
             <div className="min-w-0 flex-1">
@@ -192,7 +187,7 @@ export const AdminListView = ({}: AdminListViewProps) => {
             {(s.courseLinks || []).some((l) => l.included) && (
               <ArrowRightLeft
                 size={14}
-                className="shrink-0 text-terracotta"
+                className="shrink-0 text-secondary"
                 aria-label="Timeoverførsel aktiv"
               />
             )}
@@ -222,7 +217,7 @@ export const AdminListView = ({}: AdminListViewProps) => {
             </div>
           </div>
           <button
-            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
             onClick={() => navigate(routes.adminStudents)}
             title="Kursistvisning"
           >

@@ -1,15 +1,16 @@
-import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "./queryKeys";
-import { useAuth } from "../context/AuthContext";
+import { useCallback } from "react";
+import { domainQueryKeys } from "./queryKeys";
 
-/** After a successful API mutation, refresh bootstrap (skipped in demo mode). */
-export function useRefreshBootstrap() {
+/** Invalidate all domain queries (prefer targeted keys from mutation hooks). */
+export function useRefreshDomainData() {
   const queryClient = useQueryClient();
-  const { demoMode } = useAuth();
 
   return useCallback(async () => {
-    if (demoMode) return;
-    await queryClient.invalidateQueries({ queryKey: queryKeys.bootstrap });
-  }, [demoMode, queryClient]);
+    await Promise.all(
+      domainQueryKeys.map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      ),
+    );
+  }, [queryClient]);
 }

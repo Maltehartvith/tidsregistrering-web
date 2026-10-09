@@ -1,20 +1,24 @@
 import {
   createContext,
-  useCallback,
   useContext,
+  useState,
   type ReactNode,
   type Dispatch,
   type SetStateAction,
-  useState,
 } from "react";
 import type { Student } from "../types/user";
 import type { CourseLink } from "../types/course";
-import { useAuth } from "./AuthContext";
-import { useRefreshBootstrap } from "../api/refresh";
-import * as studentsApi from "../api/students";
+import {
+  useCreateStudent,
+  useDeleteStudent,
+  useStudentsQuery,
+  useStudentsSetter,
+  useUpdateStudent,
+} from "../hooks/students";
 
 export interface StudentsContextValue {
   students: Student[];
+  isLoading: boolean;
   setStudents: Dispatch<SetStateAction<Student[]>>;
   selectedStudent: Student | null;
   setSelectedStudent: Dispatch<SetStateAction<Student | null>>;
@@ -39,97 +43,26 @@ export interface StudentsContextValue {
 
 const StudentsContext = createContext<StudentsContextValue | null>(null);
 
-export function StudentsProvider({
-  students,
-  setStudents,
-  children,
-}: {
-  students: Student[];
-  setStudents: Dispatch<SetStateAction<Student[]>>;
-  children: ReactNode;
-}) {
-  const { demoMode } = useAuth();
-  const refresh = useRefreshBootstrap();
+export function StudentsProvider({ children }: { children: ReactNode }) {
+  const { data: students, isLoading } = useStudentsQuery();
+  const setStudents = useStudentsSetter();
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const createStudent = useCallback(
-    async (input: {
-      id?: string;
-      name: string;
-      email: string;
-      courseId: string;
-      courseLinks?: CourseLink[];
-    }) => {
-      if (demoMode) {
-        const id = input.id || `k${Date.now().toString(36)}`;
-        const created: Student = {
-          id,
-          name: input.name,
-          email: input.email,
-          courseId: input.courseId,
-          courseLinks: input.courseLinks || [
-            { courseId: input.courseId, included: true },
-          ],
-        };
-        setStudents((prev) => [...prev, created]);
-        return created;
-      }
-      const created = await studentsApi.createStudent(input);
-      await refresh();
-      return created;
-    },
-    [demoMode, refresh, setStudents],
-  );
-
-  const updateStudent = useCallback(
-    async (
-      id: string,
-      input: Partial<{
-        name: string;
-        email: string;
-        courseId: string;
-        courseLinks: CourseLink[];
-      }>,
-    ) => {
-      if (demoMode) {
-        let updated: Student | undefined;
-        setStudents((prev) =>
-          prev.map((s) => {
-            if (s.id !== id) return s;
-            updated = { ...s, ...input };
-            return updated;
-          }),
-        );
-        return updated!;
-      }
-      const updated = await studentsApi.updateStudent(id, input);
-      await refresh();
-      return updated;
-    },
-    [demoMode, refresh, setStudents],
-  );
-
-  const deleteStudentFn = useCallback(
-    async (id: string) => {
-      if (demoMode) {
-        setStudents((prev) => prev.filter((s) => s.id !== id));
-        return;
-      }
-      await studentsApi.deleteStudent(id);
-      await refresh();
-    },
-    [demoMode, refresh, setStudents],
-  );
+  const createMutation = useCreateStudent();
+  const updateMutation = useUpdateStudent();
+  const deleteMutation = useDeleteStudent();
 
   return (
     <StudentsContext.Provider
       value={{
         students,
+        isLoading,
         setStudents,
         selectedStudent,
         setSelectedStudent,
-        createStudent,
-        updateStudent,
-        deleteStudent: deleteStudentFn,
+        createStudent: (input) => createMutation.mutateAsync(input),
+        updateStudent: (id, input) =>
+          updateMutation.mutateAsync({ id, input }),
+        deleteStudent: (id) => deleteMutation.mutateAsync(id),
       }}
     >
       {children}

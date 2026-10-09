@@ -1,8 +1,7 @@
 import { Users2 } from "lucide-react";
 import { BrandLogo } from "../../components/brand/Brand";
-import { useIsDesktop } from "../../hooks/useIsDesktop";
 import { useStudents } from "../../context/StudentsContext";
-import { AdminTabs } from "./AdminTabs";
+import { AdminTabs } from "@/components/nav/AdminTabs";
 import { AdminListView } from "./AdminListView";
 import { AdminDetailView } from "./AdminDetailView";
 import { useNavigate } from "react-router-dom";
@@ -34,7 +33,7 @@ export const AdminKursisterView = ({
             </div>
           </div>
           <button
-            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-blue hover:text-blue disabled:cursor-default disabled:opacity-35"
+            className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
             onClick={() => navigate(routes.adminStudents)}
             title="Kursistvisning"
           >
