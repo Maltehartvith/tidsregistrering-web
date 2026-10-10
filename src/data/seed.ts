@@ -200,7 +200,7 @@ export const ADMIN_ROLES: Record<string, AdminRoleMeta> = {
   },
 };
 
-/** One admin account for the primary org (demo/local seed). */
+
 export const ADMIN_USERS_INITIAL: AdminUser[] = [
   {
     id: "u1",
