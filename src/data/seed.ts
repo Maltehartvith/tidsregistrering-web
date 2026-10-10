@@ -1,3 +1,4 @@
+/*
 import { LOGO_SRC } from "./logo";
 import type { CategoriesMap, ProgramsMap } from "../types/domain";
 import { TimeEntry } from "@/types/entry";
@@ -640,3 +641,4 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     background: "#FFFFFF",
   },
 ];
+*/
