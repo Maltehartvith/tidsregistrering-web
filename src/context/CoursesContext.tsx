@@ -6,6 +6,8 @@ import {
   type SetStateAction,
 } from "react";
 import type { Course, CourseMap } from "../types/course";
+import type { MutationFeedback } from "@/types/log";
+import { withFeedback } from "../hooks/queryHelpers";
 import {
   useCoursesQuery,
   useCoursesSetter,
@@ -18,9 +20,19 @@ export interface CoursesContextValue {
   courses: CourseMap;
   isLoading: boolean;
   setCourses: Dispatch<SetStateAction<CourseMap>>;
-  createCourse: (course: Omit<Course, "id"> & { id?: string }) => Promise<Course>;
-  updateCourse: (id: string, course: Partial<Course>) => Promise<Course>;
-  deleteCourse: (id: string) => Promise<void>;
+  createCourse: (
+    course: Omit<Course, "id"> & { id?: string },
+    feedback?: MutationFeedback<Course> | null,
+  ) => Promise<Course>;
+  updateCourse: (
+    id: string,
+    course: Partial<Course>,
+    feedback?: MutationFeedback<Course> | null,
+  ) => Promise<Course>;
+  deleteCourse: (
+    id: string,
+    feedback?: MutationFeedback<void> | null,
+  ) => Promise<void>;
 }
 
 const CoursesContext = createContext<CoursesContextValue | null>(null);
@@ -38,10 +50,12 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
         courses,
         isLoading,
         setCourses,
-        createCourse: (course) => createMutation.mutateAsync(course),
-        updateCourse: (id, course) =>
-          updateMutation.mutateAsync({ id, course }),
-        deleteCourse: (id) => deleteMutation.mutateAsync(id),
+        createCourse: (course, feedback) =>
+          createMutation.mutateAsync(withFeedback(course, feedback)),
+        updateCourse: (id, course, feedback) =>
+          updateMutation.mutateAsync(withFeedback({ id, course }, feedback)),
+        deleteCourse: (id, feedback) =>
+          deleteMutation.mutateAsync(withFeedback(id, feedback)),
       }}
     >
       {children}

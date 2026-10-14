@@ -20,35 +20,31 @@ export function useLearningGoalsSetter() {
   return useQuerySetter<string[]>(queryKeys.learningGoals, EMPTY);
 }
 
-export function useCreateLearningGoal(successMessage?: string) {
+export function useCreateLearningGoal() {
   return useDomainMutation({
     mutationFn: learningGoalsApi.createLearningGoal,
     invalidateKeys: [queryKeys.learningGoals],
-    successMessage,
   });
 }
 
-export function useRenameLearningGoal(successMessage?: string) {
+export function useRenameLearningGoal() {
   return useDomainMutation({
     mutationFn: ({ from, to }: { from: string; to: string }) =>
       learningGoalsApi.renameLearningGoal(from, to),
     invalidateKeys: [queryKeys.learningGoals, queryKeys.entries],
-    successMessage,
   });
 }
 
-export function useReorderLearningGoals(successMessage?: string) {
+export function useReorderLearningGoals() {
   return useDomainMutation({
     mutationFn: learningGoalsApi.reorderLearningGoals,
     invalidateKeys: [queryKeys.learningGoals],
-    successMessage,
   });
 }
 
-export function useDeleteLearningGoal(successMessage?: string) {
+export function useDeleteLearningGoal() {
   return useDomainMutation({
     mutationFn: learningGoalsApi.deleteLearningGoal,
     invalidateKeys: [queryKeys.learningGoals],
-    successMessage,
   });
 }

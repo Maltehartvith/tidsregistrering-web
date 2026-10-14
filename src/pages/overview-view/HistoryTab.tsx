@@ -1,16 +1,14 @@
 import { Check, Pencil, Search, Trash2, X } from "lucide-react";
 import { useState } from "react";
-import { useAuditLogs } from "@/context/AuditLogsContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
 import { useEntries } from "@/context/EntriesContext";
 import { CategoryPill } from "@/components/ui/CategoryPill";
 import { EntryForm } from "@/components/ui/EntryForm";
 import Input from "@/components/ui/Input";
-import { useToast } from "@/components/ui/Toast";
 import { categoryOf } from "@/domain/catalog";
 import { emptyForm } from "@/domain/entryForm";
-import { holdLabel } from "@/domain/totals";
+import { courseLabel } from "@/domain/totals";
 import { TimeEntry } from "@/types/entry";
 import { useStudentOutlet } from "./StudentLayout";
 
@@ -19,8 +17,6 @@ export const HistoryTab = () => {
   const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS } = useCatalog();
   const { courses } = useCourses();
   const { entries, updateEntry, deleteEntry } = useEntries();
-  const { logEvent } = useAuditLogs();
-  const { showToast } = useToast();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(
@@ -41,31 +37,35 @@ export const HistoryTab = () => {
 
   const saveEdit = async () => {
     if (!editingId) return;
-    await updateEntry(editingId, {
-      ...editForm,
-      hours: Number(editForm.hours),
-    });
-    void logEvent({
-      actor: "Kursist",
-      studentId: student.id,
-      description: `${student.name} rettede en registrering (${categoryOf(ALL_CATEGORIES, editForm.category).label})`,
-    });
+    await updateEntry(
+      editingId,
+      {
+        ...editForm,
+        hours: Number(editForm.hours),
+      },
+      {
+        toastSuccessMessage: "Ændring gemt",
+        logArgs: {
+          studentId: student.id,
+          description: `${student.name} rettede en registrering (${categoryOf(ALL_CATEGORIES, editForm.category).label})`,
+        },
+      },
+    );
     setEditingId(null);
-    showToast("Ændring gemt");
   };
 
   const removeEntry = async (id: string) => {
     const removed = entries.find((e) => e.id === id);
-    await deleteEntry(id);
-    if (removed) {
-      void logEvent({
-        actor: "Kursist",
-        studentId: student.id,
-        description: `${student.name} slettede en registrering på ${removed.hours} timer (${categoryOf(ALL_CATEGORIES, removed.category).label})`,
-      });
-    }
+    await deleteEntry(id, {
+      toastSuccessMessage: "Registrering slettet",
+      logArgs: removed
+        ? {
+            studentId: student.id,
+            description: `${student.name} slettede en registrering på ${removed.hours} timer (${categoryOf(ALL_CATEGORIES, removed.category).label})`,
+          }
+        : null,
+    });
     setConfirmId(null);
-    showToast("Registrering slettet");
   };
 
   const myHoldIds = Array.from(
@@ -141,7 +141,7 @@ export const HistoryTab = () => {
               }}
               onClick={() => setFilterHold(id)}
             >
-              {holdLabel(id, courses)}
+              {courseLabel(id, courses)}
             </button>
           ))}
         </div>
@@ -212,7 +212,7 @@ export const HistoryTab = () => {
                 )}
                 {e.courseId !== student.courseId && (
                   <div className="mt-0.5 text-xs text-ink-soft">
-                    Overført fra {holdLabel(e.courseId, courses)}
+                    Overført fra {courseLabel(e.courseId, courses)}
                   </div>
                 )}
               </div>

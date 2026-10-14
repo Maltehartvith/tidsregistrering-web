@@ -11,13 +11,14 @@ import { useEntries } from "@/context/EntriesContext";
 import { categoryOf } from "@/domain/catalog";
 import {
   programName,
-  holdLabel,
+  courseLabel,
   totalsForStudentOnHold,
   targetsForStudent,
   totalsForStudent,
 } from "@/domain/totals";
 import { useState } from "react";
 import { useStudentOutlet } from "./StudentLayout";
+import { Button } from "@/components/ui/Button";
 
 export const OverviewTab = () => {
   const { student } = useStudentOutlet();
@@ -54,8 +55,8 @@ export const OverviewTab = () => {
 
   const course = courses[student.courseId];
   const contactHref = contactEmail
-    ? `mailto:${contactEmail}?subject=${encodeURIComponent(`Henvendelse fra ${student.name} (${holdLabel(student.courseId, courses)})`)}&body=${encodeURIComponent(
-        `Hej\n\n[Skriv din besked her]\n\n---\nNavn: ${student.name}\nEmail: ${student.email}\nHold: ${holdLabel(student.courseId, courses)}\nUddannelse: ${programName(course, programs) || "-"}\n`,
+    ? `mailto:${contactEmail}?subject=${encodeURIComponent(`Henvendelse fra ${student.name} (${courseLabel(student.courseId, courses)})`)}&body=${encodeURIComponent(
+        `Hej\n\n[Skriv din besked her]\n\n---\nNavn: ${student.name}\nEmail: ${student.email}\nHold: ${courseLabel(student.courseId, courses)}\nUddannelse: ${programName(course, programs) || "-"}\n`,
       )}`
     : "";
 
@@ -63,7 +64,7 @@ export const OverviewTab = () => {
 
   return (
     <>
-      <div className="mb-4 rounded-[14px] border border-border bg-card px-4.5 py-3.5">
+      <div className="mb-4 rounded-md border border-border bg-card px-4.5 py-3.5">
         <div className="flex items-start justify-between gap-2.5">
           <div>
             <div
@@ -95,7 +96,7 @@ export const OverviewTab = () => {
           <div className="mt-2.5 text-xs leading-normal text-ink-soft">
             Timer fra{" "}
             {includedLinks
-              .map((l) => holdLabel(l.courseId, courses))
+              .map((l) => courseLabel(l.courseId, courses))
               .join(", ")}{" "}
             tæller også med i dit regnskab.
           </div>
@@ -112,8 +113,8 @@ export const OverviewTab = () => {
 
       {includedLinks.length > 0 && (
         <div className="flex flex-wrap gap-2" style={{ marginBottom: 12 }}>
-          <button
-            className="cursor-pointer rounded-full border-[1.5px] px-3.5 py-2 text-[13px] font-semibold transition-all"
+          <Button
+            variant="pill"
             style={{
               background: scope === "uddannelse" ? "var(--ink)" : "var(--card)",
               color: scope === "uddannelse" ? "var(--card)" : "var(--ink)",
@@ -121,9 +122,9 @@ export const OverviewTab = () => {
             onClick={() => setScope("uddannelse")}
           >
             Hele uddannelsen
-          </button>
-          <button
-            className="cursor-pointer rounded-full border-[1.5px] px-3.5 py-2 text-[13px] font-semibold transition-all"
+          </Button>
+          <Button
+            variant="pill"
             style={{
               background: scope === "hold" ? "var(--ink)" : "var(--card)",
               color: scope === "hold" ? "var(--card)" : "var(--ink)",
@@ -131,22 +132,22 @@ export const OverviewTab = () => {
             onClick={() => setScope("hold")}
           >
             Dette hold
-          </button>
+          </Button>
         </div>
       )}
-
-      {catalogLoading && categoriesList.length === 0
-        ? [0, 1, 2].map((i) => <CategoryCardGhost key={i} />)
-        : categoriesList.map((cat) => (
-            <CategoryCard
-              key={cat.key}
-              label={cat.label}
-              registered={totals[cat.key]}
-              target={targets[cat.key]}
-              color={cat.color}
-            />
-          ))}
-
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+        {catalogLoading && categoriesList.length === 0
+          ? [0, 1, 2].map((i) => <CategoryCardGhost key={i} />)
+          : categoriesList.map((cat) => (
+              <CategoryCard
+                key={cat.key}
+                label={cat.label}
+                registered={totals[cat.key]}
+                target={targets[cat.key]}
+                color={cat.color}
+              />
+            ))}
+      </div>
       <div className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink">
         Seneste registreringer
       </div>
@@ -168,11 +169,13 @@ export const OverviewTab = () => {
                 className="h-2 w-2 shrink-0 rounded-full"
                 style={{ background: cat.color }}
               />
-              <span>{cat.short}</span>
-              <span className="font-mono text-[11px] text-ink-soft">
+              <span className="min-w-0 flex-1 truncate">{cat.short}</span>
+              <span className="shrink-0 font-mono text-[11px] text-ink-soft">
                 {e.date}
               </span>
-              <span className="ml-auto font-mono font-semibold">{e.hours}t</span>
+              <span className="shrink-0 font-mono font-semibold">
+                {e.hours}t
+              </span>
             </div>
           );
         })

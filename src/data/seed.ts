@@ -1,4 +1,4 @@
-import { LOGO_SRC } from "./logo";
+/* import { LOGO_SRC } from "./logo";
 import type { CategoriesMap, ProgramsMap } from "../types/domain";
 import { TimeEntry } from "@/types/entry";
 import type { CourseMap } from "../types/course";
@@ -198,9 +198,9 @@ export const ADMIN_ROLES: Record<string, AdminRoleMeta> = {
       "Kan se og rette kursisters registreringer på de tilknyttede hold (fx ved forkert indtastning). Kan ikke oprette hold, foretage holdoverførsler eller invitere andre.",
   },
 };
-
+ */
 /** One admin account for the primary org (demo/local seed). */
-export const ADMIN_USERS_INITIAL: AdminUser[] = [
+/* export const ADMIN_USERS_INITIAL: AdminUser[] = [
   {
     id: "u1",
     name: "Admin",
@@ -639,4 +639,4 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     accent: "#B3261E",
     background: "#FFFFFF",
   },
-];
+]; */

@@ -111,7 +111,7 @@ export function InviteAcceptPage() {
             </p>
             <button
               type="button"
-              className="cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary"
+              className="cursor-pointer rounded-sm border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary"
               onClick={() => navigate(routes.login)}
             >
               Gå til login
@@ -130,14 +130,14 @@ export function InviteAcceptPage() {
             </p>
 
             <Field label="Email">
-              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 text-ink-soft opacity-80">
+              <div className="flex items-center gap-2 rounded-sm border-[1.5px] border-border bg-card px-3 text-ink-soft opacity-80">
                 <Mail size={16} />
                 <input type="email" value={preview.email} readOnly disabled />
               </div>
             </Field>
 
             <Field label="Navn">
-              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 text-ink-soft">
+              <div className="flex items-center gap-2 rounded-sm border-[1.5px] border-border bg-card px-3 text-ink-soft">
                 <User size={16} />
                 <input
                   type="text"
@@ -149,7 +149,7 @@ export function InviteAcceptPage() {
             </Field>
 
             <Field label="Adgangskode">
-              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 text-ink-soft">
+              <div className="flex items-center gap-2 rounded-sm border-[1.5px] border-border bg-card px-3 text-ink-soft">
                 <Lock size={16} />
                 <input
                   type="password"
@@ -162,7 +162,7 @@ export function InviteAcceptPage() {
             </Field>
 
             <Field label="Gentag adgangskode">
-              <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 text-ink-soft">
+              <div className="flex items-center gap-2 rounded-sm border-[1.5px] border-border bg-card px-3 text-ink-soft">
                 <Lock size={16} />
                 <input
                   type="password"
@@ -182,7 +182,7 @@ export function InviteAcceptPage() {
 
             <button
               type="button"
-              className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary disabled:opacity-45"
+              className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-sm border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary disabled:opacity-45"
               disabled={busy}
               onClick={() => void submit()}
             >

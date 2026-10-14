@@ -4,13 +4,15 @@ export function Field({
   label,
   children,
   hint,
+  className = "mb-3.5",
 }: {
   label: string;
   children: ReactNode;
   hint?: string;
+  className?: string;
 }) {
   return (
-    <label className="mb-3.5 block">
+    <label className={`block ${className}`}>
       <span className="mb-1.5 block text-xs font-semibold text-ink-soft">
         {label}
       </span>
@@ -33,12 +35,12 @@ export function FormError({ children }: { children: ReactNode }) {
 }
 
 export function FormActions({ children }: { children: ReactNode }) {
-  return <div className="mt-[18px] flex gap-2.5">{children}</div>;
+  return <div className="mt-4.5 flex gap-2.5">{children}</div>;
 }
 
 export function InputWithIcon({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--card)] px-3 text-[var(--ink-soft)] [&_input]:border-0 [&_input]:p-2.5 [&_input]:focus:border-0">
+    <div className="flex items-center gap-2 rounded-sm border-[1.5px] border-border bg-card px-3 text-ink-soft [&_input]:border-0 [&_input]:p-2.5 [&_input]:focus:border-0">
       {children}
     </div>
   );
@@ -46,7 +48,7 @@ export function InputWithIcon({ children }: { children: ReactNode }) {
 
 export function SelectWrap({ children }: { children: ReactNode }) {
   return (
-    <div className="relative [&_select]:appearance-none [&_select]:pr-[34px]">
+    <div className="relative [&_select]:appearance-none [&_select]:pr-8.5">
       {children}
     </div>
   );

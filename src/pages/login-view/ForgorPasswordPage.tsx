@@ -111,7 +111,7 @@ export const ForgorPasswordPage = ({
                 SMTP er ikke konfigureret — brug token direkte:
               </p>
               <button
-                className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                className="flex-1 cursor-pointer rounded-sm border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                 style={{ width: "100%" }}
                 onClick={() => goToStep("glemt-nyt", setError)}
               >

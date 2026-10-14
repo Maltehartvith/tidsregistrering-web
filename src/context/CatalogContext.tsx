@@ -6,6 +6,8 @@ import {
   type SetStateAction,
 } from "react";
 import type { CategoriesMap, ProgramsMap, Category, Program } from "../types/domain";
+import type { MutationFeedback } from "@/types/log";
+import { withFeedback } from "../hooks/queryHelpers";
 import { activeCategoriesOf } from "../domain/catalog";
 import {
   useCategoriesQuery,
@@ -42,19 +44,51 @@ export interface CatalogContextValue {
   setPrograms: Dispatch<SetStateAction<ProgramsMap>>;
   createCategory: (
     category: Omit<Category, "key"> & { key?: string },
+    feedback?: MutationFeedback<Category> | null,
   ) => Promise<Category>;
-  updateCategory: (key: string, category: Partial<Category>) => Promise<Category>;
-  reorderCategories: (keys: string[]) => Promise<void>;
-  deleteCategory: (key: string) => Promise<void>;
-  createLearningGoal: (text: string) => Promise<void>;
-  renameLearningGoal: (from: string, to: string) => Promise<string[]>;
-  reorderLearningGoals: (goals: string[]) => Promise<void>;
-  deleteLearningGoal: (text: string) => Promise<void>;
+  updateCategory: (
+    key: string,
+    category: Partial<Category>,
+    feedback?: MutationFeedback<Category> | null,
+  ) => Promise<Category>;
+  reorderCategories: (
+    keys: string[],
+    feedback?: MutationFeedback<CategoriesMap> | null,
+  ) => Promise<void>;
+  deleteCategory: (
+    key: string,
+    feedback?: MutationFeedback<void> | null,
+  ) => Promise<void>;
+  createLearningGoal: (
+    text: string,
+    feedback?: MutationFeedback<string[]> | null,
+  ) => Promise<void>;
+  renameLearningGoal: (
+    from: string,
+    to: string,
+    feedback?: MutationFeedback<string[]> | null,
+  ) => Promise<string[]>;
+  reorderLearningGoals: (
+    goals: string[],
+    feedback?: MutationFeedback<string[]> | null,
+  ) => Promise<void>;
+  deleteLearningGoal: (
+    text: string,
+    feedback?: MutationFeedback<string[]> | null,
+  ) => Promise<void>;
   createProgram: (
     program: Omit<Program, "id"> & { id?: string },
+    feedback?: MutationFeedback<Program> | null,
   ) => Promise<Program>;
-  updateProgram: (id: string, program: Partial<Program>) => Promise<Program>;
-  deleteProgram: (id: string) => Promise<void>;
+  updateProgram: (
+    id: string,
+    program: Partial<Program>,
+    feedback?: MutationFeedback<Program> | null,
+  ) => Promise<Program>;
+  deleteProgram: (
+    id: string,
+    feedback?: MutationFeedback<void> | null,
+  ) => Promise<void>;
 }
 
 const CatalogContext = createContext<CatalogContextValue | null>(null);
@@ -100,29 +134,46 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
         setCategories,
         setLearningGoals,
         setPrograms,
-        createCategory: (category) =>
-          createCategoryMutation.mutateAsync(category),
-        updateCategory: (key, category) =>
-          updateCategoryMutation.mutateAsync({ key, category }),
-        reorderCategories: async (keys) => {
-          await reorderCategoriesMutation.mutateAsync(keys);
+        createCategory: (category, feedback) =>
+          createCategoryMutation.mutateAsync(withFeedback(category, feedback)),
+        updateCategory: (key, category, feedback) =>
+          updateCategoryMutation.mutateAsync(
+            withFeedback({ key, category }, feedback),
+          ),
+        reorderCategories: async (keys, feedback) => {
+          await reorderCategoriesMutation.mutateAsync(
+            withFeedback(keys, feedback),
+          );
         },
-        deleteCategory: (key) => deleteCategoryMutation.mutateAsync(key),
-        createLearningGoal: async (text) => {
-          await createLearningGoalMutation.mutateAsync(text);
+        deleteCategory: (key, feedback) =>
+          deleteCategoryMutation.mutateAsync(withFeedback(key, feedback)),
+        createLearningGoal: async (text, feedback) => {
+          await createLearningGoalMutation.mutateAsync(
+            withFeedback(text, feedback),
+          );
         },
-        renameLearningGoal: (from, to) =>
-          renameLearningGoalMutation.mutateAsync({ from, to }),
-        reorderLearningGoals: async (goals) => {
-          await reorderLearningGoalsMutation.mutateAsync(goals);
+        renameLearningGoal: (from, to, feedback) =>
+          renameLearningGoalMutation.mutateAsync(
+            withFeedback({ from, to }, feedback),
+          ),
+        reorderLearningGoals: async (goals, feedback) => {
+          await reorderLearningGoalsMutation.mutateAsync(
+            withFeedback(goals, feedback),
+          );
         },
-        deleteLearningGoal: async (text) => {
-          await deleteLearningGoalMutation.mutateAsync(text);
+        deleteLearningGoal: async (text, feedback) => {
+          await deleteLearningGoalMutation.mutateAsync(
+            withFeedback(text, feedback),
+          );
         },
-        createProgram: (program) => createProgramMutation.mutateAsync(program),
-        updateProgram: (id, program) =>
-          updateProgramMutation.mutateAsync({ id, program }),
-        deleteProgram: (id) => deleteProgramMutation.mutateAsync(id),
+        createProgram: (program, feedback) =>
+          createProgramMutation.mutateAsync(withFeedback(program, feedback)),
+        updateProgram: (id, program, feedback) =>
+          updateProgramMutation.mutateAsync(
+            withFeedback({ id, program }, feedback),
+          ),
+        deleteProgram: (id, feedback) =>
+          deleteProgramMutation.mutateAsync(withFeedback(id, feedback)),
       }}
     >
       {children}

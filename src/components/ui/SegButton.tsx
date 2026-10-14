@@ -17,7 +17,7 @@ export function SegButton({
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
-      className={`flex flex-1 cursor-pointer flex-col items-center justify-center rounded-[10px] border-[1.5px] px-2 py-2.5 font-sans text-[0.8125rem] font-semibold ${
+      className={`flex flex-1 cursor-pointer flex-col items-center justify-center rounded-sm border-[1.5px] px-2 py-2.5 font-sans text-[0.8125rem] font-semibold ${
         pressed
           ? "border-ink bg-ink text-card"
           : "border-border bg-paper text-ink"

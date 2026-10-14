@@ -29,10 +29,9 @@ export function useBrandingSetter() {
   return useQuerySetter<Organization>(queryKeys.branding, EMPTY);
 }
 
-export function useSaveBranding(successMessage?: string) {
+export function useSaveBranding() {
   return useDomainMutation({
     mutationFn: brandingApi.updateBranding,
     invalidateKeys: [queryKeys.branding],
-    successMessage,
   });
 }

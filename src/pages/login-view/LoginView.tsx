@@ -6,6 +6,7 @@ import { ForgorPasswordPage } from "./ForgorPasswordPage";
 import { LoginPage } from "./LoginPage";
 import { CreateNewPasswordPage } from "./CreateNewPasswordPage";
 import { InstallAppPage } from "./InstallAppPage";
+import PageWrapper from "@/components/ui/PageWrapper";
 
 export type AuthStep =
   | "login"
@@ -69,9 +70,11 @@ export function LoginView({
   }, [params]);
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
-      <div className="mx-auto mt-15 flex max-w-85 flex-col px-6">
-        <BrandLogo className="mx-auto h-24 w-auto  max-w-55 object-contain" />
+    <PageWrapper size="form">
+      <div className="w-full px-5 py-8 md:px-8">
+        <div className="mb-4 flex justify-center">
+          <BrandLogo className="mx-auto h-16 w-auto max-w-55 object-contain md:h-24" />
+        </div>
 
         {step === "login" && (
           <LoginPage onLoggedIn={onLoggedIn} goToStep={goToStep} />
@@ -91,6 +94,6 @@ export function LoginView({
 
         {step === "installer" && <InstallAppPage goToStep={goToStep} />}
       </div>
-    </div>
+    </PageWrapper>
   );
 }

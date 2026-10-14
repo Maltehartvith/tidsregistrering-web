@@ -21,27 +21,24 @@ export function useEntriesSetter() {
   return useQuerySetter<TimeEntry[]>(queryKeys.entries, EMPTY);
 }
 
-export function useCreateEntry(successMessage?: string) {
+export function useCreateEntry() {
   return useDomainMutation({
     mutationFn: entriesApi.createEntry,
     invalidateKeys: [queryKeys.entries],
-    successMessage,
   });
 }
 
-export function useUpdateEntry(successMessage?: string) {
+export function useUpdateEntry() {
   return useDomainMutation({
     mutationFn: ({ id, entry }: { id: string; entry: Partial<TimeEntry> }) =>
       entriesApi.updateEntry(id, entry),
     invalidateKeys: [queryKeys.entries],
-    successMessage,
   });
 }
 
-export function useDeleteEntry(successMessage?: string) {
+export function useDeleteEntry() {
   return useDomainMutation({
     mutationFn: (id: string) => entriesApi.deleteEntry(id),
     invalidateKeys: [queryKeys.entries],
-    successMessage,
   });
 }

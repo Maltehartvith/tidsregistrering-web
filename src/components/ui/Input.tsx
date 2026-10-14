@@ -8,7 +8,7 @@ type InputProps = {
   icon?: React.ReactNode;
   type: React.InputHTMLAttributes<HTMLInputElement>["type"];
   onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
-  autoComplete?: "email" | "password" | "current-password";
+  autoComplete?: "email" | "password" | "current-password" | "off";
   placeholder?: string;
   className?: string;
 };
@@ -29,7 +29,7 @@ const Input = ({
 
   return (
     <div
-      className={`input-shell flex items-center gap-2 rounded-md border-[1.5px] border-border bg-card px-3 py-2 text-ink-soft focus-within:border-primary transition-colors duration-200 ${className}`}
+      className={`relative input-shell flex items-center gap-2 rounded-md border-[1.5px] border-border bg-card px-3 py-2 text-ink-soft focus-within:border-primary transition-colors duration-200 ${type === "password" ? "pr-10" : ""} ${className}`}
     >
       {icon && icon}
       <input
@@ -37,7 +37,7 @@ const Input = ({
         type={showPassword ? "text" : type}
         value={value}
         onChange={onChange}
-        autoComplete={autoComplete}
+        autoComplete={autoComplete || "off"}
         onKeyDown={onKeyDown}
         placeholder={placeholder}
       />
@@ -45,7 +45,7 @@ const Input = ({
         <Button
           variant="ghost"
           type="button"
-          className="p-2.5!"
+          className="p-2! absolute right-2"
           aria-label={showPassword ? "Skjul adgangskode" : "Vis adgangskode"}
           onClick={() => setShowPassword(!showPassword)}
           onMouseOver={() => setIsHovered(true)}

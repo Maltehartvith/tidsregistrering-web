@@ -21,27 +21,24 @@ export function useCoursesSetter() {
   return useQuerySetter<CourseMap>(queryKeys.courses, EMPTY);
 }
 
-export function useCreateCourse(successMessage?: string) {
+export function useCreateCourse() {
   return useDomainMutation({
     mutationFn: coursesApi.createCourse,
     invalidateKeys: [queryKeys.courses],
-    successMessage,
   });
 }
 
-export function useUpdateCourse(successMessage?: string) {
+export function useUpdateCourse() {
   return useDomainMutation({
     mutationFn: ({ id, course }: { id: string; course: Partial<Course> }) =>
       coursesApi.updateCourse(id, course),
     invalidateKeys: [queryKeys.courses],
-    successMessage,
   });
 }
 
-export function useDeleteCourse(successMessage?: string) {
+export function useDeleteCourse() {
   return useDomainMutation({
     mutationFn: coursesApi.deleteCourse,
     invalidateKeys: [queryKeys.courses],
-    successMessage,
   });
 }

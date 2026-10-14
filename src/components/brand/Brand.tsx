@@ -3,9 +3,10 @@ import { useBranding } from "../../context/BrandingContext";
 
 export function BrandLogo({ className }: { className?: string }) {
   const brand = useBranding();
-  const src = brand.logo?.trim() || APP_ICON_SRC;
+  const src = //brand.logo?.trim() ||
+    APP_ICON_SRC;
   return (
-    <div className=" w-fit p-2 mx-auto mb-5 rounded-lg shadow-[0_4px_12px_rgba(18,57,74,0.16)]">
+    <div className="p-2 mb-5 w-fit rounded-lg shadow-[0_4px_12px_rgba(18,57,74,0.16)]">
       <img
         src={src}
         alt={brand.orgName || "Timeregnskab"}

@@ -21,15 +21,14 @@ export function useCategoriesSetter() {
   return useQuerySetter<CategoriesMap>(queryKeys.categories, EMPTY);
 }
 
-export function useCreateCategory(successMessage?: string) {
+export function useCreateCategory() {
   return useDomainMutation({
     mutationFn: categoriesApi.createCategory,
     invalidateKeys: [queryKeys.categories],
-    successMessage,
   });
 }
 
-export function useUpdateCategory(successMessage?: string) {
+export function useUpdateCategory() {
   return useDomainMutation({
     mutationFn: ({
       key,
@@ -39,22 +38,19 @@ export function useUpdateCategory(successMessage?: string) {
       category: Partial<Category>;
     }) => categoriesApi.updateCategory(key, category),
     invalidateKeys: [queryKeys.categories],
-    successMessage,
   });
 }
 
-export function useReorderCategories(successMessage?: string) {
+export function useReorderCategories() {
   return useDomainMutation({
     mutationFn: categoriesApi.reorderCategories,
     invalidateKeys: [queryKeys.categories],
-    successMessage,
   });
 }
 
-export function useDeleteCategory(successMessage?: string) {
+export function useDeleteCategory() {
   return useDomainMutation({
     mutationFn: categoriesApi.deleteCategory,
     invalidateKeys: [queryKeys.categories],
-    successMessage,
   });
 }

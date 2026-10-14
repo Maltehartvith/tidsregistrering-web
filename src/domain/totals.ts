@@ -97,6 +97,9 @@ export function coursesWithinTransferWindow(
   );
 }
 
-export function holdLabel(courseId: string, courses: CourseMap | undefined): string {
+export function courseLabel(
+  courseId: string,
+  courses: CourseMap | undefined,
+): string {
   return courses?.[courseId]?.label || `Hold ${courseId} (slettet)`;
 }
