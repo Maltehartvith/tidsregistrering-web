@@ -77,7 +77,7 @@ function ToastViewport({
     <div
       role="status"
       aria-live="polite"
-      className={`pointer-events-none fixed bottom-19 left-1/2 z-5 flex items-center gap-1.5 rounded-full px-4.5 py-2.5 text-[0.8125rem] leading-none text-card shadow-[0_6px_18px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out motion-reduce:transition-none ${
+      className={`pointer-events-none fixed bottom-19 left-1/2 z-5 flex items-center gap-1.5 rounded-full px-4.5 py-2.5 text-[0.8125rem] leading-none text-card shadow-[0_6px_18px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-out motion-reduce:transition-none md:bottom-8 ${
         open
           ? "-translate-x-1/2 translate-y-0"
           : "-translate-x-1/2 translate-y-18"

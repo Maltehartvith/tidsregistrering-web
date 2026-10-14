@@ -1,10 +1,9 @@
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { AdminCourseView } from "@/pages/admin/AdminCourseView";
-import { AdminCatalogView } from "@/pages/admin/AdminCatalogView";
-import { AdminDesignView } from "@/pages/admin/AdminDesignView";
-import { AdminUsersView } from "@/pages/admin/AdminUsersView";
-import { AdminStudentsView } from "@/pages/admin/AdminStudentsView";
+import { CoursesPage } from "@/pages/admin/courses/CoursesPage";
+import { CatalogPage } from "@/pages/admin/catalog/CatalogPage";
+import { DesignPage } from "@/pages/admin/design/DesignPage";
+import { UsersPage } from "@/pages/admin/users/UsersPage";
 import { LoginView } from "@/pages/login-view/LoginView";
 import { InviteAcceptPage } from "@/pages/login-view/InviteAcceptPage";
 import {
@@ -19,6 +18,7 @@ import { CreateEntryTab } from "@/pages/overview-view/CreateEntryTab";
 import { HistoryTab } from "@/pages/overview-view/HistoryTab";
 import { SettingsTab } from "@/pages/overview-view/SettingsTab";
 import { routes } from "@/routes";
+import { StudentsPage } from "@/pages/admin/students/StudentsPage";
 
 function FallbackRedirect() {
   const { user } = useAuth();
@@ -76,7 +76,7 @@ export function AppRouter() {
         path={routes.adminStudents}
         element={
           <RequireStaff>
-            <AdminStudentsView />
+            <StudentsPage />
           </RequireStaff>
         }
       />
@@ -84,7 +84,7 @@ export function AppRouter() {
         path={routes.adminStudentDetail}
         element={
           <RequireStaff>
-            <AdminStudentsView />
+            <StudentsPage />
           </RequireStaff>
         }
       />
@@ -92,7 +92,7 @@ export function AppRouter() {
         path={routes.adminCourses}
         element={
           <RequireStaff>
-            <AdminCourseView />
+            <CoursesPage />
           </RequireStaff>
         }
       />
@@ -100,7 +100,7 @@ export function AppRouter() {
         path={routes.adminCatalog}
         element={
           <RequireStaff>
-            <AdminCatalogView />
+            <CatalogPage />
           </RequireStaff>
         }
       />
@@ -108,7 +108,7 @@ export function AppRouter() {
         path={routes.adminDesign}
         element={
           <RequireStaff>
-            <AdminDesignView />
+            <DesignPage />
           </RequireStaff>
         }
       />
@@ -116,7 +116,7 @@ export function AppRouter() {
         path={routes.adminUsers}
         element={
           <RequireStaff>
-            <AdminUsersView />
+            <UsersPage />
           </RequireStaff>
         }
       />

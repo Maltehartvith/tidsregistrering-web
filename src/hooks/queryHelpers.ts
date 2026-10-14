@@ -1,7 +1,4 @@
-import {
-  useCallback,
-  type SetStateAction,
-} from "react";
+import { useCallback, type SetStateAction } from "react";
 import {
   useMutation,
   useQuery,
@@ -10,6 +7,48 @@ import {
 } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/ui/Toast";
+import { useAuditLogs } from "@/context/AuditLogsContext";
+import { actorLabel } from "@/domain/actor";
+import type { LogEventInput, MutationFeedback } from "@/types/log";
+
+export type MutationCall<
+  TPayload,
+  TData = unknown,
+> = MutationFeedback<TData> & {
+  payload: TPayload;
+};
+
+export function withFeedback<TPayload, TData = unknown>(
+  payload: TPayload,
+  feedback?: MutationFeedback<TData> | null,
+): MutationCall<TPayload, TData> {
+  return {
+    payload,
+    toastSuccessMessage: feedback?.toastSuccessMessage,
+    logArgs: feedback?.logArgs,
+  };
+}
+
+function resolveMessage<TData>(
+  successMessage: MutationFeedback<TData>["toastSuccessMessage"],
+  data: TData,
+): string | null {
+  if (!successMessage) return null;
+  const message =
+    typeof successMessage === "function"
+      ? successMessage(data)
+      : successMessage;
+  return message || null;
+}
+
+function resolveLogArgs<TData>(
+  logArgs: MutationFeedback<TData>["logArgs"],
+  data: TData,
+): LogEventInput | null {
+  if (!logArgs) return null;
+  const resolved = typeof logArgs === "function" ? logArgs(data) : logArgs;
+  return resolved ?? null;
+}
 
 export function applyUpdater<T>(current: T, updater: SetStateAction<T>): T {
   return typeof updater === "function"
@@ -63,38 +102,57 @@ export function useDomainQuery<T>({
   };
 }
 
-type DomainMutationOptions<TData, TVariables> = {
-  mutationFn: (variables: TVariables) => Promise<TData>;
+type DomainMutationOptions<TData, TPayload> = {
+  mutationFn: (payload: TPayload) => Promise<TData>;
   invalidateKeys: QueryKey[];
-  successMessage?: string | ((data: TData, variables: TVariables) => string);
   errorMessage?: string;
 };
 
-export function useDomainMutation<TData, TVariables>({
+export function useDomainMutation<TData, TPayload>({
   mutationFn,
   invalidateKeys,
-  successMessage,
   errorMessage = "Noget gik galt",
-}: DomainMutationOptions<TData, TVariables>) {
+}: DomainMutationOptions<TData, TPayload>) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const { logEvent } = useAuditLogs();
+  const { user } = useAuth();
 
   return useMutation({
-    mutationFn,
+    mutationFn: ({ payload }: MutationCall<TPayload, TData>) =>
+      mutationFn(payload),
     onSuccess: (data, variables) => {
       for (const key of invalidateKeys) {
         void queryClient.invalidateQueries({ queryKey: key });
       }
-      if (successMessage) {
-        const msg =
-          typeof successMessage === "function"
-            ? successMessage(data, variables)
-            : successMessage;
-        showToast(msg, 2200, "success");
+      const message = resolveMessage(variables.toastSuccessMessage, data);
+      if (message) showToast(message, 2200, "success");
+      const logArgs = resolveLogArgs(variables.logArgs, data);
+      if (logArgs) {
+        void logEvent({ actor: actorLabel(user?.role), ...logArgs });
       }
     },
     onError: (err: Error) => {
       showToast(err.message || errorMessage, 3000, "error");
     },
   });
+}
+
+/** Toast and audit log for an action that is not a single mutation, such as a batch. */
+export function useActionFeedback() {
+  const { showToast } = useToast();
+  const { logEvent } = useAuditLogs();
+  const { user } = useAuth();
+
+  return useCallback(
+    (feedback?: MutationFeedback | null) => {
+      const message = resolveMessage(feedback?.toastSuccessMessage, undefined);
+      if (message) showToast(message, 2200, "success");
+      const logArgs = resolveLogArgs(feedback?.logArgs, undefined);
+      if (logArgs) {
+        void logEvent({ actor: actorLabel(user?.role), ...logArgs });
+      }
+    },
+    [logEvent, showToast, user?.role],
+  );
 }

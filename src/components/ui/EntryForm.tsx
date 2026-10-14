@@ -185,7 +185,7 @@ export function EntryForm({
         {onCancel && (
           <button
             type="button"
-            className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+            className="flex-1 cursor-pointer rounded-sm border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
             onClick={onCancel}
           >
             Annuller
@@ -193,7 +193,7 @@ export function EntryForm({
         )}
         <button
           type="button"
-          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+          className="flex-1 cursor-pointer rounded-sm border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
           onClick={submit}
         >
           {submitLabel}

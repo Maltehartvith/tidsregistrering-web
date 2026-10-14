@@ -7,6 +7,8 @@ import {
   type ChangeEvent,
 } from "react";
 
+type MenuPosition = "left" | "center" | "right";
+
 type SelectorProps = {
   value: string;
   onChange: (
@@ -14,9 +16,22 @@ type SelectorProps = {
   ) => void;
   options: string[];
   placeholder?: string;
+  position?: MenuPosition;
 };
 
-export const Selector = ({ value, onChange, options, placeholder }: SelectorProps) => {
+const menuPositionClass: Record<MenuPosition, string> = {
+  left: "left-0 origin-top-left",
+  center: "left-1/2 origin-top -translate-x-1/2",
+  right: "right-0 origin-top-right",
+};
+
+export const Selector = ({
+  value,
+  onChange,
+  options,
+  placeholder,
+  position = "center",
+}: SelectorProps) => {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -66,19 +81,19 @@ export const Selector = ({ value, onChange, options, placeholder }: SelectorProp
       </button>
 
       <div
-        className={`absolute top-[calc(100%+0.35rem)] left-1/2 z-30 w-max min-w-full max-w-[min(100vw-2rem,22rem)] origin-top -translate-x-1/2 transition-[opacity,transform] duration-200 ease-out ${
+        className={`absolute top-[calc(100%+0.35rem)] z-30 w-max min-w-full max-w-[min(100vw-2rem,22rem)] transition-[opacity,transform] duration-200 ease-out ${menuPositionClass[position]} ${
           open
             ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
             : "pointer-events-none -translate-y-1 scale-95 opacity-0"
         }`}
       >
         {/* Outer clips scrollbar to rounded corners; inner scrolls */}
-        <div className="overflow-hidden rounded-md border border-border bg-card shadow-[0_12px_28px_rgba(18,57,74,0.14)]">
+        <div className="overflow-hidden rounded-md border border-border bg-card py-1 shadow-[0_12px_28px_rgba(18,57,74,0.14)]">
           <ul
             id={listId}
             role="listbox"
             aria-hidden={!open}
-            className="max-h-60 overflow-y-auto py-1"
+            className="max-h-60 overflow-y-auto"
           >
             {items.map((option) => {
               const selected = option === value;

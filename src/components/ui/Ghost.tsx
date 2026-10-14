@@ -19,7 +19,7 @@ export function GhostBlock({
 
 export function CategoryCardGhost() {
   return (
-    <div className="cat-card mb-3 rounded-[14px] border border-border bg-card px-4.5 py-4">
+    <div className="cat-card mb-3 rounded-md border border-border bg-card px-4.5 py-4">
       <GhostBlock className="mb-2 h-3 w-28" />
       <GhostBlock className="mb-2.5 h-7 w-20" />
       <GhostBlock className="h-2 w-full rounded-full" />

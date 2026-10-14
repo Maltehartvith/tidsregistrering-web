@@ -6,7 +6,7 @@ import { Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { UserRole } from "@/types/user";
 import { useAuth } from "@/context/AuthContext";
-import { BrandName } from "@/components/brand/Brand";
+import { BrandLogo, BrandName } from "@/components/brand/Brand";
 import ToggleButton from "@/components/ui/ToggleButton";
 
 type LoginPageType = {
@@ -36,18 +36,9 @@ export const LoginPage = ({ onLoggedIn, goToStep }: LoginPageType) => {
     }
   };
   return (
-    <>
-      <div
-        className="mb-0.5 font-display text-3xl font-semibold"
-        style={{ textAlign: "center" }}
-      >
+    <div className="w-full">
+      <div className="flex justify-center mb-0.5 font-display text-3xl font-semibold">
         Log ind
-      </div>
-      <div
-        className="text-[13px] text-ink-soft"
-        style={{ textAlign: "center", marginBottom: 24 }}
-      >
-        <BrandName />
       </div>
       <Field label="Email">
         <Input
@@ -88,23 +79,25 @@ export const LoginPage = ({ onLoggedIn, goToStep }: LoginPageType) => {
         >
           {busy ? "Logger ind…" : "Log ind"}
         </Button>
-        <Button
-          variant="ghost"
-          type="button"
-          className="text-xs w-fit"
-          onClick={() => goToStep("glemt-email", setError)}
-        >
-          Glemt adgangskode?
-        </Button>
-        <Button
-          variant="ghost"
-          type="button"
-          className="text-xs w-fit"
-          onClick={() => goToStep("installer", setError)}
-        >
-          Sådan installerer du appen på din telefon
-        </Button>
+        <div className="flex flex-col items-center gap-2 mt-3">
+          <Button
+            variant="ghost"
+            type="button"
+            className="text-xs w-fit py-2!"
+            onClick={() => goToStep("glemt-email", setError)}
+          >
+            Glemt adgangskode?
+          </Button>
+          <Button
+            variant="ghost"
+            type="button"
+            className="text-xs w-fit py-2!"
+            onClick={() => goToStep("installer", setError)}
+          >
+            Sådan installerer du appen på din telefon
+          </Button>
+        </div>
       </div>
-    </>
+    </div>
   );
 };

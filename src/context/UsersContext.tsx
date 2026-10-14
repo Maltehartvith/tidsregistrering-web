@@ -6,6 +6,8 @@ import {
   type SetStateAction,
 } from "react";
 import type { AdminUser, AdminRoleKey, UserStatus } from "../types/user";
+import type { MutationFeedback } from "@/types/log";
+import { withFeedback } from "../hooks/queryHelpers";
 import {
   useCreateUser,
   useDeleteUser,
@@ -15,35 +17,47 @@ import {
   useUsersSetter,
 } from "../hooks/users";
 
+type CreatedUser = AdminUser & { inviteToken?: string; mailPreview?: boolean };
+type UpdateUserInput = Partial<{
+  name: string;
+  email: string;
+  role: AdminRoleKey;
+  allCourses: boolean;
+  courseIds: string[];
+  status: UserStatus;
+  password: string;
+}>;
+type InviteResult = { ok: boolean; inviteToken?: string; mailPreview?: boolean };
+
 export interface UsersContextValue {
   adminUsers: AdminUser[];
   isLoading: boolean;
   setAdminUsers: Dispatch<SetStateAction<AdminUser[]>>;
-  createUser: (input: {
-    name: string;
-    email: string;
-    role: AdminRoleKey;
-    allCourses?: boolean;
-    courseIds?: string[];
-    password?: string;
-    status?: UserStatus;
-  }) => Promise<AdminUser & { inviteToken?: string; mailPreview?: boolean }>;
-  updateUser: (
-    id: string,
-    input: Partial<{
+  createUser: (
+    input: {
       name: string;
       email: string;
       role: AdminRoleKey;
-      allCourses: boolean;
-      courseIds: string[];
-      status: UserStatus;
-      password: string;
-    }>,
+      allCourses?: boolean;
+      courseIds?: string[];
+      password?: string;
+      status?: UserStatus;
+    },
+    feedback?: MutationFeedback<CreatedUser> | null,
+  ) => Promise<CreatedUser>;
+  updateUser: (
+    id: string,
+    input: UpdateUserInput,
+    feedback?: MutationFeedback<AdminUser> | null,
   ) => Promise<AdminUser>;
-  deleteUser: (id: string) => Promise<void>;
+  deleteUser: (
+    id: string,
+    feedback?: MutationFeedback<void> | null,
+  ) => Promise<void>;
   resendInvite: (
     id: string,
-  ) => Promise<{ ok: boolean; inviteToken?: string; mailPreview?: boolean }>;
+    feedback?: MutationFeedback<InviteResult> | null,
+  ) => Promise<InviteResult>;
 }
 
 const UsersContext = createContext<UsersContextValue | null>(null);
@@ -62,10 +76,14 @@ export function UsersProvider({ children }: { children: ReactNode }) {
         adminUsers,
         isLoading,
         setAdminUsers,
-        createUser: (input) => createMutation.mutateAsync(input),
-        updateUser: (id, input) => updateMutation.mutateAsync({ id, input }),
-        deleteUser: (id) => deleteMutation.mutateAsync(id),
-        resendInvite: (id) => resendMutation.mutateAsync(id),
+        createUser: (input, feedback) =>
+          createMutation.mutateAsync(withFeedback(input, feedback)),
+        updateUser: (id, input, feedback) =>
+          updateMutation.mutateAsync(withFeedback({ id, input }, feedback)),
+        deleteUser: (id, feedback) =>
+          deleteMutation.mutateAsync(withFeedback(id, feedback)),
+        resendInvite: (id, feedback) =>
+          resendMutation.mutateAsync(withFeedback(id, feedback)),
       }}
     >
       {children}

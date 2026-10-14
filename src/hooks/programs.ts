@@ -21,27 +21,24 @@ export function useProgramsSetter() {
   return useQuerySetter<ProgramsMap>(queryKeys.programs, EMPTY);
 }
 
-export function useCreateProgram(successMessage?: string) {
+export function useCreateProgram() {
   return useDomainMutation({
     mutationFn: programsApi.createProgram,
     invalidateKeys: [queryKeys.programs],
-    successMessage,
   });
 }
 
-export function useUpdateProgram(successMessage?: string) {
+export function useUpdateProgram() {
   return useDomainMutation({
     mutationFn: ({ id, program }: { id: string; program: Partial<Program> }) =>
       programsApi.updateProgram(id, program),
     invalidateKeys: [queryKeys.programs],
-    successMessage,
   });
 }
 
-export function useDeleteProgram(successMessage?: string) {
+export function useDeleteProgram() {
   return useDomainMutation({
     mutationFn: programsApi.deleteProgram,
     invalidateKeys: [queryKeys.programs],
-    successMessage,
   });
 }

@@ -25,22 +25,22 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
+                      <AuditLogsProvider>
           <BrandingProvider>
             <CatalogProvider>
               <CoursesProvider>
                 <StudentsProvider>
                   <EntriesProvider>
                     <UsersProvider>
-                      <AuditLogsProvider>
                         <DocumentTitle />
                         <AppRouter />
-                      </AuditLogsProvider>
                     </UsersProvider>
                   </EntriesProvider>
                 </StudentsProvider>
               </CoursesProvider>
             </CatalogProvider>
           </BrandingProvider>
+                      </AuditLogsProvider>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

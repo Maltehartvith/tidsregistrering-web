@@ -8,6 +8,8 @@ import {
 } from "react";
 import type { Student } from "../types/user";
 import type { CourseLink } from "../types/course";
+import type { MutationFeedback } from "@/types/log";
+import { withFeedback } from "../hooks/queryHelpers";
 import {
   useCreateStudent,
   useDeleteStudent,
@@ -16,29 +18,33 @@ import {
   useUpdateStudent,
 } from "../hooks/students";
 
+type StudentInput = {
+  id?: string;
+  name: string;
+  email: string;
+  courseId: string;
+  courseLinks?: CourseLink[];
+};
+
 export interface StudentsContextValue {
   students: Student[];
   isLoading: boolean;
   setStudents: Dispatch<SetStateAction<Student[]>>;
   selectedStudent: Student | null;
   setSelectedStudent: Dispatch<SetStateAction<Student | null>>;
-  createStudent: (input: {
-    id?: string;
-    name: string;
-    email: string;
-    courseId: string;
-    courseLinks?: CourseLink[];
-  }) => Promise<Student>;
+  createStudent: (
+    input: StudentInput,
+    feedback?: MutationFeedback<Student> | null,
+  ) => Promise<Student>;
   updateStudent: (
     id: string,
-    input: Partial<{
-      name: string;
-      email: string;
-      courseId: string;
-      courseLinks: CourseLink[];
-    }>,
+    input: Partial<Student>,
+    feedback?: MutationFeedback<Student> | null,
   ) => Promise<Student>;
-  deleteStudent: (id: string) => Promise<void>;
+  deleteStudent: (
+    id: string,
+    feedback?: MutationFeedback<void> | null,
+  ) => Promise<void>;
 }
 
 const StudentsContext = createContext<StudentsContextValue | null>(null);
@@ -59,10 +65,12 @@ export function StudentsProvider({ children }: { children: ReactNode }) {
         setStudents,
         selectedStudent,
         setSelectedStudent,
-        createStudent: (input) => createMutation.mutateAsync(input),
-        updateStudent: (id, input) =>
-          updateMutation.mutateAsync({ id, input }),
-        deleteStudent: (id) => deleteMutation.mutateAsync(id),
+        createStudent: (input, feedback) =>
+          createMutation.mutateAsync(withFeedback(input, feedback)),
+        updateStudent: (id, input, feedback) =>
+          updateMutation.mutateAsync(withFeedback({ id, input }, feedback)),
+        deleteStudent: (id, feedback) =>
+          deleteMutation.mutateAsync(withFeedback(id, feedback)),
       }}
     >
       {children}

@@ -1,15 +1,37 @@
 import { Fragment } from "react";
 import { NavLink } from "react-router-dom";
+import { ShieldCheck } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { isStaffRole } from "@/api/queryKeys";
+import { routes } from "@/routes";
 import { studentNavItems } from "./studentNav";
 
-export function BottomNavigation() {
+export function NavigationBar({ position }: { position: "top" | "bottom" }) {
+  const isTop = position === "top";
+  const { user } = useAuth();
+  const showAdminLink = isStaffRole(user?.role);
+  const items = showAdminLink
+    ? [
+        {
+          to: routes.adminStudents,
+          label: "Admin",
+          Icon: ShieldCheck,
+        },
+        ...studentNavItems,
+      ]
+    : studentNavItems;
+
   return (
     <nav
-      className="sticky bottom-0 z-20 mx-auto w-full max-w-107.5 shrink-0 overflow-hidden border-t border-border bg-card"
+      className={`sticky z-20 w-full shrink-0 overflow-hidden bg-card ${
+        isTop
+          ? "top-0 border border-border md:rounded-b-md"
+          : "bottom-0 border-t border-border"
+      }`}
       aria-label="Hovedmenu"
     >
       <div className="flex items-stretch">
-        {studentNavItems.map(({ to, label, Icon }, index) => (
+        {items.map(({ to, label, Icon }, index) => (
           <Fragment key={to}>
             <div className="relative min-w-0 flex-1">
               <NavLink
@@ -22,7 +44,7 @@ export function BottomNavigation() {
                 }
               >
                 {({ isActive }) => (
-                  <>
+                  <div className="flex flex-col items-center md:flex-row md:gap-2 md:py-1">
                     <div
                       aria-hidden
                       className={`pointer-events-none absolute inset-0 bg-primary-100 transition-opacity duration-300 ease-out ${
@@ -31,12 +53,12 @@ export function BottomNavigation() {
                     />
                     <Icon size="1.2em" className="relative z-10" />
                     <span className="relative z-10">{label}</span>
-                  </>
+                  </div>
                 )}
               </NavLink>
             </div>
 
-            {index < studentNavItems.length - 1 && (
+            {index < items.length - 1 && (
               <span
                 aria-hidden
                 className="flex shrink-0 items-center self-stretch px-px"

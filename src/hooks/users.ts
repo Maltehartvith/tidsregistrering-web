@@ -35,28 +35,25 @@ export function useUsersSetter() {
   return useQuerySetter<AdminUser[]>(queryKeys.users, EMPTY);
 }
 
-export function useCreateUser(successMessage?: string) {
+export function useCreateUser() {
   return useDomainMutation({
     mutationFn: usersApi.createUser,
     invalidateKeys: [queryKeys.users],
-    successMessage,
   });
 }
 
-export function useUpdateUser(successMessage?: string) {
+export function useUpdateUser() {
   return useDomainMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateUserInput }) =>
       usersApi.updateUser(id, input),
     invalidateKeys: [queryKeys.users],
-    successMessage,
   });
 }
 
-export function useDeleteUser(successMessage?: string) {
+export function useDeleteUser() {
   return useDomainMutation({
     mutationFn: usersApi.deleteUser,
     invalidateKeys: [queryKeys.users],
-    successMessage,
   });
 }
 

@@ -28,7 +28,7 @@ export function SettingsTab() {
       </div>
 
       <section
-        className="rounded-[14px] border border-border bg-card px-4 py-3.5"
+        className="rounded-md border border-border bg-card px-4 py-3.5"
         aria-label="Visning"
       >
         <h3 className="mb-3 font-display text-[0.9375rem] font-semibold text-ink">
@@ -38,7 +38,7 @@ export function SettingsTab() {
       </section>
 
       <section
-        className="rounded-[14px] border border-border bg-card px-4 py-3.5"
+        className="rounded-md border border-border bg-card px-4 py-3.5"
         aria-label="Konto"
       >
         <h3 className="mb-3 font-display text-[0.9375rem] font-semibold text-ink">

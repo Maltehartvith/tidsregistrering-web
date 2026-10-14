@@ -7,6 +7,8 @@ import {
   type SetStateAction,
 } from "react";
 import type { Organization } from "../types/organization";
+import type { MutationFeedback } from "@/types/log";
+import { withFeedback } from "../hooks/queryHelpers";
 import { themeVars } from "../theme/colors";
 import { HC_CLASS } from "../theme/viewPrefs";
 import {
@@ -18,7 +20,10 @@ import {
 export type BrandingContextValue = Organization & {
   isLoading: boolean;
   setBranding: Dispatch<SetStateAction<Organization>>;
-  saveBranding: (branding: Organization) => Promise<Organization>;
+  saveBranding: (
+    branding: Organization,
+    feedback?: MutationFeedback<Organization> | null,
+  ) => Promise<Organization>;
 };
 
 const BrandingContext = createContext<BrandingContextValue | null>(null);
@@ -74,7 +79,8 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
         ...branding,
         isLoading,
         setBranding,
-        saveBranding: (next) => saveMutation.mutateAsync(next),
+        saveBranding: (next, feedback) =>
+          saveMutation.mutateAsync(withFeedback(next, feedback)),
       }}
     >
       {children}

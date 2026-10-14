@@ -29,27 +29,24 @@ export function useStudentsSetter() {
   return useQuerySetter<Student[]>(queryKeys.students, EMPTY);
 }
 
-export function useCreateStudent(successMessage?: string) {
+export function useCreateStudent() {
   return useDomainMutation({
     mutationFn: studentsApi.createStudent,
     invalidateKeys: [queryKeys.students],
-    successMessage,
   });
 }
 
-export function useUpdateStudent(successMessage?: string) {
+export function useUpdateStudent() {
   return useDomainMutation({
     mutationFn: ({ id, input }: { id: string; input: StudentUpdate }) =>
       studentsApi.updateStudent(id, input),
     invalidateKeys: [queryKeys.students],
-    successMessage,
   });
 }
 
-export function useDeleteStudent(successMessage?: string) {
+export function useDeleteStudent() {
   return useDomainMutation({
     mutationFn: studentsApi.deleteStudent,
     invalidateKeys: [queryKeys.students],
-    successMessage,
   });
 }

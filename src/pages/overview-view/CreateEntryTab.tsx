@@ -1,6 +1,4 @@
 import { EntryForm } from "@/components/ui/EntryForm";
-import { useToast } from "@/components/ui/Toast";
-import { useAuditLogs } from "@/context/AuditLogsContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useEntries } from "@/context/EntriesContext";
 import { categoryOf } from "@/domain/catalog";
@@ -17,25 +15,26 @@ export const CreateEntryTab = () => {
   const [form, setForm] = useState(
     emptyForm(student.courseId, CATEGORIES, LEARNING_GOALS),
   );
-  const { showToast } = useToast();
   const { createEntry } = useEntries();
-  const { logEvent } = useAuditLogs();
 
   const handleAdd = async () => {
     if (!form.hours || Number(form.hours) <= 0) return;
-    await createEntry({
-      ...form,
-      studentId: student.id,
-      courseId: student.courseId,
-      hours: Number(form.hours),
-    });
-    void logEvent({
-      actor: "Kursist",
-      studentId: student.id,
-      description: `${student.name} registrerede ${form.hours} timer (${categoryOf(ALL_CATEGORIES, form.category).label})`,
-    });
+    await createEntry(
+      {
+        ...form,
+        studentId: student.id,
+        courseId: student.courseId,
+        hours: Number(form.hours),
+      },
+      {
+        toastSuccessMessage: "Registrering gemt",
+        logArgs: {
+          studentId: student.id,
+          description: `${student.name} registrerede ${form.hours} timer (${categoryOf(ALL_CATEGORIES, form.category).label})`,
+        },
+      },
+    );
     setForm(emptyForm(student.courseId, CATEGORIES, LEARNING_GOALS));
-    showToast("Registrering gemt", 2200, "success");
     navigate(routes.studentOverview);
   };
 
