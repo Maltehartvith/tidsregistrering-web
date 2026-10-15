@@ -8,6 +8,7 @@ import {
 import type { TimeEntry } from "../types/entry";
 import type { MutationFeedback } from "@/types/log";
 import { withFeedback } from "../hooks/queryHelpers";
+import { useHoldQuery } from "@/hooks/queryGate";
 import {
   useCreateEntry,
   useDeleteEntry,
@@ -33,6 +34,7 @@ export interface EntriesContextValue {
     id: string,
     feedback?: MutationFeedback<void> | null,
   ) => Promise<void>;
+  isSaving: boolean;
 }
 
 const EntriesContext = createContext<EntriesContextValue | null>(null);
@@ -56,6 +58,10 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
           updateMutation.mutateAsync(withFeedback({ id, entry }, feedback)),
         deleteEntry: (id, feedback) =>
           deleteMutation.mutateAsync(withFeedback(id, feedback)),
+        isSaving:
+          createMutation.isPending ||
+          updateMutation.isPending ||
+          deleteMutation.isPending,
       }}
     >
       {children}
@@ -63,7 +69,8 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useEntries() {
+export function useEntries(options?: { list?: boolean }) {
+  useHoldQuery("entries", options?.list !== false);
   const ctx = useContext(EntriesContext);
   if (!ctx) {
     throw new Error("useEntries must be used within EntriesProvider");

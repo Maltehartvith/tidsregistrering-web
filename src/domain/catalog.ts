@@ -8,6 +8,7 @@ export function categoryOf(allCategories: CategoriesMap, key: string): Category 
   return (
     allCategories[key] || {
       key,
+      id: "",
       label: "Slettet kategori",
       short: "Slettet",
       color: "#6B6B6B",

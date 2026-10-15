@@ -5,16 +5,16 @@ import type { UserRole } from "../../types/user.ts";
 import { homeForRole, isStaffRole } from "../../api/queryKeys.ts";
 import { routes } from "../../routes.ts";
 import Spinner from "@/components/ui/Spinner.tsx";
+import PageWrapper from "@/components/ui/PageWrapper.tsx";
 
 function LoadingScreen() {
   return (
-    //todo: kom tilbage når vi har lavet en ordenlig wrapper om siden
-    <div className="relative mx-auto flex min-h-screen max-w-107.5 flex-col bg-paper font-sans text-ink md:my-10 md:min-h-[calc(100vh-80px)] md:overflow-hidden md:rounded-3xl md:shadow-[0_24px_64px_rgba(18,57,74,0.16)]">
-      <div className="mx-auto my-auto flex max-w-85 flex-row gap-2 px-6 py-10 items-center">
+    <PageWrapper ghostNav>
+      <div className="mx-auto my-auto flex max-w-85 flex-row items-center gap-2 px-6 py-10">
         <div className="text-center text-xl text-ink-soft">Indlæser…</div>
         <Spinner size={10} />
       </div>
-    </div>
+    </PageWrapper>
   );
 }
 

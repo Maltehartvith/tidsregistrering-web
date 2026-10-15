@@ -6,8 +6,10 @@ import {
   type SetStateAction,
 } from "react";
 import type { Course, CourseMap } from "../types/course";
+import type { CourseWrite } from "../api/courses";
 import type { MutationFeedback } from "@/types/log";
 import { withFeedback } from "../hooks/queryHelpers";
+import { useHoldQuery } from "@/hooks/queryGate";
 import {
   useCoursesQuery,
   useCoursesSetter,
@@ -21,18 +23,19 @@ export interface CoursesContextValue {
   isLoading: boolean;
   setCourses: Dispatch<SetStateAction<CourseMap>>;
   createCourse: (
-    course: Omit<Course, "id"> & { id?: string },
+    course: CourseWrite,
     feedback?: MutationFeedback<Course> | null,
   ) => Promise<Course>;
   updateCourse: (
     id: string,
-    course: Partial<Course>,
+    course: Partial<CourseWrite>,
     feedback?: MutationFeedback<Course> | null,
   ) => Promise<Course>;
   deleteCourse: (
     id: string,
     feedback?: MutationFeedback<void> | null,
   ) => Promise<void>;
+  isSaving: boolean;
 }
 
 const CoursesContext = createContext<CoursesContextValue | null>(null);
@@ -56,6 +59,10 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
           updateMutation.mutateAsync(withFeedback({ id, course }, feedback)),
         deleteCourse: (id, feedback) =>
           deleteMutation.mutateAsync(withFeedback(id, feedback)),
+        isSaving:
+          createMutation.isPending ||
+          updateMutation.isPending ||
+          deleteMutation.isPending,
       }}
     >
       {children}
@@ -64,6 +71,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
 }
 
 export function useCourses() {
+  useHoldQuery("courses");
   const ctx = useContext(CoursesContext);
   if (!ctx) {
     throw new Error("useCourses must be used within CoursesProvider");

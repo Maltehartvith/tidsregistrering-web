@@ -1,15 +1,16 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
   type ReactNode,
   type Dispatch,
   type SetStateAction,
 } from "react";
-import type { Student } from "../types/user";
-import type { CourseLink } from "../types/course";
+import type { User, UserCourseWrite } from "../types/user";
 import type { MutationFeedback } from "@/types/log";
 import { withFeedback } from "../hooks/queryHelpers";
+import { useHoldQuery } from "@/hooks/queryGate";
 import {
   useCreateStudent,
   useDeleteStudent,
@@ -19,32 +20,37 @@ import {
 } from "../hooks/students";
 
 type StudentInput = {
-  id?: string;
   name: string;
   email: string;
-  courseId: string;
-  courseLinks?: CourseLink[];
+  courses: UserCourseWrite[];
 };
 
+type StudentUpdate = Partial<{
+  name: string;
+  email: string;
+  courses: UserCourseWrite[];
+}>;
+
 export interface StudentsContextValue {
-  students: Student[];
+  students: User[];
   isLoading: boolean;
-  setStudents: Dispatch<SetStateAction<Student[]>>;
-  selectedStudent: Student | null;
-  setSelectedStudent: Dispatch<SetStateAction<Student | null>>;
+  setStudents: Dispatch<SetStateAction<User[]>>;
+  selectedStudent: User | null;
+  setSelectedStudent: Dispatch<SetStateAction<User | null>>;
   createStudent: (
     input: StudentInput,
-    feedback?: MutationFeedback<Student> | null,
-  ) => Promise<Student>;
+    feedback?: MutationFeedback<User> | null,
+  ) => Promise<User>;
   updateStudent: (
     id: string,
-    input: Partial<Student>,
-    feedback?: MutationFeedback<Student> | null,
-  ) => Promise<Student>;
+    input: StudentUpdate,
+    feedback?: MutationFeedback<User> | null,
+  ) => Promise<User>;
   deleteStudent: (
     id: string,
     feedback?: MutationFeedback<void> | null,
   ) => Promise<void>;
+  isSaving: boolean;
 }
 
 const StudentsContext = createContext<StudentsContextValue | null>(null);
@@ -52,10 +58,18 @@ const StudentsContext = createContext<StudentsContextValue | null>(null);
 export function StudentsProvider({ children }: { children: ReactNode }) {
   const { data: students, isLoading } = useStudentsQuery();
   const setStudents = useStudentsSetter();
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
   const createMutation = useCreateStudent();
   const updateMutation = useUpdateStudent();
   const deleteMutation = useDeleteStudent();
+
+  useEffect(() => {
+    setSelectedStudent((current) => {
+      if (!current) return current;
+      if (isLoading && students.length === 0) return current;
+      return students.find((student) => student.id === current.id) ?? null;
+    });
+  }, [isLoading, students]);
 
   return (
     <StudentsContext.Provider
@@ -71,6 +85,10 @@ export function StudentsProvider({ children }: { children: ReactNode }) {
           updateMutation.mutateAsync(withFeedback({ id, input }, feedback)),
         deleteStudent: (id, feedback) =>
           deleteMutation.mutateAsync(withFeedback(id, feedback)),
+        isSaving:
+          createMutation.isPending ||
+          updateMutation.isPending ||
+          deleteMutation.isPending,
       }}
     >
       {children}
@@ -79,6 +97,7 @@ export function StudentsProvider({ children }: { children: ReactNode }) {
 }
 
 export function useStudents() {
+  useHoldQuery("students");
   const ctx = useContext(StudentsContext);
   if (!ctx) {
     throw new Error("useStudents must be used within StudentsProvider");

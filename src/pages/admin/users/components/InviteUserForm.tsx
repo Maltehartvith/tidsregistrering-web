@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PlusCircle, ChevronDown } from "lucide-react";
+import { PlusCircle, ChevronDown, User } from "lucide-react";
 import { programName } from "@/domain/totals";
 import { ADMIN_ROLES } from "@/data/constants";
 import { Field } from "@/components/ui/Field";
@@ -9,12 +9,17 @@ import { useCourses } from "@/context/CoursesContext";
 import { useUsers } from "@/context/UsersContext";
 import { AdminRoleKey } from "@/types/user";
 import { useActorLabel } from "@/domain/actor";
+import { staffCoursesWrite } from "@/domain/userCourses";
+import SectionHeader from "../../components/SectionHeader";
+import { Button } from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import { Selector } from "@/components/ui/Selector";
 
 export function InviteUserForm() {
   const actor = useActorLabel();
-  const { programs } = useCatalog();
+  const { programs } = useCatalog({ programs: true });
   const { courses } = useCourses();
-  const { adminUsers, createUser } = useUsers();
+  const { adminUsers, createUser, isSaving } = useUsers();
   const [showInvite, setShowInvite] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -65,12 +70,12 @@ export function InviteUserForm() {
         email: trimmedEmail,
         role: role as AdminRoleKey,
         allCourses,
-        courseIds: allCourses ? [] : courseIds,
+        courses: allCourses ? [] : staffCoursesWrite(courseIds),
         status: "invited",
       },
       {
         logArgs: {
-          description: `${actor} inviterede ${trimmedName} (${ADMIN_ROLES[role as AdminRoleKey].label}) med adgang til ${allCourses ? "alle hold" : courseIds.map((id) => courses[id]?.label || id).join(", ")}`,
+          description: `${actor} inviterede ${trimmedName} (${ADMIN_ROLES[role as AdminRoleKey].label}) med adgang til ${allCourses ? "alle hold" : courseIds.map((id) => courses[id]?.label || courses[id]?.key || "hold").join(", ")}`,
         },
         toastSuccessMessage: (result) =>
           import.meta.env.DEV && result.inviteToken
@@ -89,35 +94,29 @@ export function InviteUserForm() {
 
   return (
     <>
-      <div className="mt-5.5 flex items-center justify-between">
-        <div
-          className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
-          style={{ margin: 0 }}
-        >
-          Brugere
-        </div>
+      <div className="mt-5.5 flex items-center justify-between mb-2">
+        <SectionHeader icon={<User size={20} />} title="Brugere" />
+
         {!showInvite && (
-          <button
-            className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
+          <Button
+            variant="pill"
+            size="small"
             onClick={() => {
               setShowInvite(true);
               resetForm();
             }}
           >
             <PlusCircle size={14} /> Inviter
-          </button>
+          </Button>
         )}
       </div>
 
       {showInvite && (
         <div className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card">
-          <div
-            className="border-t border-border px-4 pb-4 pt-3.5"
-            style={{ borderTop: "none", paddingTop: 16 }}
-          >
+          <div className="p-4">
             <div className="flex gap-3">
               <Field label="Navn">
-                <input
+                <Input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -125,7 +124,7 @@ export function InviteUserForm() {
                 />
               </Field>
               <Field label="Email">
-                <input
+                <Input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -135,13 +134,13 @@ export function InviteUserForm() {
             </div>
             <Field label="Rolle">
               <div className="relative">
-                <select value={role} onChange={(e) => setRole(e.target.value)}>
-                  <option value="underviser">Underviser</option>
-                  <option value="administrator">Administrator</option>
-                </select>
-                <ChevronDown
-                  size={16}
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
+                <Selector
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  options={Object.values(ADMIN_ROLES).map((role) => ({
+                    label: role.label,
+                    value: role.key,
+                  }))}
                 />
               </div>
             </Field>
@@ -180,22 +179,26 @@ export function InviteUserForm() {
                 {formError}
               </div>
             )}
-            <div className="mt-4.5 flex gap-2.5">
-              <button
-                className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+            <div className="mt-4.5 flex justify-center  gap-2.5">
+              <Button
+                variant="secondary"
+                className="w-full"
                 onClick={() => {
                   setShowInvite(false);
                   resetForm();
                 }}
               >
                 Annuller
-              </button>
-              <button
-                className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+              </Button>
+              <Button
+                variant="primary"
+                className="w-full"
                 onClick={sendInvite}
+                disabled={isSaving}
+                aria-busy={isSaving}
               >
-                Send invitation
-              </button>
+                {isSaving ? "Sender…" : "Send invitation"}
+              </Button>
             </div>
           </div>
         </div>

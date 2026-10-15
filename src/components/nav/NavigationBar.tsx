@@ -4,7 +4,43 @@ import { ShieldCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { isStaffRole } from "@/api/queryKeys";
 import { routes } from "@/routes";
+import { GhostBlock } from "@/components/ui/Ghost";
 import { studentNavItems } from "./studentNav";
+
+export function NavigationBarGhost({
+  position,
+}: {
+  position: "top" | "bottom";
+}) {
+  const isTop = position === "top";
+
+  return (
+    <div
+      className={`sticky z-20 w-full shrink-0 overflow-hidden bg-card ${
+        isTop
+          ? "top-0 border border-border md:rounded-b-md"
+          : "bottom-0 border-t border-border"
+      }`}
+      aria-hidden
+    >
+      <div className="flex items-stretch">
+        {studentNavItems.map((item, index) => (
+          <Fragment key={item.id}>
+            <div className="flex min-w-0 flex-1 flex-col items-center gap-1 p-2 md:flex-row md:justify-center md:gap-2 md:py-3">
+              <GhostBlock className="h-4 w-4 shrink-0 rounded-full" />
+              <GhostBlock className="h-2.5 w-12" />
+            </div>
+            {index < studentNavItems.length - 1 && (
+              <span className="flex shrink-0 items-center self-stretch px-px">
+                <span className="h-8 w-px bg-border" />
+              </span>
+            )}
+          </Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function NavigationBar({ position }: { position: "top" | "bottom" }) {
   const isTop = position === "top";

@@ -1,4 +1,5 @@
 export interface Category {
+  id: string;
   key: string;
   label: string;
   short: string;
@@ -13,6 +14,7 @@ export type CategoriesMap = Record<string, Category>;
 
 export interface Program {
   id: string;
+  key: string;
   name: string;
   targets: Record<string, number>;
 }
@@ -27,7 +29,7 @@ export interface AuditEvent {
   id: string;
   at: Date;
   actor: string;
-  studentId: string | null;
+  userId: string | null;
   courseId: string | null;
   description: string;
 }

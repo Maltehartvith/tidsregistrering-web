@@ -3,7 +3,7 @@ import type { EntryFormValues } from "../types/entry";
 import { todayISO } from "./format";
 
 export const emptyForm = (
-  courseId: string,
+  courseId: string | null | undefined,
   categories: CategoriesMap = {},
   learningGoals: string[] = [],
 ): EntryFormValues => ({

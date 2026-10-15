@@ -1,4 +1,5 @@
-import SectionHeader from "@/pages/admin/students/components/SectionHeader";
+import { useEffect } from "react";
+import SectionHeader from "@/pages/admin/components/SectionHeader";
 import { History } from "lucide-react";
 import { formatLogTime } from "@/domain/format";
 import { useAuditLogs } from "@/context/AuditLogsContext";
@@ -6,12 +7,16 @@ import { useStudents } from "@/context/StudentsContext";
 
 const ActivityLog = () => {
   const { selectedStudent } = useStudents();
-  const { auditLogs } = useAuditLogs();
+  const { auditLogs, refreshAuditLogs } = useAuditLogs();
+
+  useEffect(() => {
+    void refreshAuditLogs();
+  }, [refreshAuditLogs]);
 
   if (!selectedStudent) return null;
 
   const studentLog = auditLogs.filter(
-    (log) => log.studentId === selectedStudent.id,
+    (log) => log.userId === selectedStudent.id,
   );
 
   return (

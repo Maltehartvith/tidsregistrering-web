@@ -1,6 +1,6 @@
 export type LogEventArgs = {
   actor: string;
-  studentId?: string | null;
+  userId?: string | null;
   courseId?: string | null;
   description: string;
 };

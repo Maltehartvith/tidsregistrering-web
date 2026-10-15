@@ -1,5 +1,3 @@
-import { CourseLink } from "./course";
-
 export type AdminRoleKey = "administrator" | "underviser";
 
 export interface AdminRoleMeta {
@@ -10,31 +8,37 @@ export interface AdminRoleMeta {
 
 export type UserStatus = "active" | "invited";
 
-export interface Student {
-    id: string;
-    name: string;
-    email: string;
-    courseId: string;
-    courseLinks: CourseLink[];
-  }
-
-export interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  role: AdminRoleKey;
-  allCourses: boolean;
-  courseIds: string[];
-  status: UserStatus;
-}
-
 export type UserRole = "kursist" | "underviser" | "administrator";
 
-export interface SessionUser {
+/** Hours registered for one category on one of the user's courses. */
+export interface UserCourseCategory {
   id: string;
-  email: string;
+  short: string;
+  hours: number;
+}
+
+/** A course assigned to a user (enrollment for kursist, access for staff). */
+export interface UserCourse {
+  id: string;
+  active: boolean;
+  included: boolean;
+  categories: UserCourseCategory[];
+}
+
+/** Payload for POST/PATCH /users — categories/hours are server-owned. */
+export type UserCourseWrite = {
+  id: string;
+  active: boolean;
+  included?: boolean;
+};
+
+export interface User {
+  id: string;
   name: string;
+  email: string;
   role: UserRole;
-  organizationId: string;
-  studentId?: string | null;
+  organizationId?: string;
+  status: UserStatus;
+  allCourses: boolean;
+  courses: UserCourse[];
 }

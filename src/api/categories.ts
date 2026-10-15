@@ -1,12 +1,14 @@
 import type { Category, CategoriesMap } from "../types/domain";
 import { request } from "./request";
 
+export type CategoryWrite = Omit<Category, "id">;
+
 export async function listCategories(): Promise<CategoriesMap> {
   return request<CategoriesMap>("/categories");
 }
 
 export async function createCategory(
-  category: Omit<Category, "key"> & { key?: string },
+  category: CategoryWrite,
 ): Promise<Category> {
   return request<Category>("/categories", {
     method: "POST",
@@ -16,7 +18,7 @@ export async function createCategory(
 
 export async function updateCategory(
   key: string,
-  category: Partial<Category>,
+  category: Partial<CategoryWrite>,
 ): Promise<Category> {
   return request<Category>(`/categories/${encodeURIComponent(key)}`, {
     method: "PATCH",

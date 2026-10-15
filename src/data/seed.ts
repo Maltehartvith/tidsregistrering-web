@@ -3,11 +3,12 @@ import type { CategoriesMap, ProgramsMap } from "../types/domain";
 import { TimeEntry } from "@/types/entry";
 import type { CourseMap } from "../types/course";
 import type { Organization } from "../types/organization";
-import type { AdminRoleMeta, AdminUser, Student } from "../types/user";
+import type { AdminRoleMeta, User } from "../types/user";
 import type { OrganizationPreset } from "../types/ui";
 
 export const CATEGORIES_INITIAL: CategoriesMap = {
   narrativ: {
+    id: "eeeeeeee-eeee-4eee-8eee-000000000001",
     key: "narrativ",
     label: "Narrativ egenterapi",
     short: "Egenterapi",
@@ -17,6 +18,7 @@ export const CATEGORIES_INITIAL: CategoriesMap = {
     requiresTherapist: true,
   },
   study: {
+    id: "eeeeeeee-eeee-4eee-8eee-000000000002",
     key: "study",
     label: "Studiegruppeaktivitet",
     short: "Studiegruppe",
@@ -26,6 +28,7 @@ export const CATEGORIES_INITIAL: CategoriesMap = {
     requiresTherapist: false,
   },
   practice: {
+    id: "eeeeeeee-eeee-4eee-8eee-000000000003",
     key: "practice",
     label: "Øveklienter",
     short: "Øveklienter",
@@ -64,123 +67,151 @@ const DEFAULT_TARGETS = { narrativ: 40, study: 240, practice: 200 };
 const PT_TARGETS = { narrativ: 8, study: 48, practice: 40 };
 
 export const PROGRAMS_INITIAL: ProgramsMap = {
-  "narrativ-praksis": {
-    id: "narrativ-praksis",
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1": {
+    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+    key: "narrativ-praksis",
     name: "Uddannelsen i narrativ praksis",
     targets: { ...DEFAULT_TARGETS },
   },
-  psykoterapeut: {
-    id: "psykoterapeut",
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2": {
+    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
+    key: "psykoterapeut",
     name: "Psykoterapeutuddannelsen",
     targets: { ...DEFAULT_TARGETS },
   },
 };
 
 export const COURSES_INITIAL: CourseMap = {
-  "26-100": {
-    id: "26-100",
+  "bbbbbbbb-bbbb-4bbb-8bbb-000000000100": {
+    id: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100",
+    key: "26-100",
     label: "Hold 26-100",
     startYear: 2026,
-    programId: "narrativ-praksis",
-    targets: { ...DEFAULT_TARGETS },
+    programId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
   },
-  "25-080": {
-    id: "25-080",
+  "bbbbbbbb-bbbb-4bbb-8bbb-000000000080": {
+    id: "bbbbbbbb-bbbb-4bbb-8bbb-000000000080",
+    key: "25-080",
     label: "Hold 25-080",
     startYear: 2025,
-    programId: "narrativ-praksis",
-    targets: { ...DEFAULT_TARGETS },
+    programId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
   },
-  "24-050": {
-    id: "24-050",
+  "bbbbbbbb-bbbb-4bbb-8bbb-000000000050": {
+    id: "bbbbbbbb-bbbb-4bbb-8bbb-000000000050",
+    key: "24-050",
     label: "Hold 24-050",
     startYear: 2024,
-    programId: "narrativ-praksis",
-    targets: { ...DEFAULT_TARGETS },
+    programId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
   },
-  "22-030": {
-    id: "22-030",
+  "bbbbbbbb-bbbb-4bbb-8bbb-000000000030": {
+    id: "bbbbbbbb-bbbb-4bbb-8bbb-000000000030",
+    key: "22-030",
     label: "Hold 22-030",
     startYear: 2022,
-    programId: "narrativ-praksis",
-    targets: { ...DEFAULT_TARGETS },
+    programId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
   },
-  "20-010": {
-    id: "20-010",
+  "bbbbbbbb-bbbb-4bbb-8bbb-000000000010": {
+    id: "bbbbbbbb-bbbb-4bbb-8bbb-000000000010",
+    key: "20-010",
     label: "Hold 20-010",
     startYear: 2020,
-    programId: "narrativ-praksis",
-    targets: { ...DEFAULT_TARGETS },
+    programId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
   },
-  "pt-år1": {
-    id: "pt-år1",
+  "bbbbbbbb-bbbb-4bbb-8bbb-0000000000a1": {
+    id: "bbbbbbbb-bbbb-4bbb-8bbb-0000000000a1",
+    key: "pt-år1",
     label: "Hold PT-2025 (år 1 · Grunduddannelsen)",
     startYear: 2025,
-    programId: "psykoterapeut",
-    targets: { ...PT_TARGETS },
+    programId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
   },
-  "pt-år2": {
-    id: "pt-år2",
+  "bbbbbbbb-bbbb-4bbb-8bbb-0000000000a2": {
+    id: "bbbbbbbb-bbbb-4bbb-8bbb-0000000000a2",
+    key: "pt-år2",
     label: "Hold PT-2025 (år 2)",
     startYear: 2026,
-    programId: "psykoterapeut",
-    targets: { ...PT_TARGETS },
+    programId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
   },
-  "pt-år3": {
-    id: "pt-år3",
+  "bbbbbbbb-bbbb-4bbb-8bbb-0000000000a3": {
+    id: "bbbbbbbb-bbbb-4bbb-8bbb-0000000000a3",
+    key: "pt-år3",
     label: "Hold PT-2025 (år 3)",
     startYear: 2027,
-    programId: "psykoterapeut",
-    targets: { ...PT_TARGETS },
+    programId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
   },
 };
 
 export const TRANSFER_WINDOW_YEARS = 5;
 
-export const CURRENT_STUDENT_ID = "k1";
+export const CURRENT_STUDENT_ID = "cccccccc-cccc-4ccc-8ccc-000000000001";
 
-export const STUDENTS_INITIAL: Student[] = [
+export const STUDENTS_INITIAL: User[] = [
   {
-    id: "k1",
+    id: "cccccccc-cccc-4ccc-8ccc-000000000001",
     name: "Anna Bertelsen",
     email: "user1@email.dk",
-    courseId: "26-100",
-    courseLinks: [{ courseId: "25-080", included: true }],
+    role: "kursist",
+    status: "active",
+    allCourses: false,
+    courses: [
+      { id: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100", active: true, included: true, categories: [] },
+      { id: "bbbbbbbb-bbbb-4bbb-8bbb-000000000080", active: false, included: true, categories: [] },
+    ],
   },
   {
-    id: "k2",
+    id: "cccccccc-cccc-4ccc-8ccc-000000000002",
     name: "Peter Holm",
     email: "user2@email.dk",
-    courseId: "26-100",
-    courseLinks: [],
+    role: "kursist",
+    status: "active",
+    allCourses: false,
+    courses: [
+      { id: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100", active: true, included: true, categories: [] },
+    ],
   },
   {
-    id: "k3",
+    id: "cccccccc-cccc-4ccc-8ccc-000000000003",
     name: "Sofie Dahl",
     email: "user3@email.dk",
-    courseId: "25-080",
-    courseLinks: [],
+    role: "kursist",
+    status: "active",
+    allCourses: false,
+    courses: [
+      { id: "bbbbbbbb-bbbb-4bbb-8bbb-000000000080", active: true, included: true, categories: [] },
+    ],
   },
   {
-    id: "k4",
+    id: "cccccccc-cccc-4ccc-8ccc-000000000004",
     name: "Jonas Berg",
     email: "user4@email.dk",
-    courseId: "24-050",
-    courseLinks: [],
+    role: "kursist",
+    status: "active",
+    allCourses: false,
+    courses: [
+      { id: "bbbbbbbb-bbbb-4bbb-8bbb-000000000050", active: true, included: true, categories: [] },
+    ],
   },
   {
-    id: "k5",
+    id: "cccccccc-cccc-4ccc-8ccc-000000000005",
     name: "Camilla Skov",
     email: "user5@email.dk",
-    courseId: "26-100",
-    courseLinks: [],
+    role: "kursist",
+    status: "active",
+    allCourses: false,
+    courses: [
+      { id: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100", active: true, included: true, categories: [] },
+    ],
   },
   {
-    id: "k6",
+    id: "cccccccc-cccc-4ccc-8ccc-000000000006",
     name: "Mikkel Lund",
     email: "user6@email.dk",
-    courseId: "pt-år2",
-    courseLinks: [{ courseId: "pt-år1", included: true }],
+    role: "kursist",
+    status: "active",
+    allCourses: false,
+    courses: [
+      { id: "bbbbbbbb-bbbb-4bbb-8bbb-0000000000a2", active: true, included: true, categories: [] },
+      { id: "bbbbbbbb-bbbb-4bbb-8bbb-0000000000a1", active: false, included: true, categories: [] },
+    ],
   },
 ];
 
@@ -200,23 +231,23 @@ export const ADMIN_ROLES: Record<string, AdminRoleMeta> = {
 };
  */
 /** One admin account for the primary org (demo/local seed). */
-/* export const ADMIN_USERS_INITIAL: AdminUser[] = [
+/* export const ADMIN_USERS_INITIAL: User[] = [
   {
-    id: "u1",
+    id: "dddddddd-dddd-4ddd-8ddd-000000000001",
     name: "Admin",
     email: "admin@admin.dk",
     role: "administrator",
     allCourses: true,
-    courseIds: [],
     status: "active",
+    courses: [],
   },
 ];
 
 export const INITIAL_ENTRIES: TimeEntry[] = [
   {
     id: "e1",
-    studentId: "k1",
-    courseId: "25-080",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000001",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000080",
     category: "narrativ",
     date: "2026-03-04",
     hours: 10,
@@ -226,8 +257,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "e2",
-    studentId: "k1",
-    courseId: "25-080",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000001",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000080",
     category: "narrativ",
     date: "2026-05-19",
     hours: 12,
@@ -237,8 +268,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "e3",
-    studentId: "k1",
-    courseId: "26-100",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000001",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100",
     category: "narrativ",
     date: "2026-07-02",
     hours: 9,
@@ -248,8 +279,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "e4",
-    studentId: "k1",
-    courseId: "25-080",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000001",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000080",
     category: "study",
     date: "2026-02-11",
     hours: 30,
@@ -259,8 +290,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "e5",
-    studentId: "k1",
-    courseId: "25-080",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000001",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000080",
     category: "study",
     date: "2026-04-08",
     hours: 25,
@@ -270,8 +301,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "e6",
-    studentId: "k1",
-    courseId: "26-100",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000001",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100",
     category: "study",
     date: "2026-06-14",
     hours: 20,
@@ -281,8 +312,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "e7",
-    studentId: "k1",
-    courseId: "26-100",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000001",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100",
     category: "study",
     date: "2026-08-01",
     hours: 30,
@@ -292,8 +323,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "e8",
-    studentId: "k1",
-    courseId: "25-080",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000001",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000080",
     category: "practice",
     date: "2026-03-22",
     hours: 20,
@@ -303,8 +334,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "e9",
-    studentId: "k1",
-    courseId: "25-080",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000001",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000080",
     category: "practice",
     date: "2026-05-30",
     hours: 25,
@@ -314,8 +345,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "e10",
-    studentId: "k1",
-    courseId: "26-100",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000001",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100",
     category: "practice",
     date: "2026-07-19",
     hours: 15,
@@ -325,8 +356,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "e11",
-    studentId: "k1",
-    courseId: "26-100",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000001",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100",
     category: "practice",
     date: "2026-08-12",
     hours: 17,
@@ -336,8 +367,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "p1",
-    studentId: "k2",
-    courseId: "26-100",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000002",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100",
     category: "narrativ",
     date: "2026-05-02",
     hours: 5,
@@ -347,8 +378,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "p2",
-    studentId: "k2",
-    courseId: "26-100",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000002",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100",
     category: "study",
     date: "2026-06-01",
     hours: 40,
@@ -358,8 +389,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "p3",
-    studentId: "k2",
-    courseId: "26-100",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000002",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100",
     category: "practice",
     date: "2026-07-11",
     hours: 30,
@@ -369,8 +400,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "s1",
-    studentId: "k3",
-    courseId: "25-080",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000003",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000080",
     category: "narrativ",
     date: "2026-01-15",
     hours: 42,
@@ -380,8 +411,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "s2",
-    studentId: "k3",
-    courseId: "25-080",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000003",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000080",
     category: "study",
     date: "2026-03-20",
     hours: 245,
@@ -391,8 +422,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "s3",
-    studentId: "k3",
-    courseId: "25-080",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000003",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000080",
     category: "practice",
     date: "2026-06-10",
     hours: 205,
@@ -402,8 +433,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "j1",
-    studentId: "k4",
-    courseId: "24-050",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000004",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000050",
     category: "narrativ",
     date: "2026-02-08",
     hours: 15,
@@ -413,8 +444,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "j2",
-    studentId: "k4",
-    courseId: "24-050",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000004",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000050",
     category: "study",
     date: "2026-04-19",
     hours: 90,
@@ -424,8 +455,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "j3",
-    studentId: "k4",
-    courseId: "24-050",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000004",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000050",
     category: "practice",
     date: "2026-05-27",
     hours: 60,
@@ -435,8 +466,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "c1",
-    studentId: "k5",
-    courseId: "26-100",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000005",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100",
     category: "narrativ",
     date: "2026-08-03",
     hours: 3,
@@ -446,8 +477,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "c2",
-    studentId: "k5",
-    courseId: "26-100",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000005",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100",
     category: "study",
     date: "2026-08-05",
     hours: 10,
@@ -457,8 +488,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "c3",
-    studentId: "k5",
-    courseId: "26-100",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000005",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-000000000100",
     category: "practice",
     date: "2026-08-10",
     hours: 5,
@@ -468,8 +499,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "m1",
-    studentId: "k6",
-    courseId: "pt-år1",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000006",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-0000000000a1",
     category: "narrativ",
     date: "2025-10-02",
     hours: 8,
@@ -479,8 +510,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "m2",
-    studentId: "k6",
-    courseId: "pt-år1",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000006",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-0000000000a1",
     category: "study",
     date: "2025-11-14",
     hours: 48,
@@ -490,8 +521,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "m3",
-    studentId: "k6",
-    courseId: "pt-år1",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000006",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-0000000000a1",
     category: "practice",
     date: "2025-12-05",
     hours: 40,
@@ -501,8 +532,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "m4",
-    studentId: "k6",
-    courseId: "pt-år2",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000006",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-0000000000a2",
     category: "narrativ",
     date: "2026-04-08",
     hours: 3,
@@ -512,8 +543,8 @@ export const INITIAL_ENTRIES: TimeEntry[] = [
   },
   {
     id: "m5",
-    studentId: "k6",
-    courseId: "pt-år2",
+    userId: "cccccccc-cccc-4ccc-8ccc-000000000006",
+    courseId: "bbbbbbbb-bbbb-4bbb-8bbb-0000000000a2",
     category: "study",
     date: "2026-05-19",
     hours: 20,
@@ -535,28 +566,28 @@ export const BRANDING_INITIAL: Organization = {
 
 export const BRAND_PRESETS: OrganizationPreset[] = [
   {
-    group: "Klassiske",
+    group: "",
     name: "DISPUK (standard)",
     primary: "#12394A",
     accent: "#C25A4C",
     background: "#ECEEEA",
   },
   {
-    group: "Klassiske",
+    group: "",
     name: "Grafit",
     primary: "#2B2B2B",
     accent: "#C25A4C",
     background: "#EFEFEC",
   },
   {
-    group: "Klassiske",
+    group: "",
     name: "Nat",
     primary: "#1F2A5A",
     accent: "#B0701E",
     background: "#ECEDF3",
   },
   {
-    group: "Klassiske",
+    group: "",
     name: "Bordeaux",
     primary: "#5C1F2E",
     accent: "#A8793F",

@@ -19,14 +19,37 @@ import { useStudents } from "@/context/StudentsContext";
 import { useEntries } from "@/context/EntriesContext";
 import { useUsers } from "@/context/UsersContext";
 import { zeroTargets, formatTargets } from "@/domain/catalog";
-import { coursesWithinTransferWindow, programName } from "@/domain/totals";
+import {
+  coursesWithinTransferWindow,
+  programName,
+  targetsForCourse,
+} from "@/domain/totals";
+import {
+  activeCourseId,
+  kursistCoursesWrite,
+  previousCourses,
+  staffCourseIds,
+  staffCoursesWrite,
+  staffHasCourseAccess,
+} from "@/domain/userCourses";
 import { ADMIN_ROLES } from "@/data/constants";
+import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import Input from "@/components/ui/Input";
+import { NumberInput } from "@/components/ui/NumberInput";
 import ToggleButton from "@/components/ui/ToggleButton";
 import { routes } from "@/routes";
-import { Student } from "@/types/user";
+import type { User as AppUser, UserCourseWrite } from "@/types/user";
 import { useActorLabel } from "@/domain/actor";
 import { useActionFeedback } from "@/hooks/queryHelpers";
+import { Selector } from "@/components/ui/Selector";
+import { programKeyFromName } from "@/pages/admin/courses/components/ProgramsSection";
+import SectionHeader from "../../components/SectionHeader";
+
+const NEW_PROGRAM = {
+  value: "__new__",
+  label: "+ Opret ny uddannelse…",
+} as const;
 
 type CourseCardProps = {
   courseId: string;
@@ -44,7 +67,7 @@ type ImportResult = {
   courseId?: string;
   error?: string;
   fileName?: string;
-  added?: Student[];
+  added?: AppUser[];
   duplicates?: { name: string; email: string }[];
   skipped?: { name: string; email: string }[];
 };
@@ -53,12 +76,23 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   const navigate = useNavigate();
   const actor = useActorLabel();
   const recordFeedback = useActionFeedback();
-  const { CATEGORIES, programs } = useCatalog();
+  const {
+    CATEGORIES,
+    programs,
+    createProgram: createProgramApi,
+    updateProgram: updateProgramApi,
+    isSaving: catalogSaving,
+  } = useCatalog({
+    categories: true,
+    programs: true,
+  });
   const {
     courses,
     updateCourse,
     deleteCourse: deleteCourseApi,
+    isSaving: courseSaving,
   } = useCourses();
+  const isSaving = catalogSaving || courseSaving;
   const { students, createStudent, updateStudent } = useStudents();
   const { entries } = useEntries();
   const { adminUsers, updateUser } = useUsers();
@@ -78,15 +112,18 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   const [confirmRemoveCourseId, setConfirmRemoveCourseId] = useState<
     string | null
   >(null);
-  const [editProgramId, setEditProgramId] = useState<string | null>(null);
+  const [editProgramId, setEditProgramId] = useState("");
+  const [newProgramName, setNewProgramName] = useState("");
+  const [programError, setProgramError] = useState("");
+  const [transferSourceId, setTransferSourceId] = useState("");
   const [editTargets, setEditTargets] = useState(zeroTargets(CATEGORIES));
   const [addUserId, setAddUserId] = useState<string | null>(null);
-  const [transferSourceId, setTransferSourceId] = useState("");
   const [confirmTransferRoster, setConfirmTransferRoster] = useState(false);
 
   // Reset the panel's local state every time the card is opened.
   useLayoutEffect(() => {
     if (!isOpen) return;
+    const course = courses[courseId];
     setDraftOn(false);
     setDraftFrom(coursesWithinTransferWindow(courseId, courses)[0]?.id || "");
     setImportResult(null);
@@ -94,11 +131,13 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
     setAddName("");
     setAddEmail("");
     setEditProgramId(
-      courses[courseId]?.programId || Object.keys(programs)[0] || "",
+      course?.programId || Object.values(programs)[0]?.id || NEW_PROGRAM.value,
     );
+    setNewProgramName("");
+    setProgramError("");
     setEditTargets({
       ...zeroTargets(CATEGORIES),
-      ...(courses[courseId]?.targets || {}),
+      ...targetsForCourse(course, programs),
     });
     setAddUserId("");
     setTransferSourceId("");
@@ -110,21 +149,79 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   const h = courses[courseId];
   if (!h) return null;
 
+  const programOptions = Object.values(programs).map((program) => ({
+    value: program.id,
+    label: program.name,
+  }));
+  const creatingNewProgram = editProgramId === NEW_PROGRAM.value;
+  const selectedProgram = creatingNewProgram
+    ? null
+    : (programs[editProgramId] ?? null);
+
+  const coursesToWrite = (rows: AppUser["courses"]): UserCourseWrite[] =>
+    rows.map((course) => ({
+      id: course.id,
+      active: course.active,
+      included: course.included,
+    }));
+
   const saveCourseProgram = async () => {
     const course = courses[courseId];
-    if (!course || !editProgramId) return;
+    if (!course) return;
 
+    let programId = selectedProgram?.id ?? null;
+    let programLabel = selectedProgram?.name ?? "";
+
+    if (creatingNewProgram || !programId) {
+      const trimmed = newProgramName.trim();
+      if (!trimmed) {
+        setProgramError("Angiv et navn til den nye uddannelse.");
+        return;
+      }
+      const programKey = programKeyFromName(trimmed);
+      if (
+        Object.values(programs).some(
+          (program) =>
+            program.key === programKey ||
+            program.name.toLowerCase() === trimmed.toLowerCase(),
+        )
+      ) {
+        setProgramError("Der findes allerede en uddannelse med det navn.");
+        return;
+      }
+      const createdProgram = await createProgramApi(
+        { key: programKey, name: trimmed, targets: editTargets },
+        {
+          logArgs: {
+            description: `${actor} oprettede uddannelsen "${trimmed}" med totalmål ${formatTargets(editTargets, CATEGORIES)}`,
+          },
+        },
+      );
+      programId = createdProgram.id;
+      programLabel = createdProgram.name;
+      setEditProgramId(createdProgram.id);
+      setNewProgramName("");
+    } else if (programId) {
+      await updateProgramApi(
+        programId,
+        { targets: editTargets },
+        {
+          logArgs: {
+            description: `${actor} opdaterede totalmål for uddannelsen "${programLabel}" til ${formatTargets(editTargets, CATEGORIES)}`,
+          },
+        },
+      );
+    }
+
+    setProgramError("");
     await updateCourse(
       courseId,
+      { programId },
       {
-        programId: editProgramId,
-        targets: editTargets,
-      },
-      {
-        toastSuccessMessage: `Uddannelse og delmål gemt for ${course.label}`,
+        toastSuccessMessage: `Uddannelse og totalmål gemt for ${course.label}`,
         logArgs: {
           courseId,
-          description: `${actor} satte ${course.label} til uddannelsen "${programs[editProgramId]?.name}" med delmål ${formatTargets(editTargets, CATEGORIES)}`,
+          description: `${actor} satte ${course.label} til uddannelsen "${programLabel}" med totalmål ${formatTargets(editTargets, CATEGORIES)}`,
         },
       },
     );
@@ -136,17 +233,22 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
     const targetCourseId = courseId;
     const sourceLabel = courses[sourceCourseId].label;
     const targetLabel = courses[targetCourseId].label;
-    const moved = students.filter((s) => s.courseId === sourceCourseId);
+    const moved = students.filter((s) => activeCourseId(s) === sourceCourseId);
     await Promise.all(
       moved.map((s) => {
-        const restLinks = (s.courseLinks || []).filter(
-          (l) => l.courseId !== sourceCourseId && l.courseId !== targetCourseId,
+        const rest = s.courses.filter(
+          (course) =>
+            course.id !== sourceCourseId && course.id !== targetCourseId,
         );
         return updateStudent(s.id, {
-          courseId: targetCourseId,
-          courseLinks: [
-            ...restLinks,
-            { courseId: sourceCourseId, included: true },
+          courses: [
+            { id: targetCourseId, active: true, included: true },
+            { id: sourceCourseId, active: false, included: true },
+            ...rest.map((course) => ({
+              id: course.id,
+              active: false,
+              included: course.included,
+            })),
           ],
         });
       }),
@@ -165,14 +267,14 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   const addUserToCourse = async () => {
     if (!addUserId) return;
     const user = adminUsers.find((u) => u.id === addUserId);
-    if (!user || user.allCourses || (user.courseIds || []).includes(courseId)) {
+    if (!user || staffHasCourseAccess(user, courseId)) {
       setAddUserId("");
       return;
     }
     await updateUser(
       user.id,
       {
-        courseIds: [...(user.courseIds || []), courseId],
+        courses: staffCoursesWrite([...staffCourseIds(user), courseId]),
       },
       {
         toastSuccessMessage: `${user.name} har nu adgang til ${courses[courseId].label}`,
@@ -190,7 +292,9 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
     await updateUser(
       userId,
       {
-        courseIds: (user?.courseIds || []).filter((id) => id !== courseId),
+        courses: staffCoursesWrite(
+          (user ? staffCourseIds(user) : []).filter((id) => id !== courseId),
+        ),
       },
       {
         toastSuccessMessage: `${user?.name} har ikke længere adgang til ${courses[courseId].label}`,
@@ -203,19 +307,23 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   };
 
   const deleteCourse = async () => {
-    const currentMembers = students.filter((s) => s.courseId === courseId);
+    const currentMembers = students.filter(
+      (s) => activeCourseId(s) === courseId,
+    );
     if (currentMembers.length > 0) return;
     const holdBeingDeleted = courses[courseId];
     const linkedElsewhere = students.filter((s) =>
-      (s.courseLinks || []).some((l) => l.courseId === courseId),
+      s.courses.some((course) => course.id === courseId),
     ).length;
     await deleteCourseApi(courseId);
     await Promise.all(
       adminUsers
-        .filter((u) => (u.courseIds || []).includes(courseId))
+        .filter((u) => !u.allCourses && staffHasCourseAccess(u, courseId))
         .map((u) =>
           updateUser(u.id, {
-            courseIds: u.courseIds.filter((id) => id !== courseId),
+            courses: staffCoursesWrite(
+              staffCourseIds(u).filter((id) => id !== courseId),
+            ),
           }),
         ),
     );
@@ -234,22 +342,34 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   };
 
   const applyToCourse = async () => {
-    const members = students.filter((s) => s.courseId === courseId);
+    const members = students.filter((s) => activeCourseId(s) === courseId);
     await Promise.all(
       members.map((s) => {
-        const existing = s.courseLinks || [];
+        const existing = s.courses;
         if (draftOn) {
-          const already = existing.some((l) => l.courseId === draftFrom);
+          const already = existing.some((course) => course.id === draftFrom);
           const updated = already
-            ? existing.map((l) =>
-                l.courseId === draftFrom ? { ...l, included: true } : l,
+            ? existing.map((course) =>
+                course.id === draftFrom
+                  ? { ...course, included: true }
+                  : course,
               )
-            : [...existing, { courseId: draftFrom, included: true }];
-          return updateStudent(s.id, { courseLinks: updated });
+            : [
+                ...existing,
+                {
+                  id: draftFrom,
+                  active: false,
+                  included: true,
+                  categories: [],
+                },
+              ];
+          return updateStudent(s.id, { courses: coursesToWrite(updated) });
         }
         return updateStudent(s.id, {
-          courseLinks: existing.map((l) =>
-            l.courseId === draftFrom ? { ...l, included: false } : l,
+          courses: coursesToWrite(
+            existing.map((course) =>
+              course.id === draftFrom ? { ...course, included: false } : course,
+            ),
           ),
         });
       }),
@@ -261,8 +381,8 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
       logArgs: {
         courseId,
         description: draftOn
-          ? `${actor} anvendte timeoverførsel fra ${courses[draftFrom]?.label || draftFrom} på hele ${courses[courseId].label} (${members.length} kursister)`
-          : `${actor} slog timeoverførsel fra ${courses[draftFrom]?.label || draftFrom} fra for hele ${courses[courseId].label} (${members.length} kursister)`,
+          ? `${actor} anvendte timeoverførsel fra ${courses[draftFrom]?.label || courses[draftFrom]?.key || "et hold"} på hele ${courses[courseId].label} (${members.length} kursister)`
+          : `${actor} slog timeoverførsel fra ${courses[draftFrom]?.label || courses[draftFrom]?.key || "et hold"} fra for hele ${courses[courseId].label} (${members.length} kursister)`,
       },
     });
     onToggle();
@@ -271,20 +391,22 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   const removeFromCourse = async (fromCourseId: string) => {
     let hoursWithdrawnTotal = 0;
     let affectedCount = 0;
-    const members = students.filter((s) => s.courseId === courseId);
+    const members = students.filter((s) => activeCourseId(s) === courseId);
     await Promise.all(
       members.map((s) => {
-        const existing = s.courseLinks || [];
-        const link = existing.find((l) => l.courseId === fromCourseId);
+        const existing = s.courses;
+        const link = existing.find((course) => course.id === fromCourseId);
         if (!link) return Promise.resolve();
         affectedCount += 1;
         if (link.included) {
           hoursWithdrawnTotal += entries
-            .filter((e) => e.studentId === s.id && e.courseId === fromCourseId)
+            .filter((e) => e.userId === s.id && e.courseId === fromCourseId)
             .reduce((sum, e) => sum + Number(e.hours), 0);
         }
         return updateStudent(s.id, {
-          courseLinks: existing.filter((l) => l.courseId !== fromCourseId),
+          courses: coursesToWrite(
+            existing.filter((course) => course.id !== fromCourseId),
+          ),
         });
       }),
     );
@@ -292,7 +414,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
       toastSuccessMessage: `Overførsel fjernet helt — ${hoursWithdrawnTotal} timer trukket tilbage for ${affectedCount} kursister`,
       logArgs: {
         courseId,
-        description: `${actor} fjernede timeoverførslen fra ${courses[fromCourseId]?.label || fromCourseId} helt for ${courses[courseId].label} (${affectedCount} kursister berørt, ${hoursWithdrawnTotal} timer trukket ud af regnskabet igen)`,
+        description: `${actor} fjernede timeoverførslen fra ${courses[fromCourseId]?.label || courses[fromCourseId]?.key || "et hold"} helt for ${courses[courseId].label} (${affectedCount} kursister berørt, ${hoursWithdrawnTotal} timer trukket ud af regnskabet igen)`,
       },
     });
     setConfirmRemoveCourseId(null);
@@ -317,13 +439,12 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
       {
         name,
         email,
-        courseId,
-        courseLinks: [],
+        courses: kursistCoursesWrite(courseId),
       },
       {
         toastSuccessMessage: `${name} tilføjet til ${courses[courseId].label}`,
         logArgs: (student) => ({
-          studentId: student.id,
+          userId: student.id,
           courseId,
           description: `${actor} tilføjede ${name} til ${courses[courseId].label}`,
         }),
@@ -347,7 +468,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-        const added: Student[] = [];
+        const added: AppUser[] = [];
         const duplicates: { name: string; email: string }[] = [];
         const skipped: { name: string; email: string }[] = [];
         const knownEmails = new Set(students.map((s) => s.email.toLowerCase()));
@@ -373,8 +494,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
           const created = await createStudent({
             name,
             email,
-            courseId,
-            courseLinks: [],
+            courses: kursistCoursesWrite(courseId),
           });
           knownEmails.add(email.toLowerCase());
           added.push(created);
@@ -401,9 +521,9 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
     reader.readAsArrayBuffer(file);
   };
 
-  const members = students.filter((s) => s.courseId === h.id);
+  const members = students.filter((s) => activeCourseId(s) === h.id);
   const onCount = members.filter((s) =>
-    (s.courseLinks || []).some((l) => l.included),
+    previousCourses(s).some((course) => course.included),
   ).length;
   const windowCourses = coursesWithinTransferWindow(h.id, courses);
 
@@ -414,7 +534,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
       id={`hold-card-${h.id}`}
     >
       <button
-        className="flex w-full cursor-pointer items-center gap-2.5 border-0 bg-transparent px-4 py-3.5 text-left font-sans"
+        className="flex justify-between w-full cursor-pointer items-center gap-2.5 border-0 bg-transparent px-4 py-3.5 text-left font-sans"
         onClick={onToggle}
       >
         <div>
@@ -424,77 +544,103 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
             Oprettet {h.startYear} · {members.length} kursister
           </div>
         </div>
-        {onCount > 0 && (
-          <span
-            className="flex items-center gap-1 font-mono text-[11px] font-semibold"
-            style={{ color: "var(--secondary)" }}
-          >
-            <ArrowRightLeft size={12} /> {onCount}/{members.length} overfører
-          </span>
-        )}
-        <ChevronDown
-          size={16}
-          className={`shrink-0 text-ink-soft transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
-        />
+        <div className="flex items-center gap-2">
+          {onCount > 0 && (
+            <span
+              className="flex items-center gap-1 font-mono text-[11px] font-semibold"
+              style={{ color: "var(--secondary)" }}
+            >
+              <ArrowRightLeft size={12} /> {onCount}/{members.length} overfører
+            </span>
+          )}
+          <ChevronDown
+            size={16}
+            className={`shrink-0 text-ink-soft transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
+          />
+        </div>
       </button>
 
       {isOpen && (
         <div className="border-t border-border px-4 pb-4 pt-3.5">
           <Field
             label="Uddannelse"
-            hint="Hvilken uddannelse hører dette hold under?"
+            hint="Vælg en eksisterende uddannelse, eller opret en ny."
           >
-            <div className="relative">
-              <select
-                value={editProgramId ?? ""}
-                onChange={(e) => setEditProgramId(e.target.value)}
-              >
-                {Object.values(programs).map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                size={16}
-                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
-              />
-            </div>
+            <Selector
+              value={editProgramId}
+              onChange={(e) => {
+                const next = e.target.value;
+                setEditProgramId(next);
+                setProgramError("");
+                if (next !== NEW_PROGRAM.value) {
+                  setNewProgramName("");
+                  const program = programs[next];
+                  if (program) {
+                    setEditTargets({
+                      ...zeroTargets(CATEGORIES),
+                      ...program.targets,
+                    });
+                  }
+                }
+              }}
+              options={[...programOptions, NEW_PROGRAM]}
+            />
           </Field>
+          {creatingNewProgram && (
+            <Field label="Navn på ny uddannelse">
+              <Input
+                type="text"
+                value={newProgramName}
+                onChange={(e) => setNewProgramName(e.target.value)}
+                placeholder="Fx Psykoterapeutuddannelsen"
+              />
+            </Field>
+          )}
+          {programError && (
+            <div className="-mt-1.5 mb-3 text-xs text-[#a14b36]">
+              {programError}
+            </div>
+          )}
           <Field
-            label="Courseets delmål"
-            hint="Hvor mange timer bidrager netop dette hold/år med i hver kategori?"
+            label="Uddannelsens totalmål"
+            hint={
+              creatingNewProgram
+                ? "Totalmål for den nye uddannelse (program) — gælder for alle hold knyttet til den."
+                : "Rediger uddannelsens totalmål (program targets). Gælder for alle hold under den valgte uddannelse."
+            }
           >
             <div className="flex gap-3">
               {Object.values(CATEGORIES).map((c) => (
-                <div key={c.key} style={{ flex: 1 }}>
-                  <label
-                    className="mt-1 block text-[11px] text-ink-soft"
-                    style={{ display: "block", marginBottom: 4 }}
-                  >
-                    {c.short}
-                  </label>
-                  <input
-                    type="number"
-                    value={editTargets[c.key] ?? 0}
-                    onChange={(e) =>
-                      setEditTargets({
-                        ...editTargets,
-                        [c.key]: Number(e.target.value),
-                      })
-                    }
-                  />
+                <div key={c.key} className="flex-1">
+                  <Field label={c.short} className="mb-0">
+                    <NumberInput
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
+                      value={editTargets[c.key] ?? 0}
+                      onChange={(e) =>
+                        setEditTargets({
+                          ...editTargets,
+                          [c.key]: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </Field>
                 </div>
               ))}
             </div>
           </Field>
-          <button
-            className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
-            style={{ marginBottom: 16 }}
-            onClick={saveCourseProgram}
-          >
-            Gem uddannelse og delmål
-          </button>
+          <div className="mb-4 flex gap-2.5">
+            <Button
+              variant="primary"
+              className="flex-1"
+              onClick={saveCourseProgram}
+              disabled={isSaving}
+              aria-busy={isSaving}
+            >
+              {isSaving ? "Gemmer…" : "Gem uddannelse og delmål"}
+            </Button>
+          </div>
 
           <div
             className="mb-1.5 block text-xs font-semibold text-ink-soft"
@@ -503,9 +649,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
             Administratorer og undervisere på dette hold
           </div>
           {adminUsers
-            .filter(
-              (u) => u.allCourses || (u.courseIds || []).includes(h.id),
-            )
+            .filter((u) => staffHasCourseAccess(u, h.id))
             .map((u) => (
               <div
                 className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0"
@@ -538,9 +682,8 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
                 )}
               </div>
             ))}
-          {adminUsers.filter(
-            (u) => u.allCourses || (u.courseIds || []).includes(h.id),
-          ).length === 0 && (
+          {adminUsers.filter((u) => staffHasCourseAccess(u, h.id)).length ===
+            0 && (
             <p
               className="mt-1 block text-[11px] text-ink-soft"
               style={{ marginBottom: 10 }}
@@ -549,30 +692,25 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               endnu.
             </p>
           )}
-          {adminUsers.filter(
-            (u) => !u.allCourses && !(u.courseIds || []).includes(h.id),
-          ).length > 0 && (
+          {adminUsers.filter((u) => !staffHasCourseAccess(u, h.id)).length >
+            0 && (
             <div className="mt-3.5 flex flex-wrap items-center gap-2">
               <div className="relative" style={{ flex: 1 }}>
-                <select
+                <Selector
                   value={addUserId ?? ""}
                   onChange={(e) => setAddUserId(e.target.value)}
-                >
-                  <option value="">Vælg administrator eller underviser…</option>
-                  {adminUsers
-                    .filter(
-                      (u) =>
-                        !u.allCourses && !(u.courseIds || []).includes(h.id),
-                    )
-                    .map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} · {ADMIN_ROLES[u.role]?.label || u.role}
-                      </option>
-                    ))}
-                </select>
-                <ChevronDown
-                  size={16}
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
+                  options={[
+                    {
+                      value: "",
+                      label: "Vælg administrator eller underviser…",
+                    },
+                    ...adminUsers
+                      .filter((u) => !staffHasCourseAccess(u, h.id))
+                      .map((u) => ({
+                        value: u.id,
+                        label: `${u.name} · ${ADMIN_ROLES[u.role]?.label || u.role}`,
+                      })),
+                  ]}
                 />
               </div>
               <button
@@ -604,47 +742,41 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
             år 2). Flytter kursisterne hertil og viderefører automatisk deres
             optjente timer fra kildeholdet.
           </p>
-          <div className="relative" style={{ marginBottom: 10 }}>
-            <select
-              value={transferSourceId}
-              onChange={(e) => {
-                setTransferSourceId(e.target.value);
-                setConfirmTransferRoster(false);
-              }}
-            >
-              <option value="">Vælg kildehold…</option>
-              {Object.values(courses)
+
+          <Selector
+            value={transferSourceId}
+            onChange={(e) => {
+              setTransferSourceId(e.target.value);
+              setConfirmTransferRoster(false);
+            }}
+            options={[
+              ...Object.values(courses)
                 .filter((src) => src.id !== h.id)
-                .map((src) => (
-                  <option key={src.id} value={src.id}>
-                    {src.label} (
-                    {students.filter((s) => s.courseId === src.id).length}{" "}
-                    kursister)
-                  </option>
-                ))}
-            </select>
-            <ChevronDown
-              size={16}
-              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
-            />
-          </div>
+                .map((src) => ({ value: src.id, label: src.label })),
+              { value: "", label: "Vælg kildehold…" },
+            ]}
+          />
+
           {transferSourceId &&
             (confirmTransferRoster ? (
               <div className="mb-1">
                 <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
                   <AlertTriangle size={14} />
                   {
-                    students.filter((s) => s.courseId === transferSourceId)
-                      .length
+                    students.filter(
+                      (s) => activeCourseId(s) === transferSourceId,
+                    ).length
                   }{" "}
-                  kursister flyttes fra {courses[transferSourceId].label} til{" "}
-                  {h.label}, og {courses[transferSourceId].label} beholdes som
-                  tidligere hold, så deres timer fortsætter med at tælle.
+                  {students.filter(
+                    (s) => activeCourseId(s) === transferSourceId,
+                  ).length > 1
+                    ? "kursister"
+                    : "kursist"}{" "}
+                  flyttes fra {courses[transferSourceId].label} til {h.label},
+                  og {courses[transferSourceId].label} beholdes som tidligere
+                  hold, så deres timer fortsætter med at tælle.
                 </div>
-                <div
-                  className="mt-4.5 flex gap-2.5"
-                  style={{ marginTop: 10 }}
-                >
+                <div className="mt-4.5 flex gap-2.5" style={{ marginTop: 10 }}>
                   <button
                     className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                     onClick={() => setConfirmTransferRoster(false)}
@@ -655,27 +787,36 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
                     className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                     onClick={transferRoster}
                   >
-                    Ja, overfør kursisterne
+                    Ja, overfør{" "}
+                    {students.filter(
+                      (s) => activeCourseId(s) === transferSourceId,
+                    ).length > 1
+                      ? "kursisterne"
+                      : "kursisten"}
                   </button>
                 </div>
               </div>
             ) : (
-              <button
-                className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
-                style={{ width: "100%", marginBottom: 16 }}
+              <Button
+                variant="primary"
+                className="flex-1 mt-2 mx-auto"
                 onClick={() => setConfirmTransferRoster(true)}
                 disabled={
-                  students.filter((s) => s.courseId === transferSourceId)
+                  students.filter((s) => activeCourseId(s) === transferSourceId)
                     .length === 0
                 }
               >
                 <ArrowRightLeft size={14} /> Overfør{" "}
                 {
-                  students.filter((s) => s.courseId === transferSourceId)
+                  students.filter((s) => activeCourseId(s) === transferSourceId)
                     .length
                 }{" "}
-                kursister til {h.label}
-              </button>
+                {students.filter((s) => activeCourseId(s) === transferSourceId)
+                  .length > 1
+                  ? "kursister"
+                  : "kursist"}{" "}
+                til {h.label}
+              </Button>
             ))}
 
           <div
@@ -693,7 +834,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
           </div>
           <div className="flex gap-3">
             <Field label="Navn">
-              <input
+              <Input
                 type="text"
                 value={addName ?? ""}
                 onChange={(e) => setAddName(e.target.value)}
@@ -701,7 +842,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               />
             </Field>
             <Field label="Email">
-              <input
+              <Input
                 type="email"
                 value={addEmail ?? ""}
                 onChange={(e) => setAddEmail(e.target.value)}
@@ -754,7 +895,9 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
           </div>
           <label className="inline-flex w-auto flex-none cursor-pointer items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45">
             <Upload size={14} />
-            {importingCourseId === h.id ? "Importerer..." : "Importér fra Excel"}
+            {importingCourseId === h.id
+              ? "Importerer..."
+              : "Importér fra Excel"}
             <input
               type="file"
               accept=".xlsx,.xls,.csv"
@@ -860,21 +1003,20 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
 
           {draftFrom &&
             members.some((s) =>
-              (s.courseLinks || []).some((l) => l.courseId === draftFrom),
+              s.courses.some((course) => course.id === draftFrom),
             ) &&
             (confirmRemoveCourseId === draftFrom ? (
               <div className="mb-1">
                 <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
                   <AlertTriangle size={14} />
                   Sikker på at overførslen fra{" "}
-                  {courses[draftFrom]?.label || draftFrom} skal fjernes helt for
-                  hele {h.label}? Timerne trækkes automatisk ud af regnskabet
-                  igen for alle berørte kursister.
+                  {courses[draftFrom]?.label ||
+                    courses[draftFrom]?.key ||
+                    "holdet"}{" "}
+                  skal fjernes helt for hele {h.label}? Timerne trækkes
+                  automatisk ud af regnskabet igen for alle berørte kursister.
                 </div>
-                <div
-                  className="mt-4.5 flex gap-2.5"
-                  style={{ marginTop: 10 }}
-                >
+                <div className="mt-4.5 flex gap-2.5" style={{ marginTop: 10 }}>
                   <button
                     className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                     onClick={() => setConfirmRemoveCourseId(null)}
@@ -912,16 +1054,11 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
             <span className="stitch-line" />
           </div>
 
-          <div
-            className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
-            style={{ color: "var(--secondary)", marginTop: 0 }}
-          >
-            <AlertTriangle
-              size={14}
-              style={{ verticalAlign: -2, marginRight: 6 }}
-            />
-            Faresone
-          </div>
+          <SectionHeader
+            icon={<AlertTriangle size={20} />}
+            title="Faresone"
+            className="text-red-800 mb-4"
+          />
 
           {members.length > 0 ? (
             <>
@@ -951,52 +1088,41 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               </div>
             </>
           ) : confirmDeleteCourseId === h.id ? (
-            <div className="my-4.5 mb-1.5 rounded-xl border-[1.5px] border-dashed border-border p-3.5">
-              <div
-                className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink-soft"
-                style={{ color: "var(--secondary)" }}
-              >
+            <div className="p-5 bg-red-600/20 border border-red-600/30 border-dashed rounded-xl m-4">
+              <div className="font-mono uppercase tracking-[0.08em] text-black-400">
                 Bekræft sletning
               </div>
-              <p
-                className="mb-3.5 text-[13px] leading-normal text-ink-soft"
-                style={{ margin: "6px 0 10px" }}
-              >
+              <p className="mb-3.5 text-[13px] leading-normal text-black-400">
                 {h.label} slettes permanent. Kursister, der historisk har fået
                 overført timer herfra til et andet, aktivt hold, beholder deres
                 timer — holdnavnet vises blot som "(slettet)" i deres historik.
               </p>
-              <div className="mt-4.5 flex gap-2.5">
-                <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+              <div className="mt-4 flex justify-center gap-10 ">
+                <Button
+                  variant="secondary"
                   onClick={() => setConfirmDeleteCourseId(null)}
                 >
                   Annuller
-                </button>
-                <button
-                  className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
-                  style={{
-                    background: "var(--secondary)",
-                    borderColor: "var(--secondary)",
-                  }}
+                </Button>
+                <Button
+                  variant="primary"
+                  className="bg-red-700 text-white hover:bg-red-800"
                   onClick={deleteCourse}
                 >
                   Ja, slet permanent
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
-            <button
-              className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
-              style={{
-                width: "100%",
-                color: "var(--secondary)",
-                borderColor: "var(--secondary)",
-              }}
-              onClick={() => setConfirmDeleteCourseId(h.id)}
-            >
-              <Trash2 size={14} /> Slet hold permanent (GDPR)
-            </button>
+            <div className="flex items-center justify-center">
+              <Button
+                className=" bg-red-700 text-white hover:bg-red-800"
+                variant="primary"
+                onClick={() => setConfirmDeleteCourseId(h.id)}
+              >
+                <Trash2 size={14} /> Slet hold permanent
+              </Button>
+            </div>
           )}
         </div>
       )}

@@ -4,8 +4,9 @@ import Input from "@/components/ui/Input";
 import { useCourses } from "@/context/CoursesContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useActorLabel } from "@/domain/actor";
+import { activeCourseId } from "@/domain/userCourses";
 import { MutationFeedback } from "@/types/log";
-import { Student } from "@/types/user";
+import { User } from "@/types/user";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { useState } from "react";
 
@@ -15,6 +16,7 @@ const PersonalInfo = () => {
     selectedStudent,
     updateStudent: persistStudent,
     setSelectedStudent,
+    isSaving,
   } = useStudents();
   const { courses } = useCourses();
   const actor = useActorLabel();
@@ -35,8 +37,8 @@ const PersonalInfo = () => {
   };
 
   const patchStudent = (
-    patch: Partial<Student>,
-    feedback?: MutationFeedback<Student> | null,
+    patch: Partial<Pick<User, "name" | "email">>,
+    feedback?: MutationFeedback<User> | null,
   ) => persistStudent(selectedStudent.id, patch, feedback);
 
   const saveProfile = async () => {
@@ -69,7 +71,7 @@ const PersonalInfo = () => {
         ? {
             toastSuccessMessage: "Oplysninger opdateret",
             logArgs: {
-              studentId: selectedStudent.id,
+              userId: selectedStudent.id,
               description: `${actor} ændrede ${changes.join(" og ")}`,
             },
           }
@@ -124,8 +126,10 @@ const PersonalInfo = () => {
               <Button
                 onClick={saveProfile}
                 variant="primary"
+                disabled={isSaving}
+                aria-busy={isSaving}
               >
-                Gem
+                {isSaving ? "Gemmer…" : "Gem"}
               </Button>
             </div>
           </div>
@@ -139,8 +143,13 @@ const PersonalInfo = () => {
                 {selectedStudent.name}
               </div>
               <div className="text-[13px] text-ink-soft">
-                {selectedStudent.email} ·{" "}
-                {courses[selectedStudent.courseId].label}
+                {selectedStudent.email}
+                {(() => {
+                  const homeId = activeCourseId(selectedStudent);
+                  return homeId && courses[homeId]
+                    ? ` · ${courses[homeId].label}`
+                    : "";
+                })()}
               </div>
             </div>
             <Button

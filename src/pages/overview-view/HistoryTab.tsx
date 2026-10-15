@@ -9,25 +9,30 @@ import Input from "@/components/ui/Input";
 import { categoryOf } from "@/domain/catalog";
 import { emptyForm } from "@/domain/entryForm";
 import { courseLabel } from "@/domain/totals";
+import { activeCourseId } from "@/domain/userCourses";
 import { TimeEntry } from "@/types/entry";
 import { useStudentOutlet } from "./StudentLayout";
 
 export const HistoryTab = () => {
   const { student } = useStudentOutlet();
-  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS } = useCatalog();
+  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS } = useCatalog({
+    categories: true,
+    goals: true,
+  });
   const { courses } = useCourses();
-  const { entries, updateEntry, deleteEntry } = useEntries();
+  const { entries, updateEntry, deleteEntry, isSaving } = useEntries();
+  const homeCourseId = activeCourseId(student);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(
-    emptyForm(student.courseId, CATEGORIES, LEARNING_GOALS),
+    emptyForm(homeCourseId, CATEGORIES, LEARNING_GOALS),
   );
   const [filterCat, setFilterCat] = useState("alle");
   const [filterHold, setFilterHold] = useState("alle");
   const [query, setQuery] = useState("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
-  const myEntries = entries.filter((e) => e.studentId === student.id);
+  const myEntries = entries.filter((e) => e.userId === student.id);
 
   const startEdit = (entry: TimeEntry) => {
     setEditingId(entry.id ?? null);
@@ -46,7 +51,7 @@ export const HistoryTab = () => {
       {
         toastSuccessMessage: "Ændring gemt",
         logArgs: {
-          studentId: student.id,
+          userId: student.id,
           description: `${student.name} rettede en registrering (${categoryOf(ALL_CATEGORIES, editForm.category).label})`,
         },
       },
@@ -60,7 +65,7 @@ export const HistoryTab = () => {
       toastSuccessMessage: "Registrering slettet",
       logArgs: removed
         ? {
-            studentId: student.id,
+            userId: student.id,
             description: `${student.name} slettede en registrering på ${removed.hours} timer (${categoryOf(ALL_CATEGORIES, removed.category).label})`,
           }
         : null,
@@ -69,10 +74,12 @@ export const HistoryTab = () => {
   };
 
   const myHoldIds = Array.from(
-    new Set([
-      student.courseId,
-      ...(student.courseLinks || []).map((l) => l.courseId),
-    ]),
+    new Set(
+      [
+        ...student.courses.map((course) => course.id),
+        ...myEntries.map((entry) => entry.courseId),
+      ].filter((id): id is string => Boolean(id)),
+    ),
   );
 
   const filteredEntries = myEntries
@@ -176,6 +183,7 @@ export const HistoryTab = () => {
                 onSubmit={saveEdit}
                 onCancel={() => setEditingId(null)}
                 submitLabel="Gem ændring"
+                submitting={isSaving}
               />
             </div>
           );
@@ -210,7 +218,7 @@ export const HistoryTab = () => {
                     Terapeut: {e.therapist}
                   </div>
                 )}
-                {e.courseId !== student.courseId && (
+                {e.courseId !== homeCourseId && (
                   <div className="mt-0.5 text-xs text-ink-soft">
                     Overført fra {courseLabel(e.courseId, courses)}
                   </div>

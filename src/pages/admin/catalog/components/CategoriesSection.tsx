@@ -8,9 +8,9 @@ import {
   ArrowDown,
   Archive,
   ArchiveRestore,
+  Calendar,
 } from "lucide-react";
 import { useCatalog } from "@/context/CatalogContext";
-import { useCourses } from "@/context/CoursesContext";
 import { useEntries } from "@/context/EntriesContext";
 import { categoryKeyFromLabel } from "@/domain/catalog";
 import { CATEGORY_PALETTE } from "@/data/constants";
@@ -19,6 +19,10 @@ import ToggleButton from "@/components/ui/ToggleButton";
 import { CategoryPill } from "@/components/ui/CategoryPill";
 import { Category } from "@/types/domain";
 import { useActorLabel } from "@/domain/actor";
+import Input from "@/components/ui/Input";
+import SectionHeader from "../../components/SectionHeader";
+import { Button } from "@/components/ui/Button";
+import { NumberInput } from "@/components/ui/NumberInput";
 
 export default function CategoriesSection() {
   const actor = useActorLabel();
@@ -29,8 +33,8 @@ export default function CategoriesSection() {
     updateCategory,
     reorderCategories,
     deleteCategory,
-  } = useCatalog();
-  const { courses } = useCourses();
+    isSaving,
+  } = useCatalog({ categories: true, programs: true });
   const { entries } = useEntries();
   const [editingCatKey, setEditingCatKey] = useState<string | null>(null); // en kategori-nøgle, "__new__" eller null
   const [categoryDraft, setCategoryDraft] = useState<Category | null>(null);
@@ -58,6 +62,7 @@ export default function CategoriesSection() {
       CATEGORY_PALETTE[0];
     setEditingCatKey("__new__");
     setCategoryDraft({
+      id: "",
       key: "",
       label: "",
       short: "",
@@ -100,7 +105,7 @@ export default function CategoriesSection() {
       return;
     }
 
-    const fields: Omit<Category, "key"> = {
+    const fields: Omit<Category, "key" | "id"> = {
       label,
       short,
       defaultTarget,
@@ -112,7 +117,7 @@ export default function CategoriesSection() {
 
     if (editingCatKey === "__new__") {
       const taken: Record<string, unknown> = { ...CATEGORIES };
-      for (const x of [...Object.values(courses), ...Object.values(programs)]) {
+      for (const x of Object.values(programs)) {
         for (const k of Object.keys(x.targets || {})) {
           taken[k] = true;
         }
@@ -215,9 +220,9 @@ export default function CategoriesSection() {
       className="border-t border-border px-4 pb-4 pt-3.5"
       style={{ borderTop: "none", paddingTop: 16 }}
     >
-      <div className="flex gap-3">
-        <Field label="Navn">
-          <input
+      <div className="flex justify-around flex-wrap gap-4 mb-4 md:mb-0">
+        <Field label="Navn" className="flex-1">
+          <Input
             type="text"
             value={categoryDraft.label}
             onChange={(e) =>
@@ -229,8 +234,9 @@ export default function CategoriesSection() {
         <Field
           label="Kort navn"
           hint="Vises på knapperne, når kursisten registrerer."
+          className="flex-1"
         >
-          <input
+          <Input
             type="text"
             value={categoryDraft.short}
             onChange={(e) =>
@@ -239,82 +245,88 @@ export default function CategoriesSection() {
             placeholder="Fx Supervision"
           />
         </Field>
+        <Field
+          label="Standard-delmål for nye hold"
+          hint="Foreslås, når der oprettes nye hold og uddannelser. 
+          Ændrer ikke eksisterende hold."
+          className="flex-1"
+        >
+          <NumberInput
+            min={0}
+            value={categoryDraft.defaultTarget}
+            onChange={(e) =>
+              setCategoryDraft({
+                ...categoryDraft,
+                defaultTarget: Number(e.target.value),
+              })
+            }
+          />
+        </Field>
       </div>
-      <Field
-        label="Standard-delmål for nye hold"
-        hint="Foreslås, når der oprettes nye hold og uddannelser. Ændrer ikke eksisterende hold."
-      >
-        <input
-          type="number"
-          min="0"
-          value={categoryDraft.defaultTarget}
-          onChange={(e) =>
-            setCategoryDraft({
-              ...categoryDraft,
-              defaultTarget: Number(e.target.value),
-            })
-          }
-        />
-      </Field>
-      <div className="mb-3.5 block">
-        <span className="mb-1.5 block text-xs font-semibold text-ink-soft">
-          Farve
-        </span>
-        <div className="swatch-row">
-          {CATEGORY_PALETTE.map((p) => (
-            <button
-              key={p.color}
-              type="button"
-              className={`swatch ${categoryDraft.color === p.color ? "active" : ""}`}
-              style={{ background: p.color }}
-              title={p.color}
-              onClick={() =>
-                setCategoryDraft({
-                  ...categoryDraft,
-                  color: p.color,
-                  soft: p.soft,
-                })
-              }
+
+      <div className="mb-3.5 flex flex-col md:flex-row justify-center items-center gap-4 md:gap-20">
+        <div>
+          <span className="mb-1.5 block text-xs font-semibold text-ink-soft">
+            Farve
+          </span>
+          <div className="grid grid-cols-4 gap-2">
+            {CATEGORY_PALETTE.map((p) => (
+              <button
+                key={p.color}
+                type="button"
+                className={`swatch ${categoryDraft.color === p.color ? "active" : ""}`}
+                style={{ background: p.color }}
+                title={p.color}
+                onClick={() =>
+                  setCategoryDraft({
+                    ...categoryDraft,
+                    color: p.color,
+                    soft: p.soft,
+                  })
+                }
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <span className="mb-1.5 block text-xs font-semibold text-ink-soft">
+            Sådan ser knappen ud for kursisten
+          </span>
+          <div className="flex flex-wrap gap-2" style={{ marginTop: 6 }}>
+            <CategoryPill
+              cat={{
+                ...categoryDraft,
+                short:
+                  (categoryDraft.short || "").trim() ||
+                  categoryDraft.label ||
+                  "Kategori",
+              }}
+              active
+              onClick={() => {}}
             />
-          ))}
+            <CategoryPill
+              cat={{
+                ...categoryDraft,
+                short:
+                  (categoryDraft.short || "").trim() ||
+                  categoryDraft.label ||
+                  "Kategori",
+              }}
+              active={false}
+              onClick={() => {}}
+            />
+          </div>
         </div>
+        <ToggleButton
+          label='Kræver "Navn på terapeut" ved registrering'
+          checked={categoryDraft.requiresTherapist}
+          onChange={(requiresTherapist) =>
+            setCategoryDraft({ ...categoryDraft, requiresTherapist })
+          }
+          className="flex text-md gap-4"
+        />
       </div>
-      <ToggleButton
-        label='Kræver "Navn på terapeut" ved registrering'
-        checked={categoryDraft.requiresTherapist}
-        onChange={(requiresTherapist) =>
-          setCategoryDraft({ ...categoryDraft, requiresTherapist })
-        }
-      />
-      <div className="mb-3.5 block" style={{ marginTop: 12 }}>
-        <span className="mb-1.5 block text-xs font-semibold text-ink-soft">
-          Sådan ser knappen ud for kursisten
-        </span>
-        <div className="flex flex-wrap gap-2" style={{ marginTop: 6 }}>
-          <CategoryPill
-            cat={{
-              ...categoryDraft,
-              short:
-                (categoryDraft.short || "").trim() ||
-                categoryDraft.label ||
-                "Kategori",
-            }}
-            active
-            onClick={() => {}}
-          />
-          <CategoryPill
-            cat={{
-              ...categoryDraft,
-              short:
-                (categoryDraft.short || "").trim() ||
-                categoryDraft.label ||
-                "Kategori",
-            }}
-            active={false}
-            onClick={() => {}}
-          />
-        </div>
-      </div>
+
       {editingCatKey === "__new__" && (
         <p
           className="mt-1 block text-[11px] text-ink-soft"
@@ -328,52 +340,49 @@ export default function CategoriesSection() {
         <div className="-mt-1.5 mb-3 text-xs text-[#a14b36]">{catError}</div>
       )}
       <div className="mt-4.5 flex gap-2.5">
-        <button
-          className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
-          onClick={cancelCat}
-        >
+        <Button variant="secondary" className="w-full" onClick={cancelCat}>
           Annuller
-        </button>
-        <button
-          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+        </Button>
+        <Button
+          variant="primary"
+          className="w-full"
           onClick={saveCat}
+          disabled={isSaving}
+          aria-busy={isSaving}
         >
-          {editingCatKey === "__new__" ? "Opret kategori" : "Gem kategori"}
-        </button>
+          {isSaving
+            ? "Gemmer…"
+            : editingCatKey === "__new__"
+              ? "Opret kategori"
+              : "Gem kategori"}
+        </Button>
       </div>
     </div>
   );
 
   return (
     <>
-      <div
-        className="mt-5.5 flex items-center justify-between"
-        style={{ marginTop: 0 }}
-      >
-        <div
-          className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
-          style={{ margin: 0 }}
-        >
-          Timekategorier
-        </div>
+      <div className="flex items-center justify-between mb-2">
+        <SectionHeader icon={<Calendar size={20} />} title="Timekategorier" />
+
         {editingCatKey === null && (
-          <button
-            className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
-            onClick={startNewCat}
-          >
+          <Button variant="pill" size="xsmall" onClick={startNewCat}>
             <PlusCircle size={14} /> Tilføj kategori
-          </button>
+          </Button>
         )}
       </div>
-      <p
-        className="mb-3.5 text-[13px] leading-normal text-ink-soft"
-        style={{ marginTop: 0 }}
-      >
+      <p className="mb-3.5 text-sm leading-normal text-ink-soft">
         Kategorierne er de timetyper, kursisterne registrerer, og som hvert hold
-        har delmål for. Rækkefølgen her er også rækkefølgen i appen. En
-        kategori uden registreringer kan slettes; har den registreringer, kan
-        den arkiveres, så timerne bevares i historikken.
+        har delmål for. Rækkefølgen her er også rækkefølgen i appen. En kategori
+        uden registreringer kan slettes; har den registreringer, kan den
+        arkiveres, så timerne bevares i historikken.
       </p>
+
+      {editingCatKey === "__new__" && (
+        <div className="mb-2.5 overflow-hidden rounded-md border border-border bg-card">
+          {catForm}
+        </div>
+      )}
 
       {activeCats.map((c, idx) => {
         const count = countFor(c.key);
@@ -383,59 +392,41 @@ export default function CategoriesSection() {
             : null;
         return (
           <div
-            className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card"
+            className="mb-2.5 overflow-hidden rounded-md border border-border bg-card"
             key={c.key}
           >
             {editingCatKey === c.key ? (
               catForm
             ) : (
-              <div
-                className="border-t border-border px-4 pb-4 pt-3.5"
-                style={{ borderTop: "none" }}
-              >
-                <div
-                  className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0"
-                  style={{ paddingTop: 0 }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      alignItems: "flex-start",
-                      minWidth: 0,
-                    }}
-                  >
+              <div className="p-4">
+                <div className="flex items-center justify-between gap-2.5 ">
+                  <div className="flex gap-2">
                     <span
-                      style={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: "50%",
-                        background: c.color,
-                        flexShrink: 0,
-                        marginTop: 4,
-                      }}
+                      className="size-2.5 mt-1 rounded-full"
+                      style={{ background: c.color }}
                     />
                     <div>
                       <div className="text-sm font-semibold">{c.label}</div>
                       <div className="mt-px text-xs text-ink-soft">
-                        Kort navn: {c.short} · Standard-delmål{" "}
-                        {c.defaultTarget} t
-                        {c.requiresTherapist ? " · Kræver terapeut" : ""} ·{" "}
+                        Kort navn: {c.short} · Standard-delmål {c.defaultTarget}{" "}
+                        t{c.requiresTherapist ? " · Kræver terapeut" : ""} ·{" "}
                         {count} registreringer
                       </div>
                     </div>
                   </div>
                   <div className="flex shrink-0 gap-1.5">
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                    <Button
+                      variant="icon"
+                      size="icon"
                       disabled={idx === 0 || editingCatKey !== null}
                       onClick={() => moveCat(c.key, -1)}
                       title="Flyt op"
                     >
                       <ArrowUp size={14} />
-                    </button>
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                    </Button>
+                    <Button
+                      variant="icon"
+                      size="icon"
                       disabled={
                         idx === activeCats.length - 1 || editingCatKey !== null
                       }
@@ -443,18 +434,20 @@ export default function CategoriesSection() {
                       title="Flyt ned"
                     >
                       <ArrowDown size={14} />
-                    </button>
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                    </Button>
+                    <Button
+                      variant="icon"
+                      size="icon"
                       disabled={editingCatKey !== null}
                       onClick={() => startEditCat(c)}
                       title="Redigér"
                     >
                       <Pencil size={14} />
-                    </button>
+                    </Button>
                     {count === 0 ? (
-                      <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                      <Button
+                        variant="icon"
+                        size="icon"
                         disabled={
                           editingCatKey !== null || activeCats.length <= 1
                         }
@@ -467,10 +460,11 @@ export default function CategoriesSection() {
                         title="Slet"
                       >
                         <Trash2 size={14} />
-                      </button>
+                      </Button>
                     ) : (
-                      <button
-                        className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                      <Button
+                        variant="icon"
+                        size="icon"
                         disabled={
                           editingCatKey !== null || activeCats.length <= 1
                         }
@@ -483,13 +477,13 @@ export default function CategoriesSection() {
                         title="Arkivér"
                       >
                         <Archive size={14} />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
                 {confirming && (
-                  <div className="mb-1" style={{ marginTop: 10 }}>
-                    <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
+                  <div className="my-2">
+                    <div className="flex items-start gap-1.5 text-xs leading-normal text-secondary">
                       <AlertTriangle size={14} />
                       {confirming === "delete" ? (
                         <span>
@@ -505,18 +499,17 @@ export default function CategoriesSection() {
                         </span>
                       )}
                     </div>
-                    <div
-                      className="mt-4.5 flex gap-2.5"
-                      style={{ marginTop: 10 }}
-                    >
-                      <button
-                        className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                    <div className="mt-2 flex gap-2.5">
+                      <Button
+                        variant="secondary"
+                        className="w-full"
                         onClick={() => setConfirmCatAction(null)}
                       >
                         Annuller
-                      </button>
-                      <button
-                        className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                      </Button>
+                      <Button
+                        variant="primary"
+                        className="w-full"
                         onClick={() =>
                           confirming === "delete"
                             ? deleteCat(c.key)
@@ -524,7 +517,7 @@ export default function CategoriesSection() {
                         }
                       >
                         {confirming === "delete" ? "Ja, slet" : "Ja, arkivér"}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -533,52 +526,23 @@ export default function CategoriesSection() {
           </div>
         );
       })}
-      {editingCatKey === "__new__" && (
-        <div className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card">
-          {catForm}
-        </div>
-      )}
 
       {archivedCats.length > 0 && (
         <>
-          <div
-            className="mb-1.5 block text-xs font-semibold text-ink-soft"
-            style={{ margin: "18px 0 8px" }}
-          >
+          <div className="mb-1.5 mt-4 block text-xs font-semibold text-ink-soft">
             Arkiverede kategorier
           </div>
           {archivedCats.map((c) => (
             <div
-              className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card"
+              className="mb-2.5 overflow-hidden rounded-md border border-border bg-card opacity-85"
               key={c.key}
-              style={{ opacity: 0.85 }}
             >
-              <div
-                className="border-t border-border px-4 pb-4 pt-3.5"
-                style={{ borderTop: "none" }}
-              >
-                <div
-                  className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0"
-                  style={{ paddingTop: 0 }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      alignItems: "flex-start",
-                      minWidth: 0,
-                    }}
-                  >
+              <div className="p-4">
+                <div className="flex items-center justify-between gap-2.5">
+                  <div className="flex gap-2 items-start min-w-0">
                     <span
-                      style={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: "50%",
-                        background: c.color,
-                        flexShrink: 0,
-                        marginTop: 4,
-                        opacity: 0.6,
-                      }}
+                      className="size-2.5 mt-1 rounded-full"
+                      style={{ background: c.color }}
                     />
                     <div>
                       <div className="text-sm font-semibold">{c.label}</div>

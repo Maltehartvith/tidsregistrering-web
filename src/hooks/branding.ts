@@ -33,5 +33,8 @@ export function useSaveBranding() {
   return useDomainMutation({
     mutationFn: brandingApi.updateBranding,
     invalidateKeys: [queryKeys.branding],
+    applyResult: (queryClient, data) => {
+      queryClient.setQueryData(queryKeys.branding, data);
+    },
   });
 }

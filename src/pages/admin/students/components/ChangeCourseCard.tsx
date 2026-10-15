@@ -5,8 +5,9 @@ import ToggleButton from "@/components/ui/ToggleButton";
 import { useCourses } from "@/context/CoursesContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useActorLabel } from "@/domain/actor";
-import { MutationFeedback } from "@/types/log";
-import { Student } from "@/types/user";
+import { activeCourseId } from "@/domain/userCourses";
+import type { MutationFeedback } from "@/types/log";
+import type { User, UserCourseWrite } from "@/types/user";
 import { useState } from "react";
 
 type ChangeCourseCardProps = {
@@ -14,45 +15,59 @@ type ChangeCourseCardProps = {
 };
 
 const ChangeCourseCard = ({ setShowMoveHold }: ChangeCourseCardProps) => {
-  const { selectedStudent, updateStudent: persistStudent } = useStudents();
+  const { selectedStudent, updateStudent: persistStudent, isSaving } =
+    useStudents();
   const { courses } = useCourses();
   const actor = useActorLabel();
   const [moveTargetId, setMoveTargetId] = useState("");
   const [moveKeepAsLink, setMoveKeepAsLink] = useState(true);
 
-  if (!selectedStudent) return null;
+  const currentCourseId = selectedStudent
+    ? activeCourseId(selectedStudent)
+    : null;
+  if (!selectedStudent || !currentCourseId) return null;
+
+  const currentCourse = courses[currentCourseId];
 
   const patchStudent = (
-    patch: Partial<Student>,
-    feedback?: MutationFeedback<Student> | null,
-  ) => persistStudent(selectedStudent.id, patch, feedback);
+    coursesWrite: UserCourseWrite[],
+    feedback?: MutationFeedback<User> | null,
+  ) => persistStudent(selectedStudent.id, { courses: coursesWrite }, feedback);
 
   const moveToHold = async () => {
-    if (!moveTargetId || moveTargetId === selectedStudent.courseId) {
+    if (!moveTargetId || moveTargetId === currentCourse?.key) {
       setShowMoveHold(false);
       return;
     }
-    const oldcourseId = selectedStudent.courseId;
-    const oldHoldLabel = courses[oldcourseId]?.label || oldcourseId;
-    const newHoldLabel = courses[moveTargetId]?.label || moveTargetId;
-    const restOfLinks = (selectedStudent.courseLinks || []).filter(
-      (l) => l.courseId !== oldcourseId && l.courseId !== moveTargetId,
+    const target = Object.values(courses).find((h) => h.key === moveTargetId);
+    if (!target) return;
+    const oldCourseId = currentCourseId;
+    const oldCourseLabel =
+      currentCourse?.label || currentCourse?.key || "det tidligere hold";
+    const newCourseLabel = target.label || target.key;
+    const rest = selectedStudent.courses.filter(
+      (course) => course.id !== oldCourseId && course.id !== target.id,
     );
-    const newLinks = moveKeepAsLink
-      ? [...restOfLinks, { courseId: oldcourseId, included: true }]
-      : restOfLinks;
-    await patchStudent(
-      { courseLinks: newLinks },
-      {
-        toastSuccessMessage: `${selectedStudent.name} flyttet til ${newHoldLabel}`,
-        logArgs: {
-          studentId: selectedStudent.id,
-          description: moveKeepAsLink
-            ? `${actor} flyttede ${selectedStudent.name} fra ${oldHoldLabel} til ${newHoldLabel} (${oldHoldLabel} beholdt som tidligere hold, timer tæller fortsat med)`
-            : `${actor} flyttede ${selectedStudent.name} fra ${oldHoldLabel} til ${newHoldLabel} (${oldHoldLabel} fjernet helt, fx pga. fejlregistrering)`,
-        },
+    const nextCourses: UserCourseWrite[] = [
+      { id: target.id, active: true, included: true },
+      ...(moveKeepAsLink
+        ? [{ id: oldCourseId, active: false, included: true }]
+        : []),
+      ...rest.map((course) => ({
+        id: course.id,
+        active: false,
+        included: course.included,
+      })),
+    ];
+    await patchStudent(nextCourses, {
+      toastSuccessMessage: `${selectedStudent.name} flyttet til ${newCourseLabel}`,
+      logArgs: {
+        userId: selectedStudent.id,
+        description: moveKeepAsLink
+          ? `${actor} flyttede ${selectedStudent.name} fra ${oldCourseLabel} til ${newCourseLabel} (${oldCourseLabel} beholdt som tidligere hold, timer tæller fortsat med)`
+          : `${actor} flyttede ${selectedStudent.name} fra ${oldCourseLabel} til ${newCourseLabel} (${oldCourseLabel} fjernet helt, fx pga. fejlregistrering)`,
       },
-    );
+    });
     setShowMoveHold(false);
     setMoveTargetId("");
     setMoveKeepAsLink(true);
@@ -61,7 +76,7 @@ const ChangeCourseCard = ({ setShowMoveHold }: ChangeCourseCardProps) => {
   return (
     <div className="mt-4 mb-1.5 rounded-xl border-[1.5px] border-dashed border-border p-3.5 bg-paper">
       <ToggleButton
-        label={`Behold ${courses[selectedStudent.courseId].label} som tidligere hold (timer tæller stadig med)`}
+        label={`Behold ${currentCourse?.label || "det nuværende hold"} som tidligere hold (timer tæller stadig med)`}
         checked={moveKeepAsLink}
         onChange={setMoveKeepAsLink}
         size="sm"
@@ -72,7 +87,7 @@ const ChangeCourseCard = ({ setShowMoveHold }: ChangeCourseCardProps) => {
           className="mt-1 block text-[11px] text-ink-soft"
           style={{ color: "var(--secondary)" }}
         >
-          {courses[selectedStudent.courseId].label} fjernes helt fra{" "}
+          {currentCourse?.label || "Det nuværende hold"} fjernes helt fra{" "}
           {selectedStudent.name}s historik — brug kun dette, hvis tilknytningen
           var en ren fejl.
         </p>
@@ -86,8 +101,8 @@ const ChangeCourseCard = ({ setShowMoveHold }: ChangeCourseCardProps) => {
           value={moveTargetId}
           onChange={(e) => setMoveTargetId(e.target.value)}
           options={Object.values(courses)
-            .filter((h) => h.id !== selectedStudent.courseId)
-            .map((h) => h.id)}
+            .filter((h) => h.id !== currentCourseId)
+            .map((h) => ({ value: h.key, label: h.key }))}
           placeholder="Vælg hold…"
         />
       </Field>
@@ -107,9 +122,10 @@ const ChangeCourseCard = ({ setShowMoveHold }: ChangeCourseCardProps) => {
           variant="primary"
           size="small"
           onClick={moveToHold}
-          disabled={!moveTargetId}
+          disabled={!moveTargetId || isSaving}
+          aria-busy={isSaving}
         >
-          Flyt kursisten
+          {isSaving ? "Flytter…" : "Flyt kursisten"}
         </Button>
       </div>
     </div>

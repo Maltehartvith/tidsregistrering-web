@@ -1,79 +1,123 @@
 import type { CategoriesMap, ProgramsMap } from "../types/domain";
 import { TimeEntry } from "@/types/entry";
 import type { Course, CourseMap } from "../types/course";
-import type { Student } from "../types/user";
+import type { User } from "../types/user";
 import { TRANSFER_WINDOW_YEARS } from "../data/constants";
+import { includedCourseIds } from "./userCourses";
 
-export function eligibleCourseIdsForStudent(student: Student): string[] {
-  return [
-    student.courseId,
-    ...(student.courseLinks || [])
-      .filter((l) => l.included)
-      .map((l) => l.courseId),
-  ];
+export function eligibleCourseIdsForStudent(student: User): string[] {
+  return includedCourseIds(student);
 }
 
 /** @deprecated use eligibleCourseIdsForStudent */
 export const eligibleHoldIdsForStudent = eligibleCourseIdsForStudent;
 
-export function totalsForStudent(
-  student: Student,
+function hoursFromUserCourses(
+  student: User,
+  categories: CategoriesMap,
+  courseId?: string,
+): Record<string, number> {
+  const rows =
+    courseId != null
+      ? student.courses.filter((course) => course.id === courseId)
+      : student.courses.filter((course) => course.included);
+
+  return Object.fromEntries(
+    Object.values(categories).map((cat) => [
+      cat.key,
+      rows.reduce((sum, course) => {
+        const match = course.categories.find(
+          (row) => row.id === cat.id || row.short === cat.short,
+        );
+        return sum + (match?.hours ?? 0);
+      }, 0),
+    ]),
+  );
+}
+
+function hoursFromEntries(
+  student: User,
   entries: TimeEntry[],
   categories: CategoriesMap,
+  courseIds: string[],
 ): Record<string, number> {
-  const eligibleCourseIds = eligibleCourseIdsForStudent(student);
   return Object.fromEntries(
     Object.keys(categories).map((catKey) => [
       catKey,
       entries
         .filter(
-          (e) =>
-            e.studentId === student.id &&
-            e.category === catKey &&
-            eligibleCourseIds.includes(e.courseId),
+          (entry) =>
+            entry.userId === student.id &&
+            entry.category === catKey &&
+            courseIds.includes(entry.courseId),
         )
-        .reduce((sum, e) => sum + Number(e.hours), 0),
+        .reduce((sum, entry) => sum + Number(entry.hours), 0),
     ]),
+  );
+}
+
+/** Prefer server-aggregated user.courses hours; fall back to summing entries. */
+export function totalsForStudent(
+  student: User,
+  entries: TimeEntry[],
+  categories: CategoriesMap,
+): Record<string, number> {
+  const hasServerHours = student.courses.some(
+    (course) => course.categories.length > 0,
+  );
+  if (hasServerHours) {
+    return hoursFromUserCourses(student, categories);
+  }
+  return hoursFromEntries(
+    student,
+    entries,
+    categories,
+    eligibleCourseIdsForStudent(student),
   );
 }
 
 export function totalsForStudentOnHold(
-  student: Student,
+  student: User,
   entries: TimeEntry[],
   courseId: string,
   categories: CategoriesMap,
 ): Record<string, number> {
+  const course = student.courses.find((row) => row.id === courseId);
+  if (course && course.categories.length > 0) {
+    return hoursFromUserCourses(student, categories, courseId);
+  }
+  return hoursFromEntries(student, entries, categories, [courseId]);
+}
+
+export function targetsForStudent(
+  student: User,
+  courses: CourseMap | undefined,
+  programs: ProgramsMap,
+  categories: CategoriesMap,
+): Record<string, number> {
+  const courseMap = courses ?? {};
+  // Goals live on Program; sum each distinct program among included courses once.
+  const programIds = new Set(
+    eligibleCourseIdsForStudent(student)
+      .map((id) => courseMap[id]?.programId)
+      .filter((id): id is string => Boolean(id)),
+  );
   return Object.fromEntries(
     Object.keys(categories).map((catKey) => [
       catKey,
-      entries
-        .filter(
-          (e) =>
-            e.studentId === student.id &&
-            e.category === catKey &&
-            e.courseId === courseId,
-        )
-        .reduce((sum, e) => sum + Number(e.hours), 0),
+      [...programIds].reduce((sum, programId) => {
+        return sum + (programs[programId]?.targets?.[catKey] ?? 0);
+      }, 0),
     ]),
   );
 }
 
-export function targetsForStudent(
-  student: Student,
-  courses: CourseMap | undefined,
-  categories: CategoriesMap,
+export function targetsForCourse(
+  course: Course | undefined,
+  programs: ProgramsMap,
 ): Record<string, number> {
-  const courseMap = courses ?? {};
-  const eligibleCourseIds = eligibleCourseIdsForStudent(student);
-  return Object.fromEntries(
-    Object.keys(categories).map((catKey) => [
-      catKey,
-      eligibleCourseIds.reduce(
-        (sum, id) => sum + (courseMap[id]?.targets?.[catKey] ?? 0),
-        0,
-      ),
-    ]),
-  );
+  if (!course) return {};
+  return programs[course.programId]?.targets ?? {};
 }
 
 export function programName(
@@ -85,9 +129,10 @@ export function programName(
 }
 
 export function coursesWithinTransferWindow(
-  courseId: string,
+  courseId: string | null,
   courses: CourseMap,
 ): Course[] {
+  if (!courseId) return [];
   const base = courses[courseId];
   if (!base) return [];
   return Object.values(courses).filter(
@@ -98,8 +143,10 @@ export function coursesWithinTransferWindow(
 }
 
 export function courseLabel(
-  courseId: string,
+  courseId: string | null | undefined,
   courses: CourseMap | undefined,
 ): string {
-  return courses?.[courseId]?.label || `Hold ${courseId} (slettet)`;
+  if (!courseId) return "Hold (slettet)";
+  const course = courses?.[courseId];
+  return course?.label || (course?.key ? `Hold ${course.key}` : "Hold (slettet)");
 }

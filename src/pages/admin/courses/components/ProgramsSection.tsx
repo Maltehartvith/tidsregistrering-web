@@ -6,21 +6,22 @@ import {
   Check,
   X,
   AlertTriangle,
+  Book,
 } from "lucide-react";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
-import {
-  defaultTargets,
-  zeroTargets,
-  formatTargets,
-} from "@/domain/catalog";
+import { defaultTargets, zeroTargets, formatTargets } from "@/domain/catalog";
 import { Field } from "@/components/ui/Field";
 import { Program, ProgramDraft } from "@/types/domain";
 import { useActorLabel } from "@/domain/actor";
 import type { MutationFeedback } from "@/types/log";
+import SectionHeader from "../../components/SectionHeader";
+import { Button } from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import { NumberInput } from "@/components/ui/NumberInput";
 
-/** Builds a stable program id from a (trimmed) display name. */
-export const programIdFromName = (name: string) =>
+/** Builds a stable program key from a (trimmed) display name. */
+export const programKeyFromName = (name: string) =>
   name
     .trim()
     .toLowerCase()
@@ -45,7 +46,8 @@ export function ProgramsSection({
     createProgram: createProgramApi,
     updateProgram,
     deleteProgram: deleteProgramApi,
-  } = useCatalog();
+    isSaving,
+  } = useCatalog({ categories: true, programs: true });
   const { courses } = useCourses();
 
   const [showCreateProgram, setShowCreateProgram] = useState(false);
@@ -67,9 +69,9 @@ export function ProgramsSection({
     feedback?: MutationFeedback<Program> | null,
   ) => {
     const trimmed = name.trim();
-    const id = programIdFromName(trimmed);
-    await createProgramApi(
-      { id, name: trimmed, targets },
+    const key = programKeyFromName(trimmed);
+    const created = await createProgramApi(
+      { key, name: trimmed, targets },
       {
         toastSuccessMessage: feedback?.toastSuccessMessage,
         logArgs: feedback?.logArgs ?? {
@@ -77,7 +79,7 @@ export function ProgramsSection({
         },
       },
     );
-    return id;
+    return created.id;
   };
 
   const submitNewProgram = async () => {
@@ -88,7 +90,8 @@ export function ProgramsSection({
     if (
       Object.values(programs).some(
         (p) =>
-          p.name.toLowerCase() === standaloneProgramName.trim().toLowerCase(),
+          p.name.toLowerCase() === standaloneProgramName.trim().toLowerCase() ||
+          p.key === programKeyFromName(standaloneProgramName),
       )
     ) {
       setCreateProgramError("Der findes allerede en uddannelse med det navn.");
@@ -181,26 +184,19 @@ export function ProgramsSection({
 
   return (
     <>
-      <div
-        className="mt-5.5 flex items-center justify-between"
-        style={{ marginTop: 0 }}
-      >
-        <div
-          className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
-          style={{ margin: 0 }}
-        >
-          Uddannelser
-        </div>
+      <div className="my-2 flex items-center justify-between">
+        <SectionHeader icon={<Book size={20} />} title="Uddannelser" />
         {!showCreateProgram && (
-          <button
-            className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
+          <Button
+            variant="pill"
+            size="small"
             onClick={() => {
               setShowCreateProgram(true);
               setCreateProgramError("");
             }}
           >
             <PlusCircle size={14} /> Opret uddannelse
-          </button>
+          </Button>
         )}
       </div>
 
@@ -210,8 +206,11 @@ export function ProgramsSection({
             className="border-t border-border px-4 pb-4 pt-3.5"
             style={{ borderTop: "none", paddingTop: 16 }}
           >
-            <Field label="Navn på uddannelse" hint="Fx Psykoterapeutuddannelsen">
-              <input
+            <Field
+              label="Navn på uddannelse"
+              hint="Fx Psykoterapeutuddannelsen"
+            >
+              <Input
                 type="text"
                 value={standaloneProgramName}
                 onChange={(e) => setStandaloneProgramName(e.target.value)}
@@ -225,22 +224,22 @@ export function ProgramsSection({
               <div className="flex gap-3">
                 {Object.values(CATEGORIES).map((c) => (
                   <div key={c.key} style={{ flex: 1 }}>
-                    <label
-                      className="mt-1 block text-[11px] text-ink-soft"
-                      style={{ display: "block", marginBottom: 4 }}
-                    >
-                      {c.short}
-                    </label>
-                    <input
-                      type="number"
-                      value={standaloneProgramTargets[c.key] ?? 0}
-                      onChange={(e) =>
-                        setStandaloneProgramTargets({
-                          ...standaloneProgramTargets,
-                          [c.key]: Number(e.target.value),
-                        })
-                      }
-                    />
+                    <Field label={c.short}>
+                      <NumberInput
+                        min={0}
+                        step={1}
+                        inputMode="numeric"
+                        value={standaloneProgramTargets[c.key] ?? 0}
+                        onChange={(e) =>
+                          setStandaloneProgramTargets({
+                            ...standaloneProgramTargets,
+                            [c.key]: Number(e.target.value),
+                          })
+                        }
+                        placeholder="0"
+                        required
+                      />
+                    </Field>
                   </div>
                 ))}
               </div>
@@ -251,18 +250,24 @@ export function ProgramsSection({
               </div>
             )}
             <div className="mt-4.5 flex gap-2.5">
-              <button
-                className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+              <Button
+                variant="secondary"
+                className="flex-1"
                 onClick={() => setShowCreateProgram(false)}
+                disabled={isSaving}
+                aria-busy={isSaving}
               >
                 Annuller
-              </button>
-              <button
-                className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1"
                 onClick={submitNewProgram}
+                disabled={isSaving}
+                aria-busy={isSaving}
               >
-                Opret uddannelse
-              </button>
+                {isSaving ? "Opretter uddannelse…" : "Opret uddannelse"}
+              </Button>
             </div>
           </div>
         </div>
@@ -282,7 +287,7 @@ export function ProgramsSection({
               style={{ borderTop: "none" }}
             >
               <div
-                className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0"
+                className="flex items-center justify-between gap-2.5 border-b border-border  last:border-b-0"
                 style={{ paddingTop: 0 }}
               >
                 <div>
@@ -311,16 +316,18 @@ export function ProgramsSection({
                   </div>
                 ) : (
                   <div className="flex shrink-0 gap-1.5">
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                    <Button
+                      variant="icon"
+                      size="icon"
                       disabled={editingProgramId !== null}
                       onClick={() => startEditProgram(p)}
                       title="Redigér uddannelse"
                     >
                       <Pencil size={14} />
-                    </button>
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                    </Button>
+                    <Button
+                      variant="icon"
+                      size="icon"
                       disabled={editingProgramId !== null}
                       onClick={() =>
                         setConfirmDeleteProgramId(
@@ -330,14 +337,14 @@ export function ProgramsSection({
                       title="Slet uddannelse"
                     >
                       <Trash2 size={14} />
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
               {editingProgramId === p.id && programDraft && (
-                <div style={{ marginTop: 12 }}>
+                <div className="mt-3">
                   <Field label="Navn">
-                    <input
+                    <Input
                       type="text"
                       value={programDraft.name}
                       onChange={(e) =>
@@ -348,37 +355,39 @@ export function ProgramsSection({
                       }
                     />
                   </Field>
-                  <Field
-                    label="Totalmål for hele uddannelsen"
-                    hint="Til reference. Kursisternes regnskab regnes ud fra delmålene på de hold, de går på."
-                  >
+                  <Field label="Totalmål for hele uddannelsen" className="">
                     <div className="flex gap-3">
                       {Object.values(CATEGORIES).map((c) => (
                         <div key={c.key} style={{ flex: 1 }}>
-                          <label
-                            className="mt-1 block text-[11px] text-ink-soft"
-                            style={{ display: "block", marginBottom: 4 }}
-                          >
-                            {c.short}
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={programDraft.targets[c.key] ?? 0}
-                            onChange={(e) =>
-                              setProgramDraft({
-                                ...programDraft,
-                                targets: {
-                                  ...programDraft.targets,
-                                  [c.key]: Number(e.target.value),
-                                },
-                              })
-                            }
-                          />
+                          <Field label={c.short} className="mb-0">
+                            <NumberInput
+                              min={0}
+                              step={1}
+                              inputMode="numeric"
+                              value={programDraft.targets[c.key] ?? 0}
+                              onChange={(e) =>
+                                setProgramDraft({
+                                  ...programDraft,
+                                  targets: {
+                                    ...programDraft.targets,
+                                    [c.key]: Number(e.target.value),
+                                  },
+                                })
+                              }
+                              placeholder="0"
+                              required
+                            />
+                          </Field>
                         </div>
                       ))}
                     </div>
                   </Field>
+                  <div>
+                    <p className="mt-2 mb-4 block text-[11px] text-ink-soft">
+                      Til reference. Kursisternes regnskab regnes ud fra
+                      delmålene på de hold, de går på.
+                    </p>
+                  </div>
                   <div
                     className="mb-1.5 block text-xs font-semibold text-ink-soft"
                     style={{ marginBottom: 6 }}
@@ -386,9 +395,14 @@ export function ProgramsSection({
                     Hold under uddannelsen og deres delmål
                   </div>
                   {coursesUsingProgram.length === 0 ? (
-                    <p className="mt-1 block text-[11px] text-ink-soft">
-                      Ingen hold bruger uddannelsen endnu.
-                    </p>
+                    <div
+                      className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5"
+                      style={{ marginBottom: 6 }}
+                    >
+                      <p className="mt-1 block text-md text-ink-soft">
+                        Ingen hold bruger uddannelsen endnu.
+                      </p>
+                    </div>
                   ) : (
                     <div
                       className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5"
@@ -427,7 +441,7 @@ export function ProgramsSection({
                             </button>
                             <span className="mt-px text-xs text-ink-soft">
                               Start {h.startYear} · delmål{" "}
-                              {formatTargets(h.targets, CATEGORIES)}
+                              {formatTargets(p.targets, CATEGORIES)}
                             </span>
                           </div>
                         ))}
@@ -443,9 +457,10 @@ export function ProgramsSection({
                       {programError}
                     </div>
                   )}
-                  <div className="mt-4.5 flex gap-2.5">
-                    <button
-                      className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  <div className="mt-4.5 flex w-full gap-2.5">
+                    <Button
+                      variant="secondary"
+                      className="flex-1"
                       onClick={() => {
                         setEditingProgramId(null);
                         setProgramDraft(null);
@@ -453,13 +468,16 @@ export function ProgramsSection({
                       }}
                     >
                       Annuller
-                    </button>
-                    <button
-                      className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                    </Button>
+                    <Button
+                      variant="primary"
+                      className="flex-1"
                       onClick={() => saveProgramEdit(p.id)}
+                      disabled={isSaving}
+                      aria-busy={isSaving}
                     >
-                      Gem uddannelse
-                    </button>
+                      {isSaving ? "Gemmer…" : "Gem uddannelse"}
+                    </Button>
                   </div>
                 </div>
               )}
@@ -477,13 +495,22 @@ export function ProgramsSection({
                   >
                     {coursesUsingProgram.map((h) => (
                       <button
-                        key={h.id}
                         className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-primary"
                         style={{ margin: 0, textAlign: "left" }}
                         onClick={() => {
-                          setConfirmDeleteProgramId(null);
-                          onToggleCourse(h.id);
+                          if (openCourseId !== h.id) onToggleCourse(h.id);
+                          setTimeout(
+                            () =>
+                              document
+                                .getElementById(`hold-card-${h.id}`)
+                                ?.scrollIntoView({
+                                  behavior: "smooth",
+                                  block: "start",
+                                }),
+                            60,
+                          );
                         }}
+                        title="Tryk for at hoppe til holdet"
                       >
                         {h.label}
                       </button>

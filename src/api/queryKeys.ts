@@ -32,7 +32,9 @@ export const ALL_AUTH_ROLES: UserRole[] = [
   "administrator",
 ];
 
-export function isStaffRole(role: UserRole | undefined | null): boolean {
+export function isStaffRole(
+  role: UserRole | undefined | null,
+): role is "underviser" | "administrator" {
   return role === "underviser" || role === "administrator";
 }
 

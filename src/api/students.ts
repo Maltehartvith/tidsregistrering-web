@@ -1,24 +1,16 @@
-import type { Student } from "../types/user";
-import type { CourseLink } from "../types/course";
-import { request } from "./request";
+import type { User, UserCourseWrite } from "../types/user";
+import { createKursist, deleteUser, listUsers, updateUser } from "./users";
 
-export async function listStudents(): Promise<Student[]> {
-  return request<Student[]>("/students");
+export async function listStudents(): Promise<User[]> {
+  return listUsers("kursist");
 }
 
 export async function createStudent(input: {
-  id?: string;
   name: string;
   email: string;
-  courseId: string;
-  courseLinks?: CourseLink[];
-  createLogin?: boolean;
-  password?: string;
-}): Promise<Student> {
-  return request<Student>("/students", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  courses: UserCourseWrite[];
+}): Promise<User> {
+  return createKursist(input);
 }
 
 export async function updateStudent(
@@ -26,16 +18,12 @@ export async function updateStudent(
   input: Partial<{
     name: string;
     email: string;
-    courseId: string;
-    courseLinks: CourseLink[];
+    courses: UserCourseWrite[];
   }>,
-): Promise<Student> {
-  return request<Student>(`/students/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: JSON.stringify(input),
-  });
+): Promise<User> {
+  return updateUser(id, input);
 }
 
 export async function deleteStudent(id: string): Promise<void> {
-  await request(`/students/${encodeURIComponent(id)}`, { method: "DELETE" });
+  await deleteUser(id);
 }

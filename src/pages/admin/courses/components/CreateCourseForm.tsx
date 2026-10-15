@@ -1,11 +1,21 @@
 import { useState } from "react";
-import { PlusCircle, ChevronDown } from "lucide-react";
+import { PlusCircle, School } from "lucide-react";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
 import { defaultTargets, formatTargets } from "@/domain/catalog";
 import { Field } from "@/components/ui/Field";
 import { useActorLabel } from "@/domain/actor";
-import { programIdFromName } from "@/pages/admin/courses/components/ProgramsSection";
+import { programKeyFromName } from "@/pages/admin/courses/components/ProgramsSection";
+import SectionHeader from "../../components/SectionHeader";
+import { Button } from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import { NumberInput } from "@/components/ui/NumberInput";
+import { Selector } from "@/components/ui/Selector";
+
+const NEW_PROGRAM = {
+  value: "__new__",
+  label: "+ Opret ny uddannelse…",
+} as const;
 
 type CreateCourseFormProps = {
   /** Called when the user starts creating a course (page closes any open card). */
@@ -20,17 +30,29 @@ export function CreateCourseForm({
   onCreated,
 }: CreateCourseFormProps) {
   const actor = useActorLabel();
-  const { CATEGORIES, programs, createProgram: createProgramApi } =
-    useCatalog();
-  const { courses, createCourse: createCourseApi } = useCourses();
+  const {
+    CATEGORIES,
+    programs,
+    createProgram: createProgramApi,
+    isSaving: catalogSaving,
+  } = useCatalog({ categories: true, programs: true });
+  const {
+    courses,
+    createCourse: createCourseApi,
+    isSaving: courseSaving,
+  } = useCourses();
 
+  const programOptions = Object.values(programs).map((program) => ({
+    value: program.id,
+    label: program.name,
+  }));
   const [showCreate, setShowCreate] = useState(false);
   const [newCourseId, setNewCourseId] = useState("");
   const [newCourseYear, setNewCourseYear] = useState(
     String(new Date().getFullYear()),
   );
   const [newCourseProgramId, setNewCourseProgramId] = useState(
-    Object.keys(programs)[0] || "__new__",
+    programOptions[0]?.value || NEW_PROGRAM.value,
   );
   const [newProgramName, setNewProgramName] = useState("");
   const [newCourseTargets, setNewCourseTargets] = useState(
@@ -38,90 +60,110 @@ export function CreateCourseForm({
   );
   const [createError, setCreateError] = useState("");
 
+  const creatingNewProgram = newCourseProgramId === NEW_PROGRAM.value;
+  const selectedProgram = creatingNewProgram
+    ? null
+    : (programs[newCourseProgramId] ?? null);
+
+  const resetForm = () => {
+    setNewCourseId("");
+    setNewCourseYear(String(new Date().getFullYear()));
+    setNewCourseProgramId(programOptions[0]?.value || NEW_PROGRAM.value);
+    setNewProgramName("");
+    setNewCourseTargets(defaultTargets(CATEGORIES));
+    setCreateError("");
+  };
+
   const createCourse = async () => {
-    const id = newCourseId.trim();
-    if (!id) {
+    const key = newCourseId.trim();
+    if (!key) {
       setCreateError("Angiv et holdnavn, fx 26-100.");
       return;
     }
-    if (courses[id]) {
-      setCreateError(`Hold ${id} findes allerede.`);
+    if (Object.values(courses).some((course) => course.key === key)) {
+      setCreateError(`Hold ${key} findes allerede.`);
       return;
     }
-    let programId = newCourseProgramId;
-    if (programId === "__new__") {
-      if (!newProgramName.trim()) {
+
+    let programId = selectedProgram?.id ?? null;
+    let programLabel = selectedProgram?.name ?? "";
+
+    if (creatingNewProgram || !programId) {
+      const trimmed = newProgramName.trim();
+      if (!trimmed) {
         setCreateError("Angiv et navn til den nye uddannelse.");
         return;
       }
-      const trimmed = newProgramName.trim();
-      programId = programIdFromName(trimmed);
-      await createProgramApi(
-        { id: programId, name: trimmed, targets: newCourseTargets },
+      const programKey = programKeyFromName(trimmed);
+      if (
+        Object.values(programs).some(
+          (program) =>
+            program.key === programKey ||
+            program.name.toLowerCase() === trimmed.toLowerCase(),
+        )
+      ) {
+        setCreateError("Der findes allerede en uddannelse med det navn.");
+        return;
+      }
+      const createdProgram = await createProgramApi(
+        { key: programKey, name: trimmed, targets: newCourseTargets },
         {
           logArgs: {
             description: `${actor} oprettede uddannelsen "${trimmed}" med totalmål ${formatTargets(newCourseTargets, CATEGORIES)}`,
           },
         },
       );
+      programId = createdProgram.id;
+      programLabel = createdProgram.name;
     }
+
     const year = Number(newCourseYear) || new Date().getFullYear();
-    await createCourseApi(
+    const createdCourse = await createCourseApi(
       {
-        id,
-        label: `Hold ${id}`,
+        key,
+        label: `Hold ${key}`,
         startYear: year,
         programId,
-        targets: newCourseTargets,
       },
       {
-        toastSuccessMessage: `Hold ${id} oprettet`,
-        logArgs: {
-          courseId: id,
-          description: `${actor} oprettede hold ${id} under "${programs[programId]?.name || newProgramName}" med delmål ${formatTargets(newCourseTargets, CATEGORIES)}`,
-        },
+        toastSuccessMessage: `Hold ${key} oprettet`,
+        logArgs: (course) => ({
+          courseId: course.id,
+          description: creatingNewProgram
+            ? `${actor} oprettede hold ${key} under "${programLabel}" med totalmål ${formatTargets(newCourseTargets, CATEGORIES)}`
+            : `${actor} oprettede hold ${key} under "${programLabel}"`,
+        }),
       },
     );
-    setNewCourseId("");
-    setNewCourseYear(String(new Date().getFullYear()));
-    setNewProgramName("");
-    setNewCourseTargets(defaultTargets(CATEGORIES));
-    setCreateError("");
+    resetForm();
     setShowCreate(false);
-    onCreated(id);
+    onCreated(createdCourse.id);
   };
 
   return (
     <>
-      <div className="mt-5.5 flex items-center justify-between">
-        <div
-          className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
-          style={{ margin: 0 }}
-        >
-          Hold
-        </div>
+      <div className="my-2 flex items-center justify-between">
+        <SectionHeader icon={<School size={20} />} title="Hold" />
         {!showCreate && (
-          <button
-            className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
+          <Button
+            variant="pill"
+            size="small"
             onClick={() => {
               setShowCreate(true);
               onStartCreate();
             }}
           >
             <PlusCircle size={14} /> Opret hold
-          </button>
+          </Button>
         )}
       </div>
 
       {showCreate && (
         <div className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card">
-          <div
-            className="border-t border-border px-4 pb-4 pt-3.5"
-            style={{ borderTop: "none", paddingTop: 16 }}
-          >
+          <div className="px-4 pb-4 pt-3.5">
             <div className="flex gap-3">
-              <Field label="Holdnavn" hint="Fx 26-100">
-                <input
+              <Field label="Holdnavn">
+                <Input
                   type="text"
                   value={newCourseId}
                   onChange={(e) => setNewCourseId(e.target.value)}
@@ -129,10 +171,14 @@ export function CreateCourseForm({
                 />
               </Field>
               <Field label="Startår">
-                <input
-                  type="number"
-                  value={newCourseYear}
-                  onChange={(e) => setNewCourseYear(e.target.value)}
+                <NumberInput
+                  value={Number(newCourseYear)}
+                  onChange={(e) => setNewCourseYear(String(e.target.value))}
+                  min={new Date().getFullYear()}
+                  max={new Date().getFullYear() + 10}
+                  step={1}
+                  inputMode="numeric"
+                  placeholder="Fx 2026"
                 />
               </Field>
             </div>
@@ -140,27 +186,29 @@ export function CreateCourseForm({
               label="Uddannelse"
               hint="Vælg en eksisterende uddannelse, eller opret en ny."
             >
-              <div className="relative">
-                <select
-                  value={newCourseProgramId}
-                  onChange={(e) => setNewCourseProgramId(e.target.value)}
-                >
-                  {Object.values(programs).map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                  <option value="__new__">+ Opret ny uddannelse…</option>
-                </select>
-                <ChevronDown
-                  size={16}
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
-                />
-              </div>
+              <Selector
+                options={[...programOptions, NEW_PROGRAM]}
+                value={newCourseProgramId}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setNewCourseProgramId(next);
+                  setCreateError("");
+                  if (next !== NEW_PROGRAM.value) {
+                    setNewProgramName("");
+                    const program = programs[next];
+                    if (program) {
+                      setNewCourseTargets({
+                        ...defaultTargets(CATEGORIES),
+                        ...program.targets,
+                      });
+                    }
+                  }
+                }}
+              />
             </Field>
-            {newCourseProgramId === "__new__" && (
+            {creatingNewProgram && (
               <Field label="Navn på ny uddannelse">
-                <input
+                <Input
                   type="text"
                   value={newProgramName}
                   onChange={(e) => setNewProgramName(e.target.value)}
@@ -168,54 +216,58 @@ export function CreateCourseForm({
                 />
               </Field>
             )}
-            <Field
-              label="Holdets delmål"
-              hint="Hvor mange timer skal netop dette hold/år bidrage med i hver kategori?"
-            >
-              <div className="flex gap-3">
-                {Object.values(CATEGORIES).map((c) => (
-                  <div key={c.key} style={{ flex: 1 }}>
-                    <label
-                      className="mt-1 block text-[11px] text-ink-soft"
-                      style={{ display: "block", marginBottom: 4 }}
-                    >
-                      {c.short}
-                    </label>
-                    <input
-                      type="number"
-                      value={newCourseTargets[c.key] ?? 0}
-                      onChange={(e) =>
-                        setNewCourseTargets({
-                          ...newCourseTargets,
-                          [c.key]: Number(e.target.value),
-                        })
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
-            </Field>
+            {creatingNewProgram && (
+              <Field
+                label="Totalmål for den nye uddannelse"
+                hint="Holdet bruger uddannelsens totalmål. Delmål sættes her ved oprettelse."
+              >
+                <div className="flex gap-3">
+                  {Object.values(CATEGORIES).map((c) => (
+                    <div key={c.key} className="flex-1">
+                      <Field label={c.short} className="mb-0">
+                        <NumberInput
+                          min={0}
+                          step={1}
+                          inputMode="numeric"
+                          value={newCourseTargets[c.key] ?? 0}
+                          onChange={(e) =>
+                            setNewCourseTargets({
+                              ...newCourseTargets,
+                              [c.key]: Number(e.target.value),
+                            })
+                          }
+                        />
+                      </Field>
+                    </div>
+                  ))}
+                </div>
+              </Field>
+            )}
             {createError && (
               <div className="-mt-1.5 mb-3 text-xs text-[#a14b36]">
                 {createError}
               </div>
             )}
             <div className="mt-4.5 flex gap-2.5">
-              <button
-                className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+              <Button
+                variant="secondary"
+                className="flex-1"
                 onClick={() => {
                   setShowCreate(false);
-                  setCreateError("");
+                  resetForm();
                 }}
               >
                 Annuller
-              </button>
-              <button
-                className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1"
                 onClick={createCourse}
+                disabled={catalogSaving || courseSaving}
+                aria-busy={catalogSaving || courseSaving}
               >
-                Opret hold
-              </button>
+                {catalogSaving || courseSaving ? "Opretter…" : "Opret hold"}
+              </Button>
             </div>
           </div>
         </div>
