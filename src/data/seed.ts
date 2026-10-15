@@ -6,6 +6,7 @@ import type { Organization } from "../types/organization";
 import type { AdminRoleMeta, User } from "../types/user";
 import type { OrganizationPreset } from "../types/ui";
 
+
 export const CATEGORIES_INITIAL: CategoriesMap = {
   narrativ: {
     id: "eeeeeeee-eeee-4eee-8eee-000000000001",
