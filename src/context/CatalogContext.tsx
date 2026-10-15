@@ -6,8 +6,11 @@ import {
   type SetStateAction,
 } from "react";
 import type { CategoriesMap, ProgramsMap, Category, Program } from "../types/domain";
+import type { CategoryWrite } from "../api/categories";
+import type { ProgramWrite } from "../api/programs";
 import type { MutationFeedback } from "@/types/log";
 import { withFeedback } from "../hooks/queryHelpers";
+import { useHoldQuery } from "@/hooks/queryGate";
 import { activeCategoriesOf } from "../domain/catalog";
 import {
   useCategoriesQuery,
@@ -43,12 +46,12 @@ export interface CatalogContextValue {
   setLearningGoals: Dispatch<SetStateAction<string[]>>;
   setPrograms: Dispatch<SetStateAction<ProgramsMap>>;
   createCategory: (
-    category: Omit<Category, "key"> & { key?: string },
+    category: CategoryWrite,
     feedback?: MutationFeedback<Category> | null,
   ) => Promise<Category>;
   updateCategory: (
     key: string,
-    category: Partial<Category>,
+    category: Partial<CategoryWrite>,
     feedback?: MutationFeedback<Category> | null,
   ) => Promise<Category>;
   reorderCategories: (
@@ -77,18 +80,19 @@ export interface CatalogContextValue {
     feedback?: MutationFeedback<string[]> | null,
   ) => Promise<void>;
   createProgram: (
-    program: Omit<Program, "id"> & { id?: string },
+    program: ProgramWrite,
     feedback?: MutationFeedback<Program> | null,
   ) => Promise<Program>;
   updateProgram: (
     id: string,
-    program: Partial<Program>,
+    program: Partial<ProgramWrite>,
     feedback?: MutationFeedback<Program> | null,
   ) => Promise<Program>;
   deleteProgram: (
     id: string,
     feedback?: MutationFeedback<void> | null,
   ) => Promise<void>;
+  isSaving: boolean;
 }
 
 const CatalogContext = createContext<CatalogContextValue | null>(null);
@@ -174,6 +178,18 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
           ),
         deleteProgram: (id, feedback) =>
           deleteProgramMutation.mutateAsync(withFeedback(id, feedback)),
+        isSaving:
+          createCategoryMutation.isPending ||
+          updateCategoryMutation.isPending ||
+          reorderCategoriesMutation.isPending ||
+          deleteCategoryMutation.isPending ||
+          createLearningGoalMutation.isPending ||
+          renameLearningGoalMutation.isPending ||
+          reorderLearningGoalsMutation.isPending ||
+          deleteLearningGoalMutation.isPending ||
+          createProgramMutation.isPending ||
+          updateProgramMutation.isPending ||
+          deleteProgramMutation.isPending,
       }}
     >
       {children}
@@ -181,7 +197,16 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useCatalog() {
+export type CatalogScope = {
+  categories?: boolean;
+  programs?: boolean;
+  goals?: boolean;
+};
+
+export function useCatalog(scope: CatalogScope = {}) {
+  useHoldQuery("categories", scope.categories === true);
+  useHoldQuery("programs", scope.programs === true);
+  useHoldQuery("learningGoals", scope.goals === true);
   const ctx = useContext(CatalogContext);
   if (!ctx) {
     throw new Error("useCatalog must be used within CatalogProvider");

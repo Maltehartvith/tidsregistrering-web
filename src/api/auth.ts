@@ -1,10 +1,23 @@
-import type { SessionUser } from "../types/user";
-import { request } from "./request";
+import type { User } from "../types/user";
+import { ApiError, request } from "./request";
+import { clearToken, readToken, storeToken } from "./token";
 
-export async function getMe(): Promise<SessionUser | null> {
+type AuthResponse = {
+  token: string;
+  user: User;
+};
+
+export async function getMe(): Promise<User | null> {
+  if (!readToken()) return null;
   try {
-    return await request<SessionUser>("/auth/me");
-  } catch {
+    return await request<User>("/auth/me");
+  } catch (error) {
+    if (
+      error instanceof ApiError &&
+      (error.status === 401 || error.status === 403)
+    ) {
+      clearToken();
+    }
     return null;
   }
 }
@@ -13,15 +26,21 @@ export async function login(
   email: string,
   password: string,
   rememberMe = true,
-): Promise<SessionUser> {
-  return request<SessionUser>("/auth/login", {
+): Promise<User> {
+  const session = await request<AuthResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password, rememberMe }),
   });
+  storeToken(session.token, rememberMe);
+  return session.user;
 }
 
 export async function logout(): Promise<void> {
-  await request("/auth/logout", { method: "POST" });
+  try {
+    await request("/auth/logout", { method: "POST" });
+  } finally {
+    clearToken();
+  }
 }
 
 export async function forgotPassword(
@@ -59,9 +78,11 @@ export async function acceptInvite(input: {
   token: string;
   name: string;
   password: string;
-}): Promise<SessionUser> {
-  return request<SessionUser>("/auth/accept-invite", {
+}): Promise<User> {
+  const session = await request<AuthResponse>("/auth/accept-invite", {
     method: "POST",
     body: JSON.stringify(input),
   });
+  storeToken(session.token, true);
+  return session.user;
 }

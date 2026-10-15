@@ -6,7 +6,7 @@ type AuditLogDto = {
   id: string;
   at: string;
   actor: string;
-  studentId?: string;
+  userId?: string;
   courseId?: string;
   description: string;
 };
@@ -16,7 +16,7 @@ function mapAuditLog(log: AuditLogDto): AuditEvent {
     id: log.id,
     at: new Date(log.at),
     actor: log.actor,
-    studentId: log.studentId ?? null,
+    userId: log.userId ?? null,
     courseId: log.courseId ?? null,
     description: log.description,
   };
@@ -27,15 +27,13 @@ export async function listAuditLogs(): Promise<AuditEvent[]> {
   return logs.map(mapAuditLog);
 }
 
-export async function createAuditLog(
-  body: LogEventArgs,
-): Promise<AuditEvent> {
+export async function createAuditLog(body: LogEventArgs): Promise<AuditEvent> {
   const created = await request<AuditLogDto>("/audit-logs", {
     method: "POST",
     body: JSON.stringify({
       actor: body.actor,
       description: body.description,
-      studentId: body.studentId || undefined,
+      userId: body.userId || undefined,
       courseId: body.courseId || undefined,
     }),
   });

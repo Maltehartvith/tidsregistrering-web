@@ -4,24 +4,25 @@ import { useStudents } from "@/context/StudentsContext";
 import { useActorLabel } from "@/domain/actor";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { useState } from "react";
-import SectionHeader from "@/pages/admin/students/components/SectionHeader";
+import SectionHeader from "@/pages/admin/components/SectionHeader";
 
 const DangerZone = () => {
   const [confirmDeleteStudent, setConfirmDeleteStudent] = useState(false);
-  const { selectedStudent, setSelectedStudent, deleteStudent } = useStudents();
+  const { selectedStudent, setSelectedStudent, deleteStudent, isSaving } =
+    useStudents();
   const { entries } = useEntries();
   const actor = useActorLabel();
   if (!selectedStudent) return null;
 
   const registrationCount = entries.filter(
-    (entry) => entry.studentId === selectedStudent.id,
+    (entry) => entry.userId === selectedStudent.id,
   ).length;
 
   const handleDeleteStudent = async () => {
     await deleteStudent(selectedStudent.id, {
       toastSuccessMessage: "Kursist slettet",
       logArgs: {
-        studentId: selectedStudent.id,
+        userId: selectedStudent.id,
         description: `${actor} slettede ${selectedStudent.name} og ${registrationCount} registreringer permanent`,
       },
     });
@@ -54,8 +55,10 @@ const DangerZone = () => {
               onClick={handleDeleteStudent}
               variant="primary"
               className="bg-red-700 text-white hover:bg-red-800"
+              disabled={isSaving}
+              aria-busy={isSaving}
             >
-              Ja, slet permanent
+              {isSaving ? "Sletter…" : "Ja, slet permanent"}
             </Button>
           </div>
         </div>

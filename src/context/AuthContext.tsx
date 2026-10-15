@@ -5,18 +5,18 @@ import {
   type ReactNode,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { SessionUser } from "../types/user.ts";
+import type { User } from "../types/user.ts";
 import * as api from "../api/auth.ts";
 import { domainQueryKeys, queryKeys } from "../api/queryKeys.ts";
 
 interface AuthContextValue {
-  user: SessionUser | null;
+  user: User | null;
   loading: boolean;
   login: (
     email: string,
     password: string,
     rememberMe?: boolean,
-  ) => Promise<SessionUser>;
+  ) => Promise<User>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }

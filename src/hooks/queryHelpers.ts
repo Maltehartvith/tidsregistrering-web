@@ -3,6 +3,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type QueryClient,
   type QueryKey,
 } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
@@ -82,7 +83,7 @@ export function useDomainQuery<T>({
   enabled,
 }: DomainQueryOptions<T>) {
   const { user } = useAuth();
-  const active = enabled ?? Boolean(user);
+  const active = Boolean(user) && (enabled ?? true);
 
   const query = useQuery({
     queryKey,
@@ -106,12 +107,19 @@ type DomainMutationOptions<TData, TPayload> = {
   mutationFn: (payload: TPayload) => Promise<TData>;
   invalidateKeys: QueryKey[];
   errorMessage?: string;
+  /** Write the mutation result into the cache before the lists refetch. */
+  applyResult?: (
+    queryClient: QueryClient,
+    data: TData,
+    payload: TPayload,
+  ) => void;
 };
 
 export function useDomainMutation<TData, TPayload>({
   mutationFn,
   invalidateKeys,
   errorMessage = "Noget gik galt",
+  applyResult,
 }: DomainMutationOptions<TData, TPayload>) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -119,12 +127,17 @@ export function useDomainMutation<TData, TPayload>({
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: ({ payload }: MutationCall<TPayload, TData>) =>
-      mutationFn(payload),
+    mutationFn: async ({ payload }: MutationCall<TPayload, TData>) => {
+      const data = await mutationFn(payload);
+      applyResult?.(queryClient, data, payload);
+      await Promise.all(
+        invalidateKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      );
+      return data;
+    },
     onSuccess: (data, variables) => {
-      for (const key of invalidateKeys) {
-        void queryClient.invalidateQueries({ queryKey: key });
-      }
       const message = resolveMessage(variables.toastSuccessMessage, data);
       if (message) showToast(message, 2200, "success");
       const logArgs = resolveLogArgs(variables.logArgs, data);

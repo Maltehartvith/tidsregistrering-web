@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { NavigationBar } from "../nav/NavigationBar";
+import { NavigationBar, NavigationBarGhost } from "../nav/NavigationBar";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 
 type PageWrapperProps = {
@@ -9,10 +9,17 @@ type PageWrapperProps = {
    * `form` is a centered rectangle for login and similar screens.
    */
   size?: "wide" | "form";
+  /** Skeleton navigation while the session is still unknown. */
+  ghostNav?: boolean;
 };
 
-const PageWrapper = ({ children, size = "wide" }: PageWrapperProps) => {
+const PageWrapper = ({
+  children,
+  size = "wide",
+  ghostNav = false,
+}: PageWrapperProps) => {
   const isDesktop = useIsDesktop();
+  const Nav = ghostNav ? NavigationBarGhost : NavigationBar;
 
   if (size === "form") {
     return (
@@ -30,10 +37,10 @@ const PageWrapper = ({ children, size = "wide" }: PageWrapperProps) => {
 
   return (
     <div className="md:mx-auto md:px-6 flex h-dvh w-full flex-col overflow-hidden md:max-w-[90vw]">
-      {isDesktop && <NavigationBar position="top" />}
+      {isDesktop && <Nav position="top" />}
       <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-paper font-sans text-ink md:my-4 md:rounded-2xl md:shadow-[0_16px_24px_rgba(18,57,74,0.16)]">
         {children}
-        {!isDesktop && <NavigationBar position="bottom" />}
+        {!isDesktop && <Nav position="bottom" />}
       </div>
     </div>
   );

@@ -1,22 +1,47 @@
-import type { AdminUser, AdminRoleKey, UserStatus } from "../types/user";
+import type {
+  AdminRoleKey,
+  User,
+  UserCourseWrite,
+  UserRole,
+  UserStatus,
+} from "../types/user";
 import { request } from "./request";
 
-export async function listUsers(): Promise<AdminUser[]> {
-  return request<AdminUser[]>("/users");
+export type CreatedUser = User & {
+  inviteToken?: string;
+  mailPreview?: boolean;
+};
+
+export async function listUsers(role?: UserRole): Promise<User[]> {
+  const query = role ? `?role=${encodeURIComponent(role)}` : "";
+  return request<User[]>(`/users${query}`);
 }
 
 export async function createUser(input: {
   name: string;
   email: string;
-  role: AdminRoleKey;
-  allCourses?: boolean;
-  courseIds?: string[];
-  password?: string;
+  role: UserRole;
   status?: UserStatus;
-}): Promise<AdminUser & { inviteToken?: string; mailPreview?: boolean }> {
+  allCourses?: boolean;
+  courses?: UserCourseWrite[];
+  password?: string;
+}): Promise<CreatedUser> {
   return request("/users", {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export async function createKursist(input: {
+  name: string;
+  email: string;
+  courses: UserCourseWrite[];
+}): Promise<User> {
+  return createUser({
+    name: input.name,
+    email: input.email,
+    role: "kursist",
+    courses: input.courses,
   });
 }
 
@@ -33,14 +58,14 @@ export async function updateUser(
   input: Partial<{
     name: string;
     email: string;
-    role: AdminRoleKey;
+    role: AdminRoleKey | UserRole;
     allCourses: boolean;
-    courseIds: string[];
+    courses: UserCourseWrite[];
     status: UserStatus;
     password: string;
   }>,
-): Promise<AdminUser> {
-  return request<AdminUser>(`/users/${encodeURIComponent(id)}`, {
+): Promise<User> {
+  return request<User>(`/users/${encodeURIComponent(id)}`, {
     method: "PATCH",
     body: JSON.stringify(input),
   });

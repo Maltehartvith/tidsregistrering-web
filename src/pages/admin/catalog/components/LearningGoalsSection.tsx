@@ -7,10 +7,15 @@ import {
   X,
   ArrowUp,
   ArrowDown,
+  BookOpen,
 } from "lucide-react";
 import { useCatalog } from "@/context/CatalogContext";
 import { useEntries } from "@/context/EntriesContext";
 import { useActorLabel } from "@/domain/actor";
+import SectionHeader from "../../components/SectionHeader";
+import { TextArea } from "@/components/ui/TextArea";
+import { Button } from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 export default function LearningGoalsSection() {
   const actor = useActorLabel();
@@ -20,7 +25,8 @@ export default function LearningGoalsSection() {
     renameLearningGoal,
     reorderLearningGoals,
     deleteLearningGoal,
-  } = useCatalog();
+    isSaving,
+  } = useCatalog({ goals: true });
   const { entries } = useEntries();
   const [editingGoalIndex, setEditingGoalIndex] = useState<number | null>(null);
   const [goalDraft, setGoalDraft] = useState("");
@@ -113,16 +119,12 @@ export default function LearningGoalsSection() {
 
   return (
     <>
-      <div
-        className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink"
-        style={{ marginTop: 0 }}
-      >
-        Læringsmål
-      </div>
-      <p
-        className="mb-3.5 text-[13px] leading-normal text-ink-soft"
-        style={{ marginTop: 0 }}
-      >
+      <SectionHeader
+        icon={<BookOpen size={20} />}
+        title="Læringsmål"
+        className="mb-2"
+      />
+      <p className="mb-3.5 text-sm leading-normal text-ink-soft">
         Kursisten vælger ét læringsmål pr. registrering. Retter I teksten på et
         læringsmål, opdateres eksisterende registreringer med. Fjerner I et,
         beholder gamle registreringer deres tekst.
@@ -130,88 +132,91 @@ export default function LearningGoalsSection() {
 
       {LEARNING_GOALS.map((g, i) => (
         <div
-          className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card"
+          className="mb-2.5 overflow-hidden rounded-md border border-border bg-card"
           key={g}
         >
-          <div
-            className="border-t border-border px-4 pb-4 pt-3.5"
-            style={{ borderTop: "none" }}
-          >
+          <div className="p-4">
             {editingGoalIndex === i ? (
               <>
-                <textarea
+                <TextArea
                   rows={2}
                   value={goalDraft}
                   onChange={(e) => setGoalDraft(e.target.value)}
-                  style={{ width: "100%" }}
                 />
-                <div className="mt-4.5 flex gap-2.5" style={{ marginTop: 8 }}>
-                  <button
-                    className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                <div className="mt-2 flex gap-2.5">
+                  <Button
+                    variant="secondary"
+                    className="w-full"
                     onClick={() => {
                       setEditingGoalIndex(null);
                       setGoalError("");
                     }}
                   >
                     Annuller
-                  </button>
-                  <button
-                    className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  </Button>
+                  <Button
+                    variant="primary"
+                    className="w-full"
                     onClick={() => saveGoal(i)}
+                    disabled={isSaving}
+                    aria-busy={isSaving}
                   >
-                    Gem
-                  </button>
+                    {isSaving ? "Gemmer…" : "Gem"}
+                  </Button>
                 </div>
               </>
             ) : (
-              <div
-                className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0"
-                style={{ paddingTop: 0 }}
-              >
-                <div className="text-[13px] leading-snug text-ink">{g}</div>
+              <div className="flex items-center justify-between gap-2.5">
+                <div className="text-sm leading-snug text-ink">{g}</div>
                 {confirmDeleteGoal === i ? (
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <span>Fjern?</span>
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <span>Slet?</span>
+                    <Button
+                      variant="icon"
+                      size="icon"
                       onClick={() => deleteGoal(i)}
                     >
                       <Check size={14} />
-                    </button>
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                    </Button>
+                    <Button
+                      variant="icon"
+                      size="icon"
                       onClick={() => setConfirmDeleteGoal(null)}
                     >
                       <X size={14} />
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <div className="flex shrink-0 gap-1.5">
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                    <Button
+                      variant="icon"
+                      size="icon"
                       disabled={i === 0}
                       onClick={() => moveGoal(i, -1)}
                       title="Flyt op"
                     >
                       <ArrowUp size={14} />
-                    </button>
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                    </Button>
+                    <Button
+                      variant="icon"
+                      size="icon"
                       disabled={i === LEARNING_GOALS.length - 1}
                       onClick={() => moveGoal(i, 1)}
                       title="Flyt ned"
                     >
                       <ArrowDown size={14} />
-                    </button>
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                    </Button>
+                    <Button
+                      variant="icon"
+                      size="icon"
                       onClick={() => startEditGoal(i)}
                       title="Ret tekst"
                     >
                       <Pencil size={14} />
-                    </button>
-                    <button
-                      className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                    </Button>
+                    <Button
+                      variant="icon"
+                      size="icon"
                       onClick={() => {
                         setConfirmDeleteGoal(i);
                         setEditingGoalIndex(null);
@@ -219,7 +224,7 @@ export default function LearningGoalsSection() {
                       title="Fjern"
                     >
                       <Trash2 size={14} />
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -228,26 +233,21 @@ export default function LearningGoalsSection() {
         </div>
       ))}
 
-      <div
-        className="mt-3.5 flex flex-wrap items-center gap-2"
-        style={{ marginTop: 8 }}
-      >
-        <input
-          type="text"
-          value={newGoal}
-          onChange={(e) => setNewGoal(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") addGoal();
-          }}
-          placeholder="Nyt læringsmål, fx Vidensmål - ..."
-          style={{ flex: 1 }}
-        />
-        <button
-          className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
-          onClick={addGoal}
-        >
+      <div className="mt-2.5 flex items-center gap-2 pt-2">
+        <div className="min-w-0 flex-1">
+          <Input
+            type="text"
+            value={newGoal}
+            onChange={(e) => setNewGoal(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addGoal();
+            }}
+            placeholder="Nyt læringsmål, fx Vidensmål - ..."
+          />
+        </div>
+        <Button variant="primary" size="small" onClick={addGoal}>
           <PlusCircle size={14} /> Tilføj
-        </button>
+        </Button>
       </div>
       {goalError && (
         <div

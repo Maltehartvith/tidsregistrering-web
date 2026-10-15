@@ -14,15 +14,21 @@ import {
   courseLabel,
   totalsForStudentOnHold,
   targetsForStudent,
+  targetsForCourse,
   totalsForStudent,
 } from "@/domain/totals";
+import {
+  activeCourseId,
+  hasCourses,
+  previousCourses,
+} from "@/domain/userCourses";
 import { useState } from "react";
 import { useStudentOutlet } from "./StudentLayout";
 import { Button } from "@/components/ui/Button";
 
 export const OverviewTab = () => {
   const { student } = useStudentOutlet();
-  const { courses } = useCourses();
+  const { courses, isLoading: coursesLoading } = useCourses();
   const { contactEmail } = useBranding();
   const { entries, isLoading: entriesLoading } = useEntries();
 
@@ -31,32 +37,41 @@ export const OverviewTab = () => {
     ALL_CATEGORIES,
     programs,
     isLoading: catalogLoading,
-  } = useCatalog();
-  const includedLinks = (student.courseLinks || []).filter((l) => l.included);
+  } = useCatalog({ categories: true, programs: true });
+  const homeCourseId = activeCourseId(student);
+  const includedPrevious = previousCourses(student).filter(
+    (course) => course.included,
+  );
 
   const [scope, setScope] = useState("uddannelse");
   const totalsWholeProgram = totalsForStudent(student, entries, CATEGORIES);
-  const targetsWholeProgram = targetsForStudent(student, courses, CATEGORIES);
+  const targetsWholeProgram = targetsForStudent(
+    student,
+    courses,
+    programs,
+    CATEGORIES,
+  );
   const totalsThisHold = totalsForStudentOnHold(
     student,
     entries,
-    student.courseId,
+    homeCourseId ?? "",
     CATEGORIES,
   );
-  const targetsThisHold = courses?.[student.courseId]?.targets || {};
+  const homeCourse = homeCourseId ? courses[homeCourseId] : undefined;
+  const targetsThisHold = targetsForCourse(homeCourse, programs);
   const totals = scope === "hold" ? totalsThisHold : totalsWholeProgram;
   const targets = scope === "hold" ? targetsThisHold : targetsWholeProgram;
 
-  const myEntries = entries.filter((e) => e.studentId === student.id);
+  const myEntries = entries.filter((e) => e.userId === student.id);
 
   const recentEntries = [...myEntries]
     .sort((a, b) => (a.date < b.date ? 1 : -1))
     .slice(0, 3);
 
-  const course = courses[student.courseId];
+  const course = homeCourse;
   const contactHref = contactEmail
-    ? `mailto:${contactEmail}?subject=${encodeURIComponent(`Henvendelse fra ${student.name} (${courseLabel(student.courseId, courses)})`)}&body=${encodeURIComponent(
-        `Hej\n\n[Skriv din besked her]\n\n---\nNavn: ${student.name}\nEmail: ${student.email}\nHold: ${courseLabel(student.courseId, courses)}\nUddannelse: ${programName(course, programs) || "-"}\n`,
+    ? `mailto:${contactEmail}?subject=${encodeURIComponent(`Henvendelse fra ${student.name} (${courseLabel(homeCourseId, courses)})`)}&body=${encodeURIComponent(
+        `Hej\n\n[Skriv din besked her]\n\n---\nNavn: ${student.name}\nEmail: ${student.email}\nHold: ${courseLabel(homeCourseId, courses)}\nUddannelse: ${programName(course, programs) || "-"}\n`,
       )}`
     : "";
 
@@ -73,7 +88,12 @@ export const OverviewTab = () => {
             >
               Mit hold
             </div>
-            {course ? (
+            {homeCourseId && coursesLoading && !course ? (
+              <>
+                <GhostBlock className="mb-1 h-4 w-40" />
+                <GhostBlock className="h-3 w-28" />
+              </>
+            ) : course ? (
               <>
                 <div className="text-sm font-semibold" style={{ fontSize: 15 }}>
                   {course.label} · {course.startYear}
@@ -84,24 +104,37 @@ export const OverviewTab = () => {
                   </div>
                 )}
               </>
-            ) : (
-              <>
-                <GhostBlock className="mb-1 h-4 w-40" />
-                <GhostBlock className="h-3 w-28" />
-              </>
-            )}
+            ) : !hasCourses(student) ? (
+              <p className="text-sm leading-normal text-ink-soft">
+                Du er endnu ikke blevet tilskrevet et hold. Hvis dette er en
+                fejl, bedes du kontakte din administrator
+                {contactEmail ? (
+                  <>
+                    :{" "}
+                    <a
+                      className="underline underline-offset-2 hover:text-ink"
+                      href={`mailto:${contactEmail}`}
+                    >
+                      {contactEmail}
+                    </a>
+                  </>
+                ) : (
+                  "."
+                )}
+              </p>
+            ) : null}
           </div>
         </div>
-        {includedLinks.length > 0 && (
+        {includedPrevious.length > 0 && (
           <div className="mt-2.5 text-xs leading-normal text-ink-soft">
             Timer fra{" "}
-            {includedLinks
-              .map((l) => courseLabel(l.courseId, courses))
+            {includedPrevious
+              .map((row) => courseLabel(row.id, courses))
               .join(", ")}{" "}
             tæller også med i dit regnskab.
           </div>
         )}
-        {contactEmail && (
+        {contactEmail && hasCourses(student) && (
           <a
             className="mt-2.5 inline-block text-xs text-ink-soft underline underline-offset-2 hover:text-ink"
             href={contactHref}
@@ -111,7 +144,7 @@ export const OverviewTab = () => {
         )}
       </div>
 
-      {includedLinks.length > 0 && (
+      {includedPrevious.length > 0 && (
         <div className="flex flex-wrap gap-2" style={{ marginBottom: 12 }}>
           <Button
             variant="pill"

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "./Button";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { fieldControlClass } from "./inputStyles";
 
 type InputProps = {
   value: React.InputHTMLAttributes<HTMLInputElement>["value"];
@@ -11,6 +12,7 @@ type InputProps = {
   autoComplete?: "email" | "password" | "current-password" | "off";
   placeholder?: string;
   className?: string;
+  maxLength?: number;
 };
 const Input = ({
   value,
@@ -21,6 +23,7 @@ const Input = ({
   autoComplete,
   placeholder,
   className,
+  maxLength,
 }: InputProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -28,24 +31,25 @@ const Input = ({
     (showPassword && !isHovered) || (!showPassword && isHovered);
 
   return (
-    <div
-      className={`relative input-shell flex items-center gap-2 rounded-md border-[1.5px] border-border bg-card px-3 py-2 text-ink-soft focus-within:border-primary transition-colors duration-200 ${type === "password" ? "pr-10" : ""} ${className}`}
-    >
-      {icon && icon}
+    <div className={`relative`}>
+      <div className="absolute left-3 top-1/2 -translate-y-1/2">
+        {icon && icon}
+      </div>
       <input
-        className="bg-transparent outline-none border-none w-full"
+        className={`${fieldControlClass} ${icon ? "pl-9" : ""} ${className}`.trim()}
         type={showPassword ? "text" : type}
         value={value}
         onChange={onChange}
         autoComplete={autoComplete || "off"}
         onKeyDown={onKeyDown}
         placeholder={placeholder}
+        maxLength={maxLength}
       />
       {type === "password" && (
         <Button
           variant="ghost"
           type="button"
-          className="p-2! absolute right-2"
+          className="p-1.5! absolute right-2 top-1/2 -translate-y-1/2"
           aria-label={showPassword ? "Skjul adgangskode" : "Vis adgangskode"}
           onClick={() => setShowPassword(!showPassword)}
           onMouseOver={() => setIsHovered(true)}

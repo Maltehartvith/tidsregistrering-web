@@ -10,12 +10,16 @@ import { useCourses } from "@/context/CoursesContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useEntries } from "@/context/EntriesContext";
 import { totalsForStudent, targetsForStudent } from "@/domain/totals";
+import { activeCourseId, previousCourses } from "@/domain/userCourses";
 import { formatDiff } from "@/domain/format";
 import { Button } from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
 export function StudentList() {
-  const { CATEGORIES } = useCatalog();
+  const { CATEGORIES, programs } = useCatalog({
+    categories: true,
+    programs: true,
+  });
   const { courses } = useCourses();
   const { students, selectedStudent, setSelectedStudent } = useStudents();
   const { entries } = useEntries();
@@ -23,19 +27,24 @@ export function StudentList() {
   const [query, setQuery] = useState("");
 
   const filtered = students
-    .filter((s) => holdFilter === "alle" || s.courseId === holdFilter)
+    .filter(
+      (s) =>
+        holdFilter === "alle" ||
+        s.courses.some((course) => course.id === holdFilter),
+    )
     .filter((s) => {
       if (!query.trim()) return true;
       const q = query.toLowerCase();
-      const courseLabel = (
-        courses?.[s.courseId]?.label ||
-        s.courseId ||
+      const homeId = activeCourseId(s);
+      const courseLabelText = (
+        (homeId && courses?.[homeId]?.label) ||
+        (homeId && courses?.[homeId]?.key) ||
         ""
       ).toLowerCase();
       return (
         s.name.toLowerCase().includes(q) ||
         s.email.toLowerCase().includes(q) ||
-        courseLabel.includes(q)
+        courseLabelText.includes(q)
       );
     });
 
@@ -71,7 +80,7 @@ export function StudentList() {
               className="rounded-full! px-3! py-2! text-xs!"
               onClick={() => setHoldFilter(h.id)}
             >
-              {h.id}
+              {h.key}
             </Button>
           ))}
         </div>
@@ -81,10 +90,16 @@ export function StudentList() {
           Ingen kursister fundet.
         </div>
       )}
-      <div className="min-h-0 flex-1 overflow-y-auto pb-10 pr-1 mr-1">
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1 mr-1 scrollbar-bottom-margin">
         {filtered.map((s) => {
+          const homeId = activeCourseId(s);
           const totals = totalsForStudent(s, entries, CATEGORIES);
-          const targets = targetsForStudent(s, courses || {}, CATEGORIES);
+          const targets = targetsForStudent(
+            s,
+            courses || {},
+            programs,
+            CATEGORIES,
+          );
           return (
             <button
               key={s.id}
@@ -94,7 +109,10 @@ export function StudentList() {
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold">{s.name}</div>
                 <div className="mt-px text-xs text-ink-soft">
-                  {s.email} · {courses?.[s.courseId]?.label || s.courseId}
+                  {s.email}
+                  {homeId
+                    ? ` · ${courses?.[homeId]?.label || courses?.[homeId]?.key || ""}`
+                    : ""}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-3">
                   {Object.values(CATEGORIES).map((c) => {
@@ -117,7 +135,7 @@ export function StudentList() {
                   })}
                 </div>
               </div>
-              {(s.courseLinks || []).some((l) => l.included) && (
+              {previousCourses(s).some((course) => course.included) && (
                 <ArrowRightLeft
                   size={14}
                   className="shrink-0 text-secondary"

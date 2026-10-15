@@ -2,6 +2,7 @@ import AdminPageWrapper from "@/pages/admin/components/AdminPageWrapper";
 import { ADMIN_ROLES } from "@/data/constants";
 import { InviteUserForm } from "@/pages/admin/users/components/InviteUserForm";
 import { UserList } from "@/pages/admin/users/components/UserList";
+import SectionHeader from "../components/SectionHeader";
 
 export function UsersPage() {
   return (

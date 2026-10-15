@@ -47,28 +47,28 @@ export const DEFAULT_BRANDING: Organization = {
 
 export const BRAND_PRESETS: OrganizationPreset[] = [
   {
-    group: "Klassiske",
+    group: "",
     name: "DISPUK (standard)",
     primary: "#12394A",
     accent: "#C25A4C",
     background: "#ECEEEA",
   },
   {
-    group: "Klassiske",
+    group: "",
     name: "Grafit",
     primary: "#2B2B2B",
     accent: "#C25A4C",
     background: "#EFEFEC",
   },
   {
-    group: "Klassiske",
+    group: "",
     name: "Nat",
     primary: "#1F2A5A",
     accent: "#B0701E",
     background: "#ECEDF3",
   },
   {
-    group: "Klassiske",
+    group: "",
     name: "Bordeaux",
     primary: "#5C1F2E",
     accent: "#A8793F",

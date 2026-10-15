@@ -7,6 +7,7 @@ import { isValidHex } from "@/theme/colors";
 import type { Organization } from "@/types/organization";
 import { BrandingForm } from "@/pages/admin/design/components/BrandingForm";
 import { BrandPreview } from "@/pages/admin/design/components/BrandPreview";
+import { Button } from "@/components/ui/Button";
 
 export function DesignPage() {
   const actor = useActorLabel();
@@ -14,6 +15,7 @@ export function DesignPage() {
     setBranding: _setBranding,
     saveBranding,
     isLoading: _brandingLoading,
+    isSaving,
     ...branding
   } = useBranding();
   const [draft, setDraft] = useState<Organization>({
@@ -112,34 +114,25 @@ export function DesignPage() {
       </div>
 
       {formError && (
-        <div
-          className="-mt-1.5 mb-3 text-xs text-secondary"
-          style={{ marginTop: 12 }}
-        >
-          {formError}
-        </div>
+        <div className="mt-3 mb-3 text-md text-secondary">{formError}</div>
       )}
-      <div className="mt-4.5 flex gap-2.5" style={{ marginTop: 16 }}>
-        <button
-          className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
-          onClick={resetAll}
-        >
+      <div className="mt-4 flex justify-between gap-2.5">
+        <Button variant="secondary" onClick={resetAll}>
           Nulstil alt til standard
-        </button>
-        <button
-          className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
-          disabled={!dirty}
-          onClick={undo}
-        >
-          Fortryd
-        </button>
-        <button
-          className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
-          disabled={!dirty}
-          onClick={save}
-        >
-          Gem design
-        </button>
+        </Button>
+        <div className="flex gap-2.5">
+          <Button variant="secondary" disabled={!dirty} onClick={undo}>
+            Fortryd
+          </Button>
+          <Button
+            variant="primary"
+            disabled={!dirty || isSaving}
+            aria-busy={isSaving}
+            onClick={save}
+          >
+            {isSaving ? "Gemmer…" : "Gem design"}
+          </Button>
+        </div>
       </div>
     </AdminPageWrapper>
   );

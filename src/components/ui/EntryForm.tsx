@@ -18,6 +18,7 @@ export function EntryForm({
   onSubmit,
   onCancel,
   submitLabel,
+  submitting = false,
   showHoldField,
   holdOptions = [],
 }: {
@@ -26,10 +27,14 @@ export function EntryForm({
   onSubmit: () => void;
   onCancel?: () => void;
   submitLabel: string;
+  submitting?: boolean;
   showHoldField?: boolean;
   holdOptions?: Course[];
 }) {
-  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS } = useCatalog();
+  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS } = useCatalog({
+    categories: true,
+    goals: true,
+  });
   const cat = categoryOf(ALL_CATEGORIES, values.category);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -187,6 +192,7 @@ export function EntryForm({
             type="button"
             className="flex-1 cursor-pointer rounded-sm border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
             onClick={onCancel}
+            disabled={submitting}
           >
             Annuller
           </button>
@@ -195,8 +201,10 @@ export function EntryForm({
           type="button"
           className="flex-1 cursor-pointer rounded-sm border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
           onClick={submit}
+          disabled={submitting}
+          aria-busy={submitting}
         >
-          {submitLabel}
+          {submitting ? "Gemmer…" : submitLabel}
         </button>
       </div>
     </div>

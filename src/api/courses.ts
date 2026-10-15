@@ -1,13 +1,13 @@
 import type { Course, CourseMap } from "../types/course";
 import { request } from "./request";
 
+export type CourseWrite = Omit<Course, "id">;
+
 export async function listCourses(): Promise<CourseMap> {
   return request<CourseMap>("/courses");
 }
 
-export async function createCourse(
-  course: Omit<Course, "id"> & { id?: string },
-): Promise<Course> {
+export async function createCourse(course: CourseWrite): Promise<Course> {
   return request<Course>("/courses", {
     method: "POST",
     body: JSON.stringify(course),
@@ -16,7 +16,7 @@ export async function createCourse(
 
 export async function updateCourse(
   id: string,
-  course: Partial<Course>,
+  course: Partial<CourseWrite>,
 ): Promise<Course> {
   return request<Course>(`/courses/${encodeURIComponent(id)}`, {
     method: "PATCH",

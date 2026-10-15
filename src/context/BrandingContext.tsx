@@ -24,6 +24,7 @@ export type BrandingContextValue = Organization & {
     branding: Organization,
     feedback?: MutationFeedback<Organization> | null,
   ) => Promise<Organization>;
+  isSaving: boolean;
 };
 
 const BrandingContext = createContext<BrandingContextValue | null>(null);
@@ -81,6 +82,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
         setBranding,
         saveBranding: (next, feedback) =>
           saveMutation.mutateAsync(withFeedback(next, feedback)),
+        isSaving: saveMutation.isPending,
       }}
     >
       {children}

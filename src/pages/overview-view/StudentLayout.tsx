@@ -1,23 +1,22 @@
 import { useEffect, useState } from "react";
-import { Outlet, useNavigate, useOutletContext } from "react-router-dom";
+import { Outlet, useOutletContext } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useBranding } from "@/context/BrandingContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
-import { useStudents } from "@/context/StudentsContext";
 import { BrandLogo, BrandName, AppTitle } from "@/components/brand/Brand";
 import { BrandHeaderGhost } from "@/components/ui/Ghost";
-import { Button } from "@/components/ui/Button";
-import { LoadingScreen, isStaffRole } from "@/pages/auth/RequireAuth";
+import { LoadingScreen } from "@/pages/auth/RequireAuth";
+import { useOwnUserQuery } from "@/hooks/users";
 import { programName } from "@/domain/totals";
+import { activeCourseId, hasCourses } from "@/domain/userCourses";
 import { initialViewPrefs, syncViewPrefClasses } from "@/theme/viewPrefs";
 import type { ViewPrefs } from "@/types/ui";
-import type { Student } from "@/types/user";
+import type { User } from "@/types/user";
 import PageWrapper from "@/components/ui/PageWrapper";
-import { routes } from "@/routes";
 
 export type StudentOutletContext = {
-  student: Student;
+  student: User;
   viewPrefs: ViewPrefs;
   setViewPrefs: (viewPrefs: ViewPrefs) => void;
 };
@@ -26,56 +25,37 @@ export function useStudentOutlet() {
   return useOutletContext<StudentOutletContext>();
 }
 
+export { hasCourses as hasHold };
+
 /** Shared chrome for all student tabs — resolves student once, renders `<Outlet />`. */
 export function StudentLayout() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const { students, isLoading: studentsLoading, selectedStudent } =
-    useStudents();
+  const ownUser = useOwnUserQuery(Boolean(user));
   const { isLoading: brandingLoading } = useBranding();
-  const { programs, isLoading: catalogLoading } = useCatalog();
+  const { programs, isLoading: catalogLoading } = useCatalog({
+    programs: true,
+  });
   const { courses, isLoading: coursesLoading } = useCourses();
   const [viewPrefs, setViewPrefs] = useState<ViewPrefs>(initialViewPrefs);
-  const staff = isStaffRole(user?.role);
 
   useEffect(() => {
     syncViewPrefClasses(viewPrefs);
   }, [viewPrefs]);
 
-  const ownStudent = students.find((s) => s.id === user?.studentId);
-  const previewStudent =
-    selectedStudent && students.some((s) => s.id === selectedStudent.id)
-      ? selectedStudent
-      : students[0];
-  const student = ownStudent ?? (staff ? previewStudent : undefined);
+  if (!user) return <LoadingScreen />;
 
-  if (studentsLoading && !student) {
-    return <LoadingScreen />;
-  }
-  if (!student) {
-    return (
-      <PageWrapper>
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-          <p className="text-sm text-ink-soft">
-            {staff
-              ? "Ingen kursist at vise."
-              : "Vi kunne ikke finde din kursistprofil."}
-          </p>
-          {staff && (
-            <Button
-              variant="secondary"
-              onClick={() => navigate(routes.adminStudents)}
-            >
-              Tilbage til administration
-            </Button>
-          )}
-        </div>
-      </PageWrapper>
-    );
-  }
+  const profile = ownUser.data;
+  const profileLoading = ownUser.isLoading;
+  if (profileLoading && !profile) return <LoadingScreen />;
 
-  const course = courses[student.courseId];
-  const headerLoading = brandingLoading || coursesLoading || catalogLoading;
+  const student = profile ?? user;
+  const enrolled = hasCourses(student);
+  const homeCourseId = activeCourseId(student);
+  const course = homeCourseId ? courses[homeCourseId] : undefined;
+  const headerLoading =
+    enrolled &&
+    (brandingLoading || coursesLoading || catalogLoading) &&
+    !course;
 
   return (
     <PageWrapper>
@@ -98,15 +78,6 @@ export function StudentLayout() {
                     }${course.label}`
                   : ""}
               </div>
-              {staff && (
-                <Button
-                  variant="link"
-                  className="mt-1"
-                  onClick={() => navigate(routes.adminStudents)}
-                >
-                  Tilbage til administration
-                </Button>
-              )}
             </div>
             <div className="flex flex-row items-center gap-2.5">
               <BrandLogo className="h-6.5 w-auto max-w-35 shrink-0 object-contain" />

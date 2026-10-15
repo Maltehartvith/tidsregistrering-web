@@ -1,5 +1,5 @@
 import { Check, ClockCheck, Pencil, PlusCircle, Trash2, X } from "lucide-react";
-import SectionHeader from "@/pages/admin/students/components/SectionHeader";
+import SectionHeader from "@/pages/admin/components/SectionHeader";
 import { Button } from "@/components/ui/Button";
 import { TimeEntry } from "@/types/entry";
 import { useState } from "react";
@@ -7,6 +7,7 @@ import { emptyForm } from "@/domain/entryForm";
 import { categoryOf } from "@/domain/catalog";
 import { EntryForm } from "@/components/ui/EntryForm";
 import { courseLabel } from "@/domain/totals";
+import { activeCourseId } from "@/domain/userCourses";
 import { useActorLabel } from "@/domain/actor";
 import { useEntries } from "@/context/EntriesContext";
 import { useStudents } from "@/context/StudentsContext";
@@ -15,34 +16,38 @@ import { useCourses } from "@/context/CoursesContext";
 
 const Registrations = () => {
   const { selectedStudent } = useStudents();
-  const { entries, createEntry, updateEntry, deleteEntry } = useEntries();
+  const { entries, createEntry, updateEntry, deleteEntry, isSaving } =
+    useEntries();
   const {
     CATEGORIES: categories,
     ALL_CATEGORIES: allCategories,
     LEARNING_GOALS: learningGoals,
-  } = useCatalog();
+  } = useCatalog({ categories: true, goals: true });
   const { courses } = useCourses();
   const actor = useActorLabel();
+  const homeCourseId = selectedStudent
+    ? activeCourseId(selectedStudent)
+    : null;
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(
-    emptyForm(selectedStudent?.courseId || "", categories, learningGoals),
+    emptyForm(homeCourseId || "", categories, learningGoals),
   );
   const [addingNew, setAddingNew] = useState(false);
   const [newForm, setNewForm] = useState(
-    emptyForm(selectedStudent?.courseId || "", categories, learningGoals),
+    emptyForm(homeCourseId || "", categories, learningGoals),
   );
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   if (!selectedStudent) return null;
 
   const studentEntries = entries
-    .filter((e) => e.studentId === selectedStudent.id)
+    .filter((e) => e.userId === selectedStudent.id)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   const courseOptions = [
-    courses[selectedStudent.courseId],
-    ...Object.values(courses).filter((h) => h.id !== selectedStudent.courseId),
+    ...(homeCourseId && courses[homeCourseId] ? [courses[homeCourseId]] : []),
+    ...Object.values(courses).filter((h) => h.id !== homeCourseId),
   ];
 
   const startEdit = (entry: TimeEntry) => {
@@ -63,7 +68,7 @@ const Registrations = () => {
       {
         toastSuccessMessage: "Registrering opdateret",
         logArgs: {
-          studentId: selectedStudent.id,
+          userId: selectedStudent.id,
           description: `${actor} rettede en registrering for ${selectedStudent.name} (${categoryOf(allCategories, editForm.category).label})`,
         },
       },
@@ -77,7 +82,7 @@ const Registrations = () => {
       toastSuccessMessage: "Registrering slettet",
       logArgs: removed
         ? {
-            studentId: selectedStudent.id,
+            userId: selectedStudent.id,
             description: `${actor} slettede en registrering på ${removed.hours} timer for ${selectedStudent.name} (${categoryOf(allCategories, removed.category).label})`,
           }
         : null,
@@ -89,19 +94,19 @@ const Registrations = () => {
     if (!newForm.hours || Number(newForm.hours) <= 0) return;
     await createEntry(
       {
-        studentId: selectedStudent.id,
+        userId: selectedStudent.id,
         ...newForm,
         hours: Number(newForm.hours),
       },
       {
         toastSuccessMessage: "Registrering tilføjet",
         logArgs: {
-          studentId: selectedStudent.id,
+          userId: selectedStudent.id,
           description: `${actor} tilføjede ${newForm.hours} timer for ${selectedStudent.name} (${categoryOf(allCategories, newForm.category).label})`,
         },
       },
     );
-    setNewForm(emptyForm(selectedStudent.courseId, categories, learningGoals));
+    setNewForm(emptyForm(homeCourseId, categories, learningGoals));
     setAddingNew(false);
   };
 
@@ -116,9 +121,7 @@ const Registrations = () => {
             onClick={() => {
               setAddingNew(true);
               setEditingId(null);
-              setNewForm(
-                emptyForm(selectedStudent.courseId, categories, learningGoals),
-              );
+              setNewForm(emptyForm(homeCourseId, categories, learningGoals));
             }}
           >
             <PlusCircle size={14} /> Tilføj
@@ -134,6 +137,7 @@ const Registrations = () => {
             onSubmit={addEntry}
             onCancel={() => setAddingNew(false)}
             submitLabel="Tilføj registrering"
+            submitting={isSaving}
             showHoldField
             holdOptions={courseOptions}
           />
@@ -160,6 +164,7 @@ const Registrations = () => {
                 onSubmit={saveEdit}
                 onCancel={() => setEditingId(null)}
                 submitLabel="Gem ændring"
+                submitting={isSaving}
                 showHoldField
                 holdOptions={courseOptions}
               />
@@ -218,14 +223,11 @@ const Registrations = () => {
                 </div>
               ) : (
                 <div className="flex gap-1.5">
-                  <Button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
-                    onClick={() => startEdit(e)}
-                  >
+                  <Button variant="primary" onClick={() => startEdit(e)}>
                     <Pencil size={14} />
                   </Button>
                   <Button
-                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
+                    variant="primary"
                     onClick={() => setConfirmId(e.id ?? "")}
                   >
                     <Trash2 size={14} />

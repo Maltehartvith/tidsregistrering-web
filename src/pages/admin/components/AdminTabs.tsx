@@ -19,18 +19,18 @@ export const adminNavItems = [
     isActive: (path: string) => path.startsWith(routes.adminStudents),
   },
   {
-    key: "course",
-    to: routes.adminCourses,
-    label: "Hold-administration",
-    Icon: Building2,
-    isActive: (path: string) => path.startsWith(routes.adminCourses),
-  },
-  {
     key: "users",
     to: routes.adminUsers,
     label: "Administratorer",
     Icon: ShieldCheck,
     isActive: (path: string) => path.startsWith(routes.adminUsers),
+  },
+  {
+    key: "course",
+    to: routes.adminCourses,
+    label: "Hold-administration",
+    Icon: Building2,
+    isActive: (path: string) => path.startsWith(routes.adminCourses),
   },
   {
     key: "catalog",

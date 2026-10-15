@@ -11,7 +11,7 @@ export interface Entry {
 
 export interface TimeEntry {
   id?: string;
-  studentId: string;
+  userId: string;
   category: string;
   date: string;
   hours: string | number;
