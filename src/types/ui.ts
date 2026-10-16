@@ -11,4 +11,5 @@ export interface OrganizationPreset {
   primary: string;
   accent: string;
   background: string;
+  card: string;
 }

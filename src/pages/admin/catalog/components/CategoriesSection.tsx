@@ -246,9 +246,8 @@ export default function CategoriesSection() {
           />
         </Field>
         <Field
-          label="Standard-delmål for nye hold"
-          hint="Foreslås, når der oprettes nye hold og uddannelser. 
-          Ændrer ikke eksisterende hold."
+          label="Foreslået timekrav"
+          hint="Bruges som forslag, når kategorien tilføjes til en uddannelse. Kategorien vises ikke, før den er tilføjet."
           className="flex-1"
         >
           <NumberInput
@@ -379,7 +378,7 @@ export default function CategoriesSection() {
       </p>
 
       {editingCatKey === "__new__" && (
-        <div className="mb-2.5 overflow-hidden rounded-md border border-border bg-card">
+        <div className="mb-2.5 overflow-hidden rounded-lg border border-border bg-card">
           {catForm}
         </div>
       )}
@@ -392,7 +391,7 @@ export default function CategoriesSection() {
             : null;
         return (
           <div
-            className="mb-2.5 overflow-hidden rounded-md border border-border bg-card"
+            className="mb-2.5 overflow-hidden rounded-lg border border-border bg-card"
             key={c.key}
           >
             {editingCatKey === c.key ? (
@@ -534,7 +533,7 @@ export default function CategoriesSection() {
           </div>
           {archivedCats.map((c) => (
             <div
-              className="mb-2.5 overflow-hidden rounded-md border border-border bg-card opacity-85"
+              className="mb-2.5 overflow-hidden rounded-lg border border-border bg-card opacity-85"
               key={c.key}
             >
               <div className="p-4">

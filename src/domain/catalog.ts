@@ -1,4 +1,5 @@
-import type { CategoriesMap, Category } from "../types/domain";
+import type { CourseMap } from "../types/course";
+import type { CategoriesMap, Category, ProgramsMap } from "../types/domain";
 
 export function activeCategoriesOf(categories: CategoriesMap): CategoriesMap {
   return Object.fromEntries(Object.entries(categories).filter(([, c]) => !c.archived));
@@ -20,12 +21,34 @@ export function categoryOf(allCategories: CategoriesMap, key: string): Category 
   );
 }
 
-export function defaultTargets(categories: CategoriesMap): Record<string, number> {
-  return Object.fromEntries(Object.values(categories).map((c) => [c.key, c.defaultTarget ?? 0]));
+/** Categories whose key is stored on a program. Missing keys are not part of it. */
+export function categoriesInTargets(
+  targets: Record<string, number> | undefined,
+  categories: CategoriesMap,
+): Category[] {
+  if (!targets) return [];
+  return Object.values(categories).filter((category) =>
+    Object.prototype.hasOwnProperty.call(targets, category.key),
+  );
 }
 
-export function zeroTargets(categories: CategoriesMap): Record<string, number> {
-  return Object.fromEntries(Object.keys(categories).map((k) => [k, 0]));
+/** Active categories on the programs of the given courses, in catalog order. */
+export function categoriesForCourseIds(
+  courseIds: string[],
+  courses: CourseMap,
+  programs: ProgramsMap,
+  categories: CategoriesMap,
+): Category[] {
+  const keys = new Set<string>();
+  for (const courseId of courseIds) {
+    const programId = courses[courseId]?.programId;
+    const targets = programId ? programs[programId]?.targets : undefined;
+    if (!targets) continue;
+    for (const key of Object.keys(targets)) {
+      if (categories[key]) keys.add(key);
+    }
+  }
+  return Object.values(categories).filter((category) => keys.has(category.key));
 }
 
 export function categoryKeyFromLabel(
@@ -50,7 +73,12 @@ export function categoryKeyFromLabel(
 }
 
 export function formatTargets(targets: Record<string, number> | undefined, categories: CategoriesMap): string {
-  return Object.keys(categories)
-    .map((k) => targets?.[k] ?? 0)
-    .join("/");
+  if (!targets || Object.keys(targets).length === 0) return "—";
+  const ordered = [
+    ...Object.keys(categories).filter((key) =>
+      Object.prototype.hasOwnProperty.call(targets, key),
+    ),
+    ...Object.keys(targets).filter((key) => !categories[key]),
+  ];
+  return ordered.map((key) => targets[key] ?? 0).join("/");
 }

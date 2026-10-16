@@ -18,11 +18,8 @@ const Registrations = () => {
   const { selectedStudent } = useStudents();
   const { entries, createEntry, updateEntry, deleteEntry, isSaving } =
     useEntries();
-  const {
-    CATEGORIES: categories,
-    ALL_CATEGORIES: allCategories,
-    LEARNING_GOALS: learningGoals,
-  } = useCatalog({ categories: true, goals: true });
+  const { ALL_CATEGORIES: allCategories, LEARNING_GOALS: learningGoals } =
+    useCatalog({ categories: true, goals: true });
   const { courses } = useCourses();
   const actor = useActorLabel();
   const homeCourseId = selectedStudent
@@ -30,12 +27,12 @@ const Registrations = () => {
     : null;
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState(
-    emptyForm(homeCourseId || "", categories, learningGoals),
+  const [editForm, setEditForm] = useState(() =>
+    emptyForm(homeCourseId || "", {}, learningGoals),
   );
   const [addingNew, setAddingNew] = useState(false);
-  const [newForm, setNewForm] = useState(
-    emptyForm(homeCourseId || "", categories, learningGoals),
+  const [newForm, setNewForm] = useState(() =>
+    emptyForm(homeCourseId || "", {}, learningGoals),
   );
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
@@ -106,7 +103,7 @@ const Registrations = () => {
         },
       },
     );
-    setNewForm(emptyForm(homeCourseId, categories, learningGoals));
+    setNewForm(emptyForm(homeCourseId, {}, learningGoals));
     setAddingNew(false);
   };
 
@@ -121,7 +118,7 @@ const Registrations = () => {
             onClick={() => {
               setAddingNew(true);
               setEditingId(null);
-              setNewForm(emptyForm(homeCourseId, categories, learningGoals));
+              setNewForm(emptyForm(homeCourseId, {}, learningGoals));
             }}
           >
             <PlusCircle size={14} /> Tilføj
@@ -155,7 +152,7 @@ const Registrations = () => {
         if (editingId === e.id) {
           return (
             <div
-              className="mb-2.5 rounded-xl border border-border bg-card px-3.5 py-3"
+              className="mb-2.5 rounded-lg border border-border bg-card px-3.5 py-3"
               key={e.id}
             >
               <EntryForm

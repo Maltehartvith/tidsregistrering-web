@@ -12,13 +12,13 @@ import { useStudentOutlet } from "./StudentLayout";
 export const CreateEntryTab = () => {
   const { student } = useStudentOutlet();
   const navigate = useNavigate();
-  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS } = useCatalog({
+  const { ALL_CATEGORIES, LEARNING_GOALS } = useCatalog({
     categories: true,
     goals: true,
   });
   const homeCourseId = activeCourseId(student);
-  const [form, setForm] = useState(
-    emptyForm(homeCourseId, CATEGORIES, LEARNING_GOALS),
+  const [form, setForm] = useState(() =>
+    emptyForm(homeCourseId, {}, LEARNING_GOALS),
   );
   const { createEntry, isSaving } = useEntries({ list: false });
 
@@ -39,13 +39,13 @@ export const CreateEntryTab = () => {
         },
       },
     );
-    setForm(emptyForm(homeCourseId, CATEGORIES, LEARNING_GOALS));
+    setForm(emptyForm(homeCourseId, {}, LEARNING_GOALS));
     navigate(routes.studentOverview);
   };
 
   return (
     <>
-      <div className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink">
+      <div className="mb-2.5 font-display text-[15px] font-semibold text-ink">
         Registrér timer
       </div>
       <EntryForm

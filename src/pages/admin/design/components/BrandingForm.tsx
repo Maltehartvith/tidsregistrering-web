@@ -7,7 +7,7 @@ import type { Organization } from "@/types/organization";
 import Input from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
-type ColorKey = "primary" | "accent" | "background";
+type ColorKey = "primary" | "accent" | "background" | "card";
 
 type BrandingFormProps = {
   draft: Organization;
@@ -151,7 +151,8 @@ export function BrandingForm({
               const active =
                 p.primary === draft.primary &&
                 p.accent === draft.accent &&
-                p.background === draft.background;
+                p.background === draft.background &&
+                p.card === draft.card;
               return (
                 <button
                   key={p.name}
@@ -165,6 +166,7 @@ export function BrandingForm({
                       primary: p.primary,
                       accent: p.accent,
                       background: p.background,
+                      card: p.card,
                     }))
                   }
                 >
@@ -180,6 +182,10 @@ export function BrandingForm({
                     <span
                       className="-ml-1.5 h-3.5 w-3.5 rounded-full border border-black/10"
                       style={{ background: p.background }}
+                    />
+                    <span
+                      className="-ml-1.5 h-3.5 w-3.5 rounded-full border border-black/10"
+                      style={{ background: p.card }}
                     />
                   </span>
                   {p.name}
@@ -201,6 +207,11 @@ export function BrandingForm({
         "Timer over målet (+) og små detaljer.",
       )}
       {colorRow("background", "Baggrundsfarve", "Baggrunden bag kortene.")}
+      {colorRow(
+        "card",
+        "Kortfarve",
+        "Flader på kort, faner og paneler oven på baggrunden.",
+      )}
     </div>
   );
 }

@@ -29,7 +29,7 @@ const DangerZone = () => {
     setSelectedStudent(null);
   };
   return (
-    <div className="p-5 bg-red-600/20 border border-red-600/30 border-dashed rounded-xl m-4">
+    <div className="p-5 bg-red-600/20 border border-red-600/30 border-dashed rounded-xl">
       <SectionHeader
         icon={<AlertTriangle size={20} />}
         title="Faresone"

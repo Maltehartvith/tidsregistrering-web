@@ -16,7 +16,7 @@ export function CategoryCard({
   return (
     <div className="cat-card mb-3 rounded-md border border-border bg-card px-4.5 py-4">
       <div
-        className="cat-eyebrow text-[0.6875rem] font-semibold uppercase tracking-[0.06em] break-words"
+        className="cat-eyebrow text-[0.6875rem] font-semibold uppercase tracking-[0.06em] wrap-break-word"
         style={{ color }}
       >
         {label}

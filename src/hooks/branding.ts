@@ -15,6 +15,7 @@ const EMPTY: Organization = {
   primary: "#12394A",
   accent: "#C25A4C",
   background: "#ECEEEA",
+  card: "#FAFAF7",
 };
 
 export function useBrandingQuery() {

@@ -43,6 +43,7 @@ export const DEFAULT_BRANDING: Organization = {
   primary: "#12394A",
   accent: "#C25A4C",
   background: "#ECEEEA",
+  card: "#FAFAF7",
 };
 
 export const BRAND_PRESETS: OrganizationPreset[] = [
@@ -52,6 +53,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#12394A",
     accent: "#C25A4C",
     background: "#ECEEEA",
+    card: "#FAFAF7",
   },
   {
     group: "",
@@ -59,6 +61,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#2B2B2B",
     accent: "#C25A4C",
     background: "#EFEFEC",
+    card: "#FFFFFF",
   },
   {
     group: "",
@@ -66,6 +69,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#1F2A5A",
     accent: "#B0701E",
     background: "#ECEDF3",
+    card: "#F7F8FC",
   },
   {
     group: "",
@@ -73,6 +77,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#5C1F2E",
     accent: "#A8793F",
     background: "#F3EEEC",
+    card: "#FCFAF9",
   },
   {
     group: "Naturlige og varme",
@@ -80,6 +85,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#2F4F3A",
     accent: "#B5793A",
     background: "#EEF0E8",
+    card: "#F8F9F4",
   },
   {
     group: "Naturlige og varme",
@@ -87,6 +93,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#6B3A2A",
     accent: "#B97A2F",
     background: "#F4EEE7",
+    card: "#FCFAF7",
   },
   {
     group: "Naturlige og varme",
@@ -94,6 +101,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#4A3F35",
     accent: "#2F7D7A",
     background: "#F2EEE6",
+    card: "#FAF8F4",
   },
   {
     group: "Naturlige og varme",
@@ -101,6 +109,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#454B1B",
     accent: "#A0522D",
     background: "#F1F1E6",
+    card: "#F9F9F3",
   },
   {
     group: "Kølige",
@@ -108,6 +117,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#0F4C5C",
     accent: "#D0654A",
     background: "#EAF1F2",
+    card: "#F5FAFB",
   },
   {
     group: "Kølige",
@@ -115,6 +125,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#1E2A30",
     accent: "#4F7F8C",
     background: "#F3F4F2",
+    card: "#FAFBFA",
   },
   {
     group: "Kølige",
@@ -122,6 +133,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#004E89",
     accent: "#D9512C",
     background: "#EEF3F8",
+    card: "#F7FAFC",
   },
   {
     group: "Bløde",
@@ -129,6 +141,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#4A2545",
     accent: "#2F7D7A",
     background: "#F1ECEF",
+    card: "#FAF7F9",
   },
   {
     group: "Bløde",
@@ -136,6 +149,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#3F3A6B",
     accent: "#B04A74",
     background: "#F0EEF5",
+    card: "#F8F7FC",
   },
   {
     group: "Bløde",
@@ -143,6 +157,7 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#3D5A4C",
     accent: "#B45A76",
     background: "#EEF2EC",
+    card: "#F7FAF6",
   },
   {
     group: "Tilgængelighed",
@@ -150,5 +165,6 @@ export const BRAND_PRESETS: OrganizationPreset[] = [
     primary: "#000000",
     accent: "#B3261E",
     background: "#FFFFFF",
+    card: "#F5F5F5",
   },
 ];

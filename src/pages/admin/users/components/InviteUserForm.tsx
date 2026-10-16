@@ -112,7 +112,7 @@ export function InviteUserForm() {
       </div>
 
       {showInvite && (
-        <div className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card">
+        <div className="mb-2.5 overflow-hidden rounded-lg border border-border bg-card">
           <div className="p-4">
             <div className="flex gap-3">
               <Field label="Navn">

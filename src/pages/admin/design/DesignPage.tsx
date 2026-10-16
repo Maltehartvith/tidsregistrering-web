@@ -3,11 +3,28 @@ import AdminPageWrapper from "@/pages/admin/components/AdminPageWrapper";
 import { useBranding } from "@/context/BrandingContext";
 import { DEFAULT_BRANDING } from "@/data/constants";
 import { useActorLabel } from "@/domain/actor";
-import { isValidHex } from "@/theme/colors";
+import { defaultCardFromBackground, isValidHex } from "@/theme/colors";
 import type { Organization } from "@/types/organization";
 import { BrandingForm } from "@/pages/admin/design/components/BrandingForm";
 import { BrandPreview } from "@/pages/admin/design/components/BrandPreview";
 import { Button } from "@/components/ui/Button";
+
+const COLOR_KEYS = ["primary", "accent", "background", "card"] as const;
+
+function toDraft(branding: Organization): Organization {
+  return {
+    orgName: branding.orgName,
+    appTitle: branding.appTitle,
+    contactEmail: branding.contactEmail,
+    logo: branding.logo,
+    primary: branding.primary,
+    accent: branding.accent,
+    background: branding.background,
+    card: isValidHex(branding.card)
+      ? branding.card
+      : defaultCardFromBackground(branding.background),
+  };
+}
 
 export function DesignPage() {
   const actor = useActorLabel();
@@ -18,19 +35,12 @@ export function DesignPage() {
     isSaving,
     ...branding
   } = useBranding();
-  const [draft, setDraft] = useState<Organization>({
-    orgName: branding.orgName,
-    appTitle: branding.appTitle,
-    contactEmail: branding.contactEmail,
-    logo: branding.logo,
-    primary: branding.primary,
-    accent: branding.accent,
-    background: branding.background,
-  });
+  const [draft, setDraft] = useState<Organization>(() => toDraft(branding));
   const [logoError, setLogoError] = useState("");
   const [formError, setFormError] = useState("");
 
-  const dirty = JSON.stringify(draft) !== JSON.stringify(branding);
+  const saved = toDraft(branding);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
 
   const save = async () => {
     const orgName = draft.orgName.trim();
@@ -39,11 +49,7 @@ export function DesignPage() {
       setFormError("Udfyld både navn og titel.");
       return;
     }
-    if (
-      !(["primary", "accent", "background"] as const).every((k) =>
-        isValidHex(draft[k]),
-      )
-    ) {
+    if (!COLOR_KEYS.every((k) => isValidHex(draft[k]))) {
       setFormError("En af farverne er ikke en gyldig farvekode (fx #12394A).");
       return;
     }
@@ -56,23 +62,18 @@ export function DesignPage() {
     }
     const next = { ...draft, orgName, appTitle, contactEmail };
     const changes = [];
-    if (next.orgName !== branding.orgName)
+    if (next.orgName !== saved.orgName)
       changes.push(`navn til "${next.orgName}"`);
-    if (next.appTitle !== branding.appTitle)
+    if (next.appTitle !== saved.appTitle)
       changes.push(`titel til "${next.appTitle}"`);
-    if (next.contactEmail !== (branding.contactEmail || ""))
+    if (next.contactEmail !== (saved.contactEmail || ""))
       changes.push(
         next.contactEmail
           ? `kontakt-email til ${next.contactEmail}`
           : "fjernede kontakt-email",
       );
-    if (next.logo !== branding.logo) changes.push("logo");
-    if (
-      (["primary", "accent", "background"] as const).some(
-        (k) => next[k] !== branding[k],
-      )
-    )
-      changes.push("farver");
+    if (next.logo !== saved.logo) changes.push("logo");
+    if (COLOR_KEYS.some((k) => next[k] !== saved[k])) changes.push("farver");
     await saveBranding(next, {
       toastSuccessMessage: "Design gemt",
       logArgs:
@@ -93,7 +94,7 @@ export function DesignPage() {
   };
 
   const undo = () => {
-    setDraft(branding);
+    setDraft(toDraft(branding));
     setFormError("");
     setLogoError("");
   };

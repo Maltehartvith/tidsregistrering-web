@@ -130,13 +130,24 @@ function scaleVars(
   return vars;
 }
 
+/** Fallback card tint when older branding payloads omit `card`. */
+export function defaultCardFromBackground(background: string): string {
+  return mixHex(background || "#ECEEEA", "#FFFFFF", 0.65);
+}
+
+export function resolveCardColor(
+  b: Pick<Organization, "background" | "card">,
+): string {
+  return isValidHex(b.card) ? b.card : defaultCardFromBackground(b.background);
+}
+
 export function themeVars(
-  b: Pick<Organization, "primary" | "accent" | "background">,
+  b: Pick<Organization, "primary" | "accent" | "background" | "card">,
 ): Record<string, string> {
   const primary = buildScale(b.primary, PRIMARY_MIXES);
   const secondary = buildScale(b.accent, SECONDARY_MIXES);
   const paper = buildScale(b.background, SURFACE_MIXES);
-  const card = buildScale(mixHex(b.background, "#FFFFFF", 0.65), SURFACE_MIXES);
+  const card = buildScale(resolveCardColor(b), SURFACE_MIXES);
 
   return {
     ...scaleVars("primary", primary),
@@ -168,14 +179,15 @@ export function themeVars(
 }
 
 export function brandWarnings(
-  b: Pick<Organization, "primary" | "accent" | "background">,
+  b: Pick<Organization, "primary" | "accent" | "background" | "card">,
 ): string[] {
+  const card = resolveCardColor(b);
   const warnings: string[] = [];
-  if (contrastRatio(b.primary, "#FAFAF7") < 4.5)
+  if (contrastRatio(b.primary, card) < 4.5)
     warnings.push(
-      "Primærfarven er for lys til hvid tekst på knapper og til overskrifter. Vælg en mørkere farve.",
+      "Primærfarven er for lys til tekst på knapper og kort. Vælg en mørkere farve, eller en lysere kortfarve.",
     );
-  if (contrastRatio(b.accent, "#FAFAF7") < 3)
+  if (contrastRatio(b.accent, card) < 3)
     warnings.push(
       "Accentfarven er meget lys, så plus-timer kan blive svære at læse.",
     );
@@ -183,5 +195,6 @@ export function brandWarnings(
     warnings.push(
       "Primærfarven og baggrunden ligner hinanden for meget, så tekst på baggrunden bliver svær at læse.",
     );
+
   return warnings;
 }

@@ -27,7 +27,7 @@ export function ColorInput({
   const swatch = isValidHex(value) ? toPickerValue(value) : "#000000";
 
   return (
-    <div className={`flex items-stretch gap-2 ${className}`.trim()}>
+    <div className={`flex gap-2 ${className}`.trim()}>
       <label
         className="relative w-14  shrink-0 cursor-pointer overflow-hidden rounded-md border-[1.5px] border-border transition-colors hover:border-primary focus-within:border-primary"
         title="Vælg farve"

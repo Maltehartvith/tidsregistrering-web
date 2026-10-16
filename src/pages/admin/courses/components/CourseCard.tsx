@@ -18,7 +18,7 @@ import { useCourses } from "@/context/CoursesContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useEntries } from "@/context/EntriesContext";
 import { useUsers } from "@/context/UsersContext";
-import { zeroTargets, formatTargets } from "@/domain/catalog";
+import { formatTargets } from "@/domain/catalog";
 import {
   coursesWithinTransferWindow,
   programName,
@@ -36,7 +36,6 @@ import { ADMIN_ROLES } from "@/data/constants";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import Input from "@/components/ui/Input";
-import { NumberInput } from "@/components/ui/NumberInput";
 import ToggleButton from "@/components/ui/ToggleButton";
 import { routes } from "@/routes";
 import type { User as AppUser, UserCourseWrite } from "@/types/user";
@@ -44,6 +43,7 @@ import { useActorLabel } from "@/domain/actor";
 import { useActionFeedback } from "@/hooks/queryHelpers";
 import { Selector } from "@/components/ui/Selector";
 import { programKeyFromName } from "@/pages/admin/courses/components/ProgramsSection";
+import { ProgramCategoryFields } from "@/pages/admin/courses/components/ProgramCategoryFields";
 import SectionHeader from "../../components/SectionHeader";
 
 const NEW_PROGRAM = {
@@ -93,7 +93,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
     isSaving: courseSaving,
   } = useCourses();
   const isSaving = catalogSaving || courseSaving;
-  const { students, createStudent, updateStudent } = useStudents();
+  const { students, createStudent, updateStudent, setSelectedStudent } = useStudents();
   const { entries } = useEntries();
   const { adminUsers, updateUser } = useUsers();
 
@@ -116,7 +116,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   const [newProgramName, setNewProgramName] = useState("");
   const [programError, setProgramError] = useState("");
   const [transferSourceId, setTransferSourceId] = useState("");
-  const [editTargets, setEditTargets] = useState(zeroTargets(CATEGORIES));
+  const [editTargets, setEditTargets] = useState<Record<string, number>>({});
   const [addUserId, setAddUserId] = useState<string | null>(null);
   const [confirmTransferRoster, setConfirmTransferRoster] = useState(false);
 
@@ -135,10 +135,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
     );
     setNewProgramName("");
     setProgramError("");
-    setEditTargets({
-      ...zeroTargets(CATEGORIES),
-      ...targetsForCourse(course, programs),
-    });
+    setEditTargets({ ...targetsForCourse(course, programs) });
     setAddUserId("");
     setTransferSourceId("");
     setConfirmTransferRoster(false);
@@ -529,7 +526,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
 
   return (
     <div
-      className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card"
+      className="mb-2.5 overflow-hidden rounded-lg border border-border bg-card"
       key={h.id}
       id={`hold-card-${h.id}`}
     >
@@ -572,15 +569,13 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
                 const next = e.target.value;
                 setEditProgramId(next);
                 setProgramError("");
-                if (next !== NEW_PROGRAM.value) {
+                if (next === NEW_PROGRAM.value) {
+                  setNewProgramName("");
+                  setEditTargets({});
+                } else {
                   setNewProgramName("");
                   const program = programs[next];
-                  if (program) {
-                    setEditTargets({
-                      ...zeroTargets(CATEGORIES),
-                      ...program.targets,
-                    });
-                  }
+                  setEditTargets(program ? { ...program.targets } : {});
                 }
               }}
               options={[...programOptions, NEW_PROGRAM]}
@@ -601,35 +596,17 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               {programError}
             </div>
           )}
-          <Field
+          <ProgramCategoryFields
             label="Uddannelsens totalmål"
             hint={
               creatingNewProgram
-                ? "Totalmål for den nye uddannelse (program) — gælder for alle hold knyttet til den."
-                : "Rediger uddannelsens totalmål (program targets). Gælder for alle hold under den valgte uddannelse."
+                ? "Totalmål for den nye uddannelse — gælder for alle hold knyttet til den."
+                : "Rediger uddannelsens totalmål. Gælder for alle hold under den valgte uddannelse."
             }
-          >
-            <div className="flex gap-3">
-              {Object.values(CATEGORIES).map((c) => (
-                <div key={c.key} className="flex-1">
-                  <Field label={c.short} className="mb-0">
-                    <NumberInput
-                      min={0}
-                      step={1}
-                      inputMode="numeric"
-                      value={editTargets[c.key] ?? 0}
-                      onChange={(e) =>
-                        setEditTargets({
-                          ...editTargets,
-                          [c.key]: Number(e.target.value),
-                        })
-                      }
-                    />
-                  </Field>
-                </div>
-              ))}
-            </div>
-          </Field>
+            targets={editTargets}
+            onChange={setEditTargets}
+            categories={CATEGORIES}
+          />
           <div className="mb-4 flex gap-2.5">
             <Button
               variant="primary"
@@ -778,13 +755,13 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
                 </div>
                 <div className="mt-4.5 flex gap-2.5" style={{ marginTop: 10 }}>
                   <button
-                    className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                    className="flex-1 cursor-pointer rounded-md border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                     onClick={() => setConfirmTransferRoster(false)}
                   >
                     Annuller
                   </button>
                   <button
-                    className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                    className="flex-1 cursor-pointer rounded-md border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
                     onClick={transferRoster}
                   >
                     Ja, overfør{" "}
@@ -893,7 +870,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
           >
             Tilføj flere kursister
           </div>
-          <label className="inline-flex w-auto flex-none cursor-pointer items-center gap-2 rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45">
+          <label className="inline-flex w-auto flex-none cursor-pointer items-center gap-2 rounded-md border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45">
             <Upload size={14} />
             {importingCourseId === h.id
               ? "Importerer..."
@@ -993,13 +970,9 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
             Denne indstilling anvendes på alle {members.length} kursister i{" "}
             {h.label}.
           </p>
-          <button
-            className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
-            style={{ width: "100%" }}
-            onClick={applyToCourse}
-          >
+          <Button variant="primary" className="w-full" onClick={applyToCourse}>
             Anvend på hele holdet
-          </button>
+          </Button>
 
           {draftFrom &&
             members.some((s) =>
@@ -1017,34 +990,31 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
                   automatisk ud af regnskabet igen for alle berørte kursister.
                 </div>
                 <div className="mt-4.5 flex gap-2.5" style={{ marginTop: 10 }}>
-                  <button
-                    className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  <Button
+                    variant="secondary"
+                    className="w-full"
                     onClick={() => setConfirmRemoveCourseId(null)}
                   >
                     Annuller
-                  </button>
-                  <button
-                    className="flex-1 cursor-pointer rounded-[10px] border-0 bg-primary px-4 py-3 font-sans text-sm font-semibold text-on-primary transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
+                  </Button>
+                  <Button
+                    variant="primary"
+                    className="w-full"
                     onClick={() => removeFromCourse(draftFrom)}
                   >
                     Ja, fjern helt
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
-              <button
-                className="flex-1 cursor-pointer rounded-[10px] border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45"
-                style={{
-                  width: "100%",
-                  marginTop: 10,
-                  color: "var(--secondary)",
-                  borderColor: "var(--secondary)",
-                }}
+              <Button
+                variant="secondary"
+                className="w-full border-red-700 text-red-700 hover:bg-red-700/10 mt-2"
                 onClick={() => setConfirmRemoveCourseId(draftFrom as string)}
                 title="Brug denne hvis overførslen ved en fejl blev sat op med det forkerte hold"
               >
                 <Trash2 size={14} /> Fjern denne overførsel helt for hele holdet
-              </button>
+              </Button>
             ))}
 
           <div
@@ -1072,7 +1042,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
                 kursist herunder for at gå direkte dertil.
               </p>
               <div
-                className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5"
+                className="flex flex-col gap-2 rounded-md border-[1.5px] border-border bg-card px-3 py-2.5"
                 style={{ marginBottom: 12 }}
               >
                 {members.map((m) => (
@@ -1080,7 +1050,10 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
                     key={m.id}
                     className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-primary"
                     style={{ margin: 0, textAlign: "left" }}
-                    onClick={() => navigate(routes.adminStudent(m.id))}
+                    onClick={() => {
+                      setSelectedStudent(m);
+                      navigate(routes.adminStudent(m.id));
+                    }}
                   >
                     {m.name}
                   </button>
@@ -1088,7 +1061,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               </div>
             </>
           ) : confirmDeleteCourseId === h.id ? (
-            <div className="p-5 bg-red-600/20 border border-red-600/30 border-dashed rounded-xl m-4">
+            <div className="p-5 bg-red-600/20 border border-red-600/30 border-dashed rounded-xl">
               <div className="font-mono uppercase tracking-[0.08em] text-black-400">
                 Bekræft sletning
               </div>

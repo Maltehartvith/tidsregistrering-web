@@ -8,7 +8,7 @@ import { useBranding } from "@/context/BrandingContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
 import { useEntries } from "@/context/EntriesContext";
-import { categoryOf } from "@/domain/catalog";
+import { categoriesForCourseIds, categoryOf } from "@/domain/catalog";
 import {
   programName,
   courseLabel,
@@ -51,16 +51,24 @@ export const OverviewTab = () => {
     programs,
     CATEGORIES,
   );
-  const totalsThisHold = totalsForStudentOnHold(
-    student,
-    entries,
-    homeCourseId ?? "",
-    CATEGORIES,
-  );
   const homeCourse = homeCourseId ? courses[homeCourseId] : undefined;
-  const targetsThisHold = targetsForCourse(homeCourse, programs);
-  const totals = scope === "hold" ? totalsThisHold : totalsWholeProgram;
-  const targets = scope === "hold" ? targetsThisHold : targetsWholeProgram;
+  const includedCourses = [
+    ...(homeCourseId
+      ? student.courses.filter(
+          (row) => row.id === homeCourseId && row.included,
+        )
+      : []),
+    ...includedPrevious,
+  ];
+  const selectedCourseId = includedCourses.some((row) => row.id === scope)
+    ? scope
+    : null;
+  const totals = selectedCourseId
+    ? totalsForStudentOnHold(student, entries, selectedCourseId, CATEGORIES)
+    : totalsWholeProgram;
+  const targets = selectedCourseId
+    ? targetsForCourse(courses[selectedCourseId], programs)
+    : targetsWholeProgram;
 
   const myEntries = entries.filter((e) => e.userId === student.id);
 
@@ -75,7 +83,17 @@ export const OverviewTab = () => {
       )}`
     : "";
 
-  const categoriesList = Object.values(CATEGORIES);
+  const scopeCourseIds = selectedCourseId
+    ? [selectedCourseId]
+    : includedCourses.map((row) => row.id);
+  const categoriesList = categoriesForCourseIds(
+    scopeCourseIds,
+    courses,
+    programs,
+    CATEGORIES,
+  );
+  const cardsLoading =
+    (catalogLoading || coursesLoading) && categoriesList.length === 0;
 
   return (
     <>
@@ -144,42 +162,51 @@ export const OverviewTab = () => {
         )}
       </div>
 
-      {includedPrevious.length > 0 && (
+      {includedCourses.length > 1 && (
         <div className="flex flex-wrap gap-2" style={{ marginBottom: 12 }}>
           <Button
             variant="pill"
             style={{
-              background: scope === "uddannelse" ? "var(--ink)" : "var(--card)",
-              color: scope === "uddannelse" ? "var(--card)" : "var(--ink)",
+              background: selectedCourseId ? "var(--card)" : "var(--ink)",
+              color: selectedCourseId ? "var(--ink)" : "var(--card)",
             }}
             onClick={() => setScope("uddannelse")}
           >
             Hele uddannelsen
           </Button>
-          <Button
-            variant="pill"
-            style={{
-              background: scope === "hold" ? "var(--ink)" : "var(--card)",
-              color: scope === "hold" ? "var(--card)" : "var(--ink)",
-            }}
-            onClick={() => setScope("hold")}
-          >
-            Dette hold
-          </Button>
+          {includedCourses.map((row) => (
+            <Button
+              key={row.id}
+              variant="pill"
+              style={{
+                background: scope === row.id ? "var(--ink)" : "var(--card)",
+                color: scope === row.id ? "var(--card)" : "var(--ink)",
+              }}
+              onClick={() => setScope(row.id)}
+            >
+              {courseLabel(row.id, courses)}
+            </Button>
+          ))}
         </div>
       )}
       <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-        {catalogLoading && categoriesList.length === 0
-          ? [0, 1, 2].map((i) => <CategoryCardGhost key={i} />)
-          : categoriesList.map((cat) => (
-              <CategoryCard
-                key={cat.key}
-                label={cat.label}
-                registered={totals[cat.key]}
-                target={targets[cat.key]}
-                color={cat.color}
-              />
-            ))}
+        {cardsLoading ? (
+          [0, 1, 2].map((i) => <CategoryCardGhost key={i} />)
+        ) : categoriesList.length === 0 ? (
+          <p className="col-span-full px-1 py-2 text-[13px] text-ink-soft">
+            Ingen kategorier på de valgte hold.
+          </p>
+        ) : (
+          categoriesList.map((cat) => (
+            <CategoryCard
+              key={cat.key}
+              label={cat.label}
+              registered={totals[cat.key]}
+              target={targets[cat.key]}
+              color={cat.color}
+            />
+          ))
+        )}
       </div>
       <div className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink">
         Seneste registreringer

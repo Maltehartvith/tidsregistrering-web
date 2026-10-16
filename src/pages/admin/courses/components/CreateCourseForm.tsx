@@ -2,7 +2,7 @@ import { useState } from "react";
 import { PlusCircle, School } from "lucide-react";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
-import { defaultTargets, formatTargets } from "@/domain/catalog";
+import { formatTargets } from "@/domain/catalog";
 import { Field } from "@/components/ui/Field";
 import { useActorLabel } from "@/domain/actor";
 import { programKeyFromName } from "@/pages/admin/courses/components/ProgramsSection";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Selector } from "@/components/ui/Selector";
+import { ProgramCategoryFields } from "@/pages/admin/courses/components/ProgramCategoryFields";
 
 const NEW_PROGRAM = {
   value: "__new__",
@@ -55,9 +56,9 @@ export function CreateCourseForm({
     programOptions[0]?.value || NEW_PROGRAM.value,
   );
   const [newProgramName, setNewProgramName] = useState("");
-  const [newCourseTargets, setNewCourseTargets] = useState(
-    defaultTargets(CATEGORIES),
-  );
+  const [newCourseTargets, setNewCourseTargets] = useState<
+    Record<string, number>
+  >({});
   const [createError, setCreateError] = useState("");
 
   const creatingNewProgram = newCourseProgramId === NEW_PROGRAM.value;
@@ -70,7 +71,7 @@ export function CreateCourseForm({
     setNewCourseYear(String(new Date().getFullYear()));
     setNewCourseProgramId(programOptions[0]?.value || NEW_PROGRAM.value);
     setNewProgramName("");
-    setNewCourseTargets(defaultTargets(CATEGORIES));
+    setNewCourseTargets({});
     setCreateError("");
   };
 
@@ -159,7 +160,7 @@ export function CreateCourseForm({
       </div>
 
       {showCreate && (
-        <div className="mb-2.5 overflow-hidden rounded-[14px] border border-border bg-card">
+        <div className="mb-2.5 overflow-hidden rounded-lg border border-border bg-card">
           <div className="px-4 pb-4 pt-3.5">
             <div className="flex gap-3">
               <Field label="Holdnavn">
@@ -193,15 +194,11 @@ export function CreateCourseForm({
                   const next = e.target.value;
                   setNewCourseProgramId(next);
                   setCreateError("");
-                  if (next !== NEW_PROGRAM.value) {
+                  if (next === NEW_PROGRAM.value) {
+                    setNewCourseTargets({});
+                  } else {
                     setNewProgramName("");
-                    const program = programs[next];
-                    if (program) {
-                      setNewCourseTargets({
-                        ...defaultTargets(CATEGORIES),
-                        ...program.targets,
-                      });
-                    }
+                    setNewCourseTargets({});
                   }
                 }}
               />
@@ -217,31 +214,13 @@ export function CreateCourseForm({
               </Field>
             )}
             {creatingNewProgram && (
-              <Field
+              <ProgramCategoryFields
                 label="Totalmål for den nye uddannelse"
                 hint="Holdet bruger uddannelsens totalmål. Delmål sættes her ved oprettelse."
-              >
-                <div className="flex gap-3">
-                  {Object.values(CATEGORIES).map((c) => (
-                    <div key={c.key} className="flex-1">
-                      <Field label={c.short} className="mb-0">
-                        <NumberInput
-                          min={0}
-                          step={1}
-                          inputMode="numeric"
-                          value={newCourseTargets[c.key] ?? 0}
-                          onChange={(e) =>
-                            setNewCourseTargets({
-                              ...newCourseTargets,
-                              [c.key]: Number(e.target.value),
-                            })
-                          }
-                        />
-                      </Field>
-                    </div>
-                  ))}
-                </div>
-              </Field>
+                targets={newCourseTargets}
+                onChange={setNewCourseTargets}
+                categories={CATEGORIES}
+              />
             )}
             {createError && (
               <div className="-mt-1.5 mb-3 text-xs text-[#a14b36]">

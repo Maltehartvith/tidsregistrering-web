@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   type ReactNode,
   type Dispatch,
   type SetStateAction,
@@ -9,7 +10,11 @@ import {
 import type { Organization } from "../types/organization";
 import type { MutationFeedback } from "@/types/log";
 import { withFeedback } from "../hooks/queryHelpers";
-import { themeVars } from "../theme/colors";
+import {
+  defaultCardFromBackground,
+  isValidHex,
+  themeVars,
+} from "../theme/colors";
 import { HC_CLASS } from "../theme/viewPrefs";
 import {
   useBrandingQuery,
@@ -31,12 +36,21 @@ const BrandingContext = createContext<BrandingContextValue | null>(null);
 
 const BRAND_STYLE_ID = "brand-theme";
 
+function normalizeBranding(branding: Organization): Organization {
+  return {
+    ...branding,
+    card: isValidHex(branding.card)
+      ? branding.card
+      : defaultCardFromBackground(branding.background),
+  };
+}
+
 /**
  * Org brand as a stylesheet on :root, skipped while .hc is active
  * (high-contrast mode replaces the whole palette, like .dark).
  */
 function applyBrandStylesheet(branding: Organization) {
-  const vars = themeVars(branding);
+  const vars = themeVars(normalizeBranding(branding));
   let styleEl = document.getElementById(
     BRAND_STYLE_ID,
   ) as HTMLStyleElement | null;
@@ -66,7 +80,11 @@ function applyBrandStylesheet(branding: Organization) {
 }
 
 export function BrandingProvider({ children }: { children: ReactNode }) {
-  const { data: branding, isLoading } = useBrandingQuery();
+  const { data: brandingData, isLoading } = useBrandingQuery();
+  const branding = useMemo(
+    () => normalizeBranding(brandingData),
+    [brandingData],
+  );
   const setBranding = useBrandingSetter();
   const saveMutation = useSaveBranding();
 
@@ -81,7 +99,9 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
         isLoading,
         setBranding,
         saveBranding: (next, feedback) =>
-          saveMutation.mutateAsync(withFeedback(next, feedback)),
+          saveMutation.mutateAsync(
+            withFeedback(normalizeBranding(next), feedback),
+          ),
         isSaving: saveMutation.isPending,
       }}
     >

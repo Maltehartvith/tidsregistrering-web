@@ -6,7 +6,7 @@ import { useEntries } from "@/context/EntriesContext";
 import { CategoryPill } from "@/components/ui/CategoryPill";
 import { EntryForm } from "@/components/ui/EntryForm";
 import Input from "@/components/ui/Input";
-import { categoryOf } from "@/domain/catalog";
+import { categoriesForCourseIds, categoryOf } from "@/domain/catalog";
 import { emptyForm } from "@/domain/entryForm";
 import { courseLabel } from "@/domain/totals";
 import { activeCourseId } from "@/domain/userCourses";
@@ -15,8 +15,9 @@ import { useStudentOutlet } from "./StudentLayout";
 
 export const HistoryTab = () => {
   const { student } = useStudentOutlet();
-  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS } = useCatalog({
+  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS, programs } = useCatalog({
     categories: true,
+    programs: true,
     goals: true,
   });
   const { courses } = useCourses();
@@ -24,8 +25,8 @@ export const HistoryTab = () => {
   const homeCourseId = activeCourseId(student);
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState(
-    emptyForm(homeCourseId, CATEGORIES, LEARNING_GOALS),
+  const [editForm, setEditForm] = useState(() =>
+    emptyForm(homeCourseId, {}, LEARNING_GOALS),
   );
   const [filterCat, setFilterCat] = useState("alle");
   const [filterHold, setFilterHold] = useState("alle");
@@ -114,7 +115,12 @@ export const HistoryTab = () => {
         >
           Alle
         </button>
-        {Object.values(CATEGORIES).map((c) => (
+        {categoriesForCourseIds(
+          student.courses.map((course) => course.id),
+          courses,
+          programs,
+          CATEGORIES,
+        ).map((c) => (
           <CategoryPill
             key={c.key}
             cat={c}
@@ -153,15 +159,15 @@ export const HistoryTab = () => {
           ))}
         </div>
       )}
-
-      <Input
-        placeholder="Søg i noter, terapeut eller læringsmål..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        icon={<Search size={15} />}
-        type="text"
-        className="mb-4"
-      />
+      <div className="mb-4">
+        <Input
+          placeholder="Søg i noter, terapeut eller læringsmål..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          icon={<Search size={15} />}
+          type="text"
+        />
+      </div>
 
       {filteredEntries.length === 0 && (
         <div className="px-2.5 py-10 text-center text-[13px] text-ink-soft">

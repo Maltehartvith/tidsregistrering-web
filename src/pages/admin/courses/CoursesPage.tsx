@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { useCourses } from "@/context/CoursesContext";
+import { useStudents } from "@/context/StudentsContext";
 import AdminPageWrapper from "@/pages/admin/components/AdminPageWrapper";
 import { ProgramsSection } from "@/pages/admin/courses/components/ProgramsSection";
 import { CreateCourseForm } from "@/pages/admin/courses/components/CreateCourseForm";
 import { CourseCard } from "@/pages/admin/courses/components/CourseCard";
+import { GhostBlock } from "@/components/ui/Ghost";
 
 export function CoursesPage() {
-  const { courses } = useCourses();
+  const { courses, isLoading: isCoursesLoading } = useCourses();
+  const { isLoading: isStudentsLoading } = useStudents();
+  const isLoading = isCoursesLoading || isStudentsLoading;
   const [openCourseId, setOpenCourseId] = useState<string | null>(null);
 
   const toggleCourse = (courseId: string) =>
@@ -43,14 +47,26 @@ export function CoursesPage() {
         timerne trækkes automatisk ud af regnskabet.
       </p>
 
-      {Object.values(courses).map((h) => (
-        <CourseCard
-          key={h.id}
-          courseId={h.id}
-          isOpen={openCourseId === h.id}
-          onToggle={() => toggleCourse(h.id)}
-        />
-      ))}
+      {isLoading ? (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 10 }).map((_, index) => (
+            <div key={index}>
+              <GhostBlock className="h-16 w-full rounded-lg!" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          {Object.values(courses).map((h) => (
+            <CourseCard
+              key={h.id}
+              courseId={h.id}
+              isOpen={openCourseId === h.id}
+              onToggle={() => toggleCourse(h.id)}
+            />
+          ))}
+        </>
+      )}
     </AdminPageWrapper>
   );
 }

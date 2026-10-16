@@ -1,7 +1,8 @@
-import { useState, useEffect, type ChangeEvent } from "react";
+import { useState, useEffect, useRef, type ChangeEvent } from "react";
 import { User, ChevronDown } from "lucide-react";
 import { useCatalog } from "../../context/CatalogContext";
-import { categoryOf } from "../../domain/catalog";
+import { useCourses } from "../../context/CoursesContext";
+import { categoriesForCourseIds, categoryOf } from "../../domain/catalog";
 import { Field } from "./Field";
 import { CategoryPill } from "./CategoryPill";
 import type { EntryFormValues } from "../../types/entry";
@@ -31,15 +32,33 @@ export function EntryForm({
   showHoldField?: boolean;
   holdOptions?: Course[];
 }) {
-  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS } = useCatalog({
+  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS, programs } = useCatalog({
     categories: true,
+    programs: true,
     goals: true,
   });
+  const { courses } = useCourses();
+  const relevant = values.courseId
+    ? categoriesForCourseIds([values.courseId], courses, programs, CATEGORIES)
+    : [];
+  const relevantKeys = relevant.map((category) => category.key).join("\0");
+  const prevCourseId = useRef(values.courseId);
   const cat = categoryOf(ALL_CATEGORIES, values.category);
   const [error, setError] = useState("");
   useEffect(() => {
     setError("");
   }, [values]);
+
+  useEffect(() => {
+    const courseChanged = prevCourseId.current !== values.courseId;
+    prevCourseId.current = values.courseId;
+    const keys = relevantKeys ? relevantKeys.split("\0") : [];
+    if (values.category && keys.includes(values.category)) return;
+    const first = keys[0];
+    if (!first) return;
+    if (!courseChanged && values.category) return;
+    onChange({ ...values, category: first });
+  }, [values, relevantKeys, onChange]);
   const set =
     (key: keyof EntryFormValues) =>
     (
@@ -90,12 +109,17 @@ export function EntryForm({
         </span>
         <div className="flex flex-wrap gap-2">
           {[
-            ...Object.values(CATEGORIES),
-            ...(values.category && !CATEGORIES[values.category]
+            ...relevant,
+            ...(values.category &&
+            !relevant.some((category) => category.key === values.category)
               ? [
                   {
                     ...categoryOf(ALL_CATEGORIES, values.category),
-                    short: `${categoryOf(ALL_CATEGORIES, values.category).short} (arkiveret)`,
+                    short:
+                      !ALL_CATEGORIES[values.category] ||
+                      ALL_CATEGORIES[values.category].archived
+                        ? `${categoryOf(ALL_CATEGORIES, values.category).short} (arkiveret)`
+                        : `${categoryOf(ALL_CATEGORIES, values.category).short} (ikke på holdet)`,
                   },
                 ]
               : []),

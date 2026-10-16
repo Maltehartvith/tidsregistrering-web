@@ -132,7 +132,7 @@ export default function LearningGoalsSection() {
 
       {LEARNING_GOALS.map((g, i) => (
         <div
-          className="mb-2.5 overflow-hidden rounded-md border border-border bg-card"
+          className="mb-2.5 overflow-hidden rounded-lg border border-border bg-card"
           key={g}
         >
           <div className="p-4">

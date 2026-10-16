@@ -1,4 +1,5 @@
 import { useActorLabel } from "@/domain/actor";
+import { categoriesForCourseIds } from "@/domain/catalog";
 import type { MutationFeedback } from "@/types/log";
 import {
   coursesWithinTransferWindow,
@@ -9,10 +10,7 @@ import {
   totalsForStudent,
   totalsForStudentOnHold,
 } from "@/domain/totals";
-import {
-  activeCourseId,
-  previousCourses,
-} from "@/domain/userCourses";
+import { activeCourseId, previousCourses } from "@/domain/userCourses";
 import type { User, UserCourseWrite } from "@/types/user";
 import { Check, Clock3, PlusCircle, X } from "lucide-react";
 import { useState } from "react";
@@ -20,6 +18,7 @@ import ChangeCourseCard from "./ChangeCourseCard";
 import { Button } from "@/components/ui/Button";
 import ToggleButton from "@/components/ui/ToggleButton";
 import { CategoryCard } from "@/components/ui/CategoryCard";
+import { CategoryCardGhost } from "@/components/ui/Ghost";
 import { Selector } from "@/components/ui/Selector";
 import SectionHeader from "@/pages/admin/components/SectionHeader";
 import { useStudents } from "@/context/StudentsContext";
@@ -29,8 +28,12 @@ import { useEntries } from "@/context/EntriesContext";
 
 const CourseHistory = () => {
   const { selectedStudent, updateStudent: persistStudent } = useStudents();
-  const { courses } = useCourses();
-  const { CATEGORIES: categories, programs } = useCatalog({
+  const { courses, isLoading: coursesLoading } = useCourses();
+  const {
+    CATEGORIES: categories,
+    programs,
+    isLoading: catalogLoading,
+  } = useCatalog({
     categories: true,
     programs: true,
   });
@@ -67,30 +70,53 @@ const CourseHistory = () => {
     programs,
     categories,
   );
-  const totalsThisHold = totalsForStudentOnHold(
-    selectedStudent,
-    studentEntries,
-    homeCourseId || "",
+  const includedPrevious = previous.filter((course) => course.included);
+  const includedCourses = [
+    ...(homeCourseId
+      ? selectedStudent.courses.filter(
+          (course) => course.id === homeCourseId && course.included,
+        )
+      : []),
+    ...includedPrevious,
+  ];
+  const selectedCourseId = includedCourses.some((course) => course.id === scope)
+    ? scope
+    : null;
+  const totals = selectedCourseId
+    ? totalsForStudentOnHold(
+        selectedStudent,
+        studentEntries,
+        selectedCourseId,
+        categories,
+      )
+    : totalsWholeProgram;
+  const targets = selectedCourseId
+    ? targetsForCourse(courses[selectedCourseId], programs)
+    : targetsWholeProgram;
+  const scopeCourseIds = selectedCourseId
+    ? [selectedCourseId]
+    : includedCourses.map((course) => course.id);
+  const categoriesList = categoriesForCourseIds(
+    scopeCourseIds,
+    courses,
+    programs,
     categories,
   );
-  const targetsThisHold = targetsForCourse(currentCourse, programs);
-
-  const includedPrevious = previous.filter((course) => course.included);
-  const totals = scope === "hold" ? totalsThisHold : totalsWholeProgram;
-  const targets = scope === "hold" ? targetsThisHold : targetsWholeProgram;
+  const cardsLoading =
+    (catalogLoading || coursesLoading) && categoriesList.length === 0;
   const availableCoursesToAdd = coursesWithinTransferWindow(
     homeCourseId,
     courses,
-  ).filter((h) => !selectedStudent.courses.some((course) => course.id === h.id));
+  ).filter(
+    (h) => !selectedStudent.courses.some((course) => course.id === h.id),
+  );
 
   const patchCourses = (
     coursesWrite: UserCourseWrite[],
     feedback?: MutationFeedback<User> | null,
   ) => persistStudent(selectedStudent.id, { courses: coursesWrite }, feedback);
 
-  const toWrite = (
-    rows: typeof selectedStudent.courses,
-  ): UserCourseWrite[] =>
+  const toWrite = (rows: typeof selectedStudent.courses): UserCourseWrite[] =>
     rows.map((course) => ({
       id: course.id,
       active: course.active,
@@ -127,7 +153,9 @@ const CourseHistory = () => {
       : 0;
     const label = courses[courseId]?.label || courses[courseId]?.key || "Hold";
     await patchCourses(
-      toWrite(selectedStudent.courses.filter((course) => course.id !== courseId)),
+      toWrite(
+        selectedStudent.courses.filter((course) => course.id !== courseId),
+      ),
       {
         toastSuccessMessage: wasIncluded
           ? `Overførsel fjernet — ${hoursFromHold} timer trukket tilbage`
@@ -174,8 +202,12 @@ const CourseHistory = () => {
 
   return (
     <div>
-      <SectionHeader icon={<Clock3 size={20} />} title="Holdhistorik" />
-      <div className="mb-4 rounded-[14px] border border-border bg-card px-4.5 py-4">
+      <SectionHeader
+        icon={<Clock3 size={20} />}
+        title="Holdhistorik"
+        className="mb-2"
+      />
+      <div className="mb-4 rounded-lg border border-border bg-card px-4.5 py-4">
         <p className="mb-3.5 text-[13px] leading-normal text-ink-soft">
           Kursister kan have gået på et andet hold eller kursus tidligere i
           uddannelsen. Her ses alle hold {selectedStudent.name} har været
@@ -306,35 +338,46 @@ const CourseHistory = () => {
         )}
       </div>
 
-      {includedPrevious.length > 0 && (
+      {includedCourses.length > 1 && (
         <div className="flex flex-wrap gap-2" style={{ marginBottom: 12 }}>
           <Button
-            variant={scope === "uddannelse" ? "primary" : "secondary"}
+            variant={selectedCourseId ? "secondary" : "primary"}
             size="small"
             onClick={() => setScope("uddannelse")}
           >
             Hele uddannelsen
           </Button>
-          <Button
-            variant={scope === "hold" ? "primary" : "secondary"}
-            size="small"
-            onClick={() => setScope("hold")}
-          >
-            Dette hold
-          </Button>
+          {includedCourses.map((course) => (
+            <Button
+              key={course.id}
+              variant={scope === course.id ? "primary" : "secondary"}
+              size="small"
+              onClick={() => setScope(course.id)}
+            >
+              {courseLabel(course.id, courses)}
+            </Button>
+          ))}
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 2xl:grid-cols-3 md:gap-3">
-        {Object.values(categories).map((cat) => (
-          <CategoryCard
-            key={cat.key}
-            label={cat.label}
-            registered={totals[cat.key]}
-            target={targets[cat.key]}
-            color={cat.color}
-          />
-        ))}
+        {cardsLoading ? (
+          [0, 1, 2].map((i) => <CategoryCardGhost key={i} />)
+        ) : categoriesList.length === 0 ? (
+          <p className="col-span-full px-1 py-2 text-[13px] text-ink-soft">
+            Ingen kategorier på de valgte hold.
+          </p>
+        ) : (
+          categoriesList.map((cat) => (
+            <CategoryCard
+              key={cat.key}
+              label={cat.label}
+              registered={totals[cat.key]}
+              target={targets[cat.key]}
+              color={cat.color}
+            />
+          ))
+        )}
       </div>
     </div>
   );

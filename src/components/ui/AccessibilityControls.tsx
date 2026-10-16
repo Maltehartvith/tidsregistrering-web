@@ -1,6 +1,6 @@
 import { TEXT_SIZES } from "@/theme/viewPrefs";
 import type { ViewPrefs } from "@/types/ui";
-import { SegButton } from "./SegButton";
+import { Button } from "./Button";
 
 export function AccessibilityControls({
   prefs,
@@ -14,18 +14,20 @@ export function AccessibilityControls({
       <div>
         <div className="mb-1.5 text-xs font-semibold text-ink">Kontrast</div>
         <div className="flex gap-1.5">
-          <SegButton
-            pressed={!prefs.highContrast}
+          <Button
+            variant={!prefs.highContrast ? "primary" : "secondary"}
             onClick={() => onChange({ ...prefs, highContrast: false })}
+            className="w-full"
           >
             Standard
-          </SegButton>
-          <SegButton
-            pressed={prefs.highContrast}
+          </Button>
+          <Button
+            className="w-full"
+            variant={prefs.highContrast ? "primary" : "secondary"}
             onClick={() => onChange({ ...prefs, highContrast: true })}
           >
             Høj kontrast
-          </SegButton>
+          </Button>
         </div>
       </div>
       <div>
@@ -34,10 +36,11 @@ export function AccessibilityControls({
         </div>
         <div className="flex gap-1.5">
           {TEXT_SIZES.map((t) => (
-            <SegButton
+            <Button
               key={t.key}
-              pressed={prefs.textSize === t.key}
+              variant={prefs.textSize === t.key ? "primary" : "secondary"}
               onClick={() => onChange({ ...prefs, textSize: t.key })}
+              className="w-full flex-col gap-0!"
             >
               <span
                 className="mb-1 block leading-none"
@@ -46,7 +49,7 @@ export function AccessibilityControls({
                 Aa
               </span>
               {t.label}
-            </SegButton>
+            </Button>
           ))}
         </div>
       </div>

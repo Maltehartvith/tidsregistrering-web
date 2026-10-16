@@ -563,6 +563,7 @@ export const BRANDING_INITIAL: Organization = {
   primary: "#12394A",
   accent: "#C25A4C",
   background: "#ECEEEA",
+  card: "#FAFAF7",
 };
 
 export const BRAND_PRESETS: OrganizationPreset[] = [
