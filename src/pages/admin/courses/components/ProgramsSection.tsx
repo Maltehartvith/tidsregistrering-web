@@ -14,6 +14,8 @@ import { formatTargets } from "@/domain/catalog";
 import { Field } from "@/components/ui/Field";
 import { Program, ProgramDraft } from "@/types/domain";
 import { useActorLabel } from "@/domain/actor";
+import { useAuth } from "@/context/AuthContext";
+import { isAdministrator } from "@/api/queryKeys";
 import type { MutationFeedback } from "@/types/log";
 import SectionHeader from "../../components/SectionHeader";
 import { Button } from "@/components/ui/Button";
@@ -41,6 +43,7 @@ export function ProgramsSection({
   onToggleCourse,
 }: ProgramsSectionProps) {
   const actor = useActorLabel();
+  const { user } = useAuth();
   const {
     CATEGORIES,
     programs,
@@ -306,6 +309,8 @@ export function ProgramsSection({
                         </button>
                       </div>
                     ) : (
+                      isAdministrator(user?.role) ||
+                      p.createdByUserId === user?.id ? (
                       <div className="flex shrink-0 gap-1.5">
                         <Button
                           variant="icon"
@@ -330,6 +335,7 @@ export function ProgramsSection({
                           <Trash2 size={14} />
                         </Button>
                       </div>
+                      ) : null
                     )}
                   </div>
                   {editingProgramId === p.id && programDraft && (

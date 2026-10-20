@@ -4,6 +4,7 @@ export interface Course {
   label: string;
   startYear: number;
   programId: string;
+  createdByUserId?: string | null;
 }
 
 export type CourseMap = Record<string, Course>;

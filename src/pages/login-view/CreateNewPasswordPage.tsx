@@ -5,6 +5,7 @@ import { useState } from "react";
 import { AuthStep } from "./LoginView";
 import * as api from "../../api/auth";
 import { Button } from "@/components/ui/Button";
+import { passwordError, PASSWORD_HINT } from "../../domain/password";
 
 type CreateNewPasswordPageType = {
   step: AuthStep;
@@ -23,8 +24,9 @@ export const CreateNewPasswordPage = ({
   const [newPassword2, setNewPassword2] = useState("");
 
   const saveNewPassword = async () => {
-    if (newPassword.length < 8) {
-      setError("Adgangskoden skal være mindst 8 tegn.");
+    const tooWeak = passwordError(newPassword);
+    if (tooWeak) {
+      setError(tooWeak);
       return;
     }
     if (newPassword !== newPassword2) {
@@ -62,7 +64,7 @@ export const CreateNewPasswordPage = ({
             className="text-[13px] text-ink-soft"
             style={{ textAlign: "center", marginBottom: 24 }}
           >
-            Mindst 8 tegn.
+            {PASSWORD_HINT}
           </div>
           <Field label="Ny adgangskode">
             <Input

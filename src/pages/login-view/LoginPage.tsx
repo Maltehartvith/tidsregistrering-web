@@ -6,7 +6,7 @@ import { Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { UserRole } from "@/types/user";
 import { useAuth } from "@/context/AuthContext";
-import { BrandLogo, BrandName } from "@/components/brand/Brand";
+import type { OrganizationChoice } from "@/api/auth";
 import ToggleButton from "@/components/ui/ToggleButton";
 
 type LoginPageType = {
@@ -15,26 +15,88 @@ type LoginPageType = {
 };
 
 export const LoginPage = ({ onLoggedIn, goToStep }: LoginPageType) => {
-  const { login } = useAuth();
+  const { login, selectOrganization } = useAuth();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [pending, setPending] = useState<{
+    selectionToken: string;
+    organizations: OrganizationChoice[];
+  } | null>(null);
 
   const handleLogin = async () => {
     setError("");
     setBusy(true);
     try {
-      const session = await login(email.trim(), password, rememberMe);
-      onLoggedIn(session.role);
+      const result = await login(email.trim(), password, rememberMe);
+      if (result.status === "choose-organization") {
+        setPending({
+          selectionToken: result.selectionToken,
+          organizations: result.organizations,
+        });
+        return;
+      }
+      onLoggedIn(result.user.role);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Kunne ikke logge ind.");
     } finally {
       setBusy(false);
     }
   };
+
+  const chooseOrganization = async (organizationId: string) => {
+    if (!pending) return;
+    setError("");
+    setBusy(true);
+    try {
+      const user = await selectOrganization(pending.selectionToken, organizationId);
+      onLoggedIn(user.role);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Kunne ikke vælge organisation.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (pending) {
+    return (
+      <div className="w-full">
+        <div className="flex justify-center mb-0.5 font-display text-3xl font-semibold">
+          Vælg organisation
+        </div>
+        <p className="mb-4 text-center text-[13px] text-ink-soft">
+          Emailen har adgang til flere organisationer. Data fra den ene kan ikke ses i den anden.
+        </p>
+        <div className="flex flex-col gap-2">
+          {pending.organizations.map((organization) => (
+            <Button
+              key={organization.id}
+              variant="secondary"
+              className="w-full"
+              disabled={busy}
+              onClick={() => void chooseOrganization(organization.id)}
+            >
+              {organization.name}
+            </Button>
+          ))}
+        </div>
+        {error && (
+          <div className="mt-3 text-xs text-[#a14b36]">{error}</div>
+        )}
+        <Button
+          variant="ghost"
+          type="button"
+          className="mt-3 text-xs"
+          onClick={() => setPending(null)}
+        >
+          Tilbage
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full">
       <div className="flex justify-center mb-0.5 font-display text-3xl font-semibold">

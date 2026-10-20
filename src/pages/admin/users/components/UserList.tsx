@@ -39,17 +39,12 @@ export function UserList() {
   const resendUserInvite = async (userId: string) => {
     const user = adminUsers.find((u) => u.id === userId);
     try {
-      const result = await resendInvite(userId, {
+      await resendInvite(userId, {
         toastSuccessMessage: `Invitation gensendt til ${user?.email}`,
         logArgs: {
           description: `${actor} gensendte invitation til ${user?.name || userId}`,
         },
       });
-      if (import.meta.env.DEV && result.inviteToken) {
-        console.log(
-          `[invite] ${user?.email} → ${window.location.origin}/invite?token=${result.inviteToken}`,
-        );
-      }
     } catch {
       /* mutationen viser allerede fejl-toast */
     }

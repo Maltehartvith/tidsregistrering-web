@@ -1,14 +1,42 @@
 import type { User } from "../types/user";
 import { ApiError, request } from "./request";
-import { clearToken, readToken, storeToken } from "./token";
 
-type AuthResponse = {
-  token: string;
-  user: User;
+export type OrganizationChoice = {
+  id: string;
+  name: string;
 };
 
+type LoginPayload = {
+  user?: User;
+  chooseOrganization?: boolean;
+  selectionToken?: string;
+  organizations?: OrganizationChoice[];
+};
+
+export type LoginResult =
+  | { status: "signed-in"; user: User }
+  | {
+      status: "choose-organization";
+      selectionToken: string;
+      organizations: OrganizationChoice[];
+    };
+
+function readLogin(payload: LoginPayload): LoginResult {
+  if (payload.chooseOrganization) {
+    if (!payload.selectionToken || !payload.organizations?.length) {
+      throw new ApiError("Kunne ikke vælge organisation.", 500);
+    }
+    return {
+      status: "choose-organization",
+      selectionToken: payload.selectionToken,
+      organizations: payload.organizations,
+    };
+  }
+  if (!payload.user) throw new ApiError("Kunne ikke logge ind.", 500);
+  return { status: "signed-in", user: payload.user };
+}
+
 export async function getMe(): Promise<User | null> {
-  if (!readToken()) return null;
   try {
     return await request<User>("/auth/me");
   } catch (error) {
@@ -16,7 +44,7 @@ export async function getMe(): Promise<User | null> {
       error instanceof ApiError &&
       (error.status === 401 || error.status === 403)
     ) {
-      clearToken();
+      return null;
     }
     return null;
   }
@@ -25,27 +53,35 @@ export async function getMe(): Promise<User | null> {
 export async function login(
   email: string,
   password: string,
-  rememberMe = true,
-): Promise<User> {
-  const session = await request<AuthResponse>("/auth/login", {
+  rememberMe = false,
+): Promise<LoginResult> {
+  const session = await request<LoginPayload>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password, rememberMe }),
   });
-  storeToken(session.token, rememberMe);
-  return session.user;
+  return readLogin(session);
+}
+
+export async function selectOrganization(
+  selectionToken: string,
+  organizationId: string,
+): Promise<User> {
+  const session = await request<LoginPayload>("/auth/select-organization", {
+    method: "POST",
+    body: JSON.stringify({ selectionToken, organizationId }),
+  });
+  const result = readLogin(session);
+  if (result.status !== "signed-in") {
+    throw new ApiError("Kunne ikke vælge organisation.", 500);
+  }
+  return result.user;
 }
 
 export async function logout(): Promise<void> {
-  try {
-    await request("/auth/logout", { method: "POST" });
-  } finally {
-    clearToken();
-  }
+  await request("/auth/logout", { method: "POST" });
 }
 
-export async function forgotPassword(
-  email: string,
-): Promise<{ ok: boolean; token?: string }> {
+export async function forgotPassword(email: string): Promise<{ ok: boolean }> {
   return request("/auth/forgot-password", {
     method: "POST",
     body: JSON.stringify({ email }),
@@ -79,10 +115,13 @@ export async function acceptInvite(input: {
   name: string;
   password: string;
 }): Promise<User> {
-  const session = await request<AuthResponse>("/auth/accept-invite", {
+  const session = await request<LoginPayload>("/auth/accept-invite", {
     method: "POST",
     body: JSON.stringify(input),
   });
-  storeToken(session.token, true);
-  return session.user;
+  const result = readLogin(session);
+  if (result.status !== "signed-in") {
+    throw new ApiError("Kunne ikke fuldføre invitationen.", 500);
+  }
+  return result.user;
 }

@@ -9,6 +9,7 @@ import { InviteAcceptPage } from "@/pages/login-view/InviteAcceptPage";
 import {
   RequireAuth,
   RequireGuest,
+  RequireRole,
   RequireStaff,
   homeForRole,
 } from "@/pages/auth/RequireAuth";
@@ -107,17 +108,17 @@ export function AppRouter() {
       <Route
         path={routes.adminDesign}
         element={
-          <RequireStaff>
+          <RequireRole roles={["administrator"]}>
             <DesignPage />
-          </RequireStaff>
+          </RequireRole>
         }
       />
       <Route
         path={routes.adminUsers}
         element={
-          <RequireStaff>
+          <RequireRole roles={["administrator"]}>
             <UsersPage />
-          </RequireStaff>
+          </RequireRole>
         }
       />
 

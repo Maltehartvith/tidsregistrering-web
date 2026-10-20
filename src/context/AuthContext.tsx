@@ -7,6 +7,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { User } from "../types/user.ts";
 import * as api from "../api/auth.ts";
+import type { LoginResult } from "../api/auth.ts";
 import { domainQueryKeys, queryKeys } from "../api/queryKeys.ts";
 
 interface AuthContextValue {
@@ -16,6 +17,10 @@ interface AuthContextValue {
     email: string,
     password: string,
     rememberMe?: boolean,
+  ) => Promise<LoginResult>;
+  selectOrganization: (
+    selectionToken: string,
+    organizationId: string,
   ) => Promise<User>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -25,6 +30,9 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: true,
   login: async () => {
+    throw new Error("AuthProvider missing");
+  },
+  selectOrganization: async () => {
     throw new Error("AuthProvider missing");
   },
   logout: async () => {},
@@ -42,8 +50,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const login = useCallback(
-    async (email: string, password: string, rememberMe = true) => {
-      const user = await api.login(email, password, rememberMe);
+    async (email: string, password: string, rememberMe = false) => {
+      const result = await api.login(email, password, rememberMe);
+      if (result.status === "signed-in") {
+        queryClient.setQueryData(queryKeys.me, result.user);
+      }
+      return result;
+    },
+    [queryClient],
+  );
+
+  const selectOrganization = useCallback(
+    async (selectionToken: string, organizationId: string) => {
+      const user = await api.selectOrganization(selectionToken, organizationId);
       queryClient.setQueryData(queryKeys.me, user);
       return user;
     },
@@ -71,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: meQuery.data ?? null,
         loading: meQuery.isLoading,
         login,
+        selectOrganization,
         logout,
         refresh,
       }}

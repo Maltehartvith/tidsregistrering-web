@@ -7,6 +7,7 @@ import * as api from "../../api/auth";
 import { domainQueryKeys, queryKeys, homeForRole } from "../../api/queryKeys";
 import { useQueryClient } from "@tanstack/react-query";
 import { routes } from "@/routes";
+import { passwordError, PASSWORD_HINT } from "../../domain/password";
 
 export function InviteAcceptPage() {
   const [params] = useSearchParams();
@@ -60,8 +61,9 @@ export function InviteAcceptPage() {
       setError("Angiv dit navn.");
       return;
     }
-    if (password.length < 8) {
-      setError("Adgangskoden skal være mindst 8 tegn.");
+    const tooWeak = passwordError(password);
+    if (tooWeak) {
+      setError(tooWeak);
       return;
     }
     if (password !== password2) {
@@ -155,7 +157,7 @@ export function InviteAcceptPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Mindst 8 tegn"
+                  placeholder={PASSWORD_HINT}
                   autoComplete="new-password"
                 />
               </div>

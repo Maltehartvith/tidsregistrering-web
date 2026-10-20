@@ -8,6 +8,8 @@ import {
   Palette,
 } from "lucide-react";
 import { routes } from "@/routes";
+import { useAuth } from "@/context/AuthContext";
+import { isAdministrator } from "@/api/queryKeys";
 
 /** Shared admin tabs — config only; AdminTabs renders it. */
 export const adminNavItems = [
@@ -23,6 +25,7 @@ export const adminNavItems = [
     to: routes.adminUsers,
     label: "Administratorer",
     Icon: ShieldCheck,
+    administratorOnly: true,
     isActive: (path: string) => path.startsWith(routes.adminUsers),
   },
   {
@@ -44,6 +47,7 @@ export const adminNavItems = [
     to: routes.adminDesign,
     label: "Design",
     Icon: Palette,
+    administratorOnly: true,
     isActive: (path: string) => path.startsWith(routes.adminDesign),
   },
 ] as const;
@@ -51,27 +55,25 @@ export const adminNavItems = [
 export function AdminTabs() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { user } = useAuth();
+  const items = adminNavItems.filter(
+    (item) =>
+      !("administratorOnly" in item && item.administratorOnly) ||
+      isAdministrator(user?.role),
+  );
 
   return (
     <div>
-      <div className="grid grid-cols-6 md:hidden">
-        {adminNavItems.map(({ key, to, label, Icon, isActive }, index) => (
+      <div className="flex flex-wrap md:hidden">
+        {items.map(({ key, to, label, Icon, isActive }) => (
           <button
             key={key}
             type="button"
             onClick={() => navigate(to)}
-            className={`relative border-border border z-10 col-span-2 flex cursor-pointer flex-col items-center gap-0.5 p-2 text-center font-sans text-[0.6rem] font-semibold transition-colors duration-300 ${
+            className={`relative flex min-w-[33%] flex-1 cursor-pointer flex-col items-center gap-0.5 border border-border p-2 text-center font-sans text-[0.6rem] font-semibold transition-colors duration-300 ${
               isActive(pathname)
                 ? "text-primary bg-primary-100"
                 : "text-ink-soft bg-transparent"
-            } ${
-              index === 1
-                ? "border-x-0"
-                : index === 3
-                  ? "col-start-1 col-span-3 border-t-0 border-r-0"
-                  : index === 4
-                    ? "col-start-4 col-span-3 border-t-0"
-                    : ""
             }`}
           >
             <Icon size="1.2em" className="relative z-10" />
@@ -80,7 +82,7 @@ export function AdminTabs() {
         ))}
       </div>
       <div className="hidden md:flex md:justify-center md:flex-wrap md:gap-2 md:pt-5 md:px-5">
-        {adminNavItems.map(({ key, to, label, Icon, isActive }) => (
+        {items.map(({ key, to, label, Icon, isActive }) => (
           <Button
             key={key}
             variant="secondary"

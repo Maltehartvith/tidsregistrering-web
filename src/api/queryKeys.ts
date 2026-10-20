@@ -38,6 +38,12 @@ export function isStaffRole(
   return role === "underviser" || role === "administrator";
 }
 
+export function isAdministrator(
+  role: UserRole | undefined | null,
+): role is "administrator" {
+  return role === "administrator";
+}
+
 export function homeForRole(role: UserRole): string {
   return isStaffRole(role) ? routes.adminStudents : routes.studentOverview;
 }

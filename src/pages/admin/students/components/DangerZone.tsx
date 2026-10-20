@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/Button";
 import { useEntries } from "@/context/EntriesContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useActorLabel } from "@/domain/actor";
+import { useAuth } from "@/context/AuthContext";
+import { isAdministrator } from "@/api/queryKeys";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { useState } from "react";
 import SectionHeader from "@/pages/admin/components/SectionHeader";
@@ -12,7 +14,8 @@ const DangerZone = () => {
     useStudents();
   const { entries } = useEntries();
   const actor = useActorLabel();
-  if (!selectedStudent) return null;
+  const { user } = useAuth();
+  if (!selectedStudent || !isAdministrator(user?.role)) return null;
 
   const registrationCount = entries.filter(
     (entry) => entry.userId === selectedStudent.id,

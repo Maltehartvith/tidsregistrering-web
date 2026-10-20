@@ -1,5 +1,4 @@
 import type { AuditEvent } from "@/types/domain";
-import type { LogEventArgs } from "@/types/log";
 import { request } from "./request";
 
 type AuditLogDto = {
@@ -25,17 +24,4 @@ function mapAuditLog(log: AuditLogDto): AuditEvent {
 export async function listAuditLogs(): Promise<AuditEvent[]> {
   const logs = await request<AuditLogDto[]>("/audit-logs");
   return logs.map(mapAuditLog);
-}
-
-export async function createAuditLog(body: LogEventArgs): Promise<AuditEvent> {
-  const created = await request<AuditLogDto>("/audit-logs", {
-    method: "POST",
-    body: JSON.stringify({
-      actor: body.actor,
-      description: body.description,
-      userId: body.userId || undefined,
-      courseId: body.courseId || undefined,
-    }),
-  });
-  return mapAuditLog(created);
 }

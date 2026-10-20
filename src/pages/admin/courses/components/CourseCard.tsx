@@ -40,6 +40,8 @@ import ToggleButton from "@/components/ui/ToggleButton";
 import { routes } from "@/routes";
 import type { User as AppUser, UserCourseWrite } from "@/types/user";
 import { useActorLabel } from "@/domain/actor";
+import { useAuth } from "@/context/AuthContext";
+import { isAdministrator } from "@/api/queryKeys";
 import { useActionFeedback } from "@/hooks/queryHelpers";
 import { Selector } from "@/components/ui/Selector";
 import { programKeyFromName } from "@/pages/admin/courses/components/ProgramsSection";
@@ -75,6 +77,7 @@ type ImportResult = {
 export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   const navigate = useNavigate();
   const actor = useActorLabel();
+  const { user } = useAuth();
   const recordFeedback = useActionFeedback();
   const {
     CATEGORIES,
@@ -146,6 +149,8 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
 
   const h = courses[courseId];
   if (!h) return null;
+  const canEditCourse =
+    isAdministrator(user?.role) || h.createdByUserId === user?.id;
 
   const programOptions = Object.values(programs).map((program) => ({
     value: program.id,
@@ -199,7 +204,11 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
       programLabel = createdProgram.name;
       setEditProgramId(createdProgram.id);
       setNewProgramName("");
-    } else if (programId) {
+    } else if (
+      programId &&
+      (isAdministrator(user?.role) ||
+        selectedProgram?.createdByUserId === user?.id)
+    ) {
       await updateProgramApi(
         programId,
         { targets: editTargets },
@@ -560,6 +569,8 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
 
       {isOpen && (
         <div className="border-t border-border px-4 pb-4 pt-3.5">
+          {canEditCourse && (
+            <>
           <Field
             label="Uddannelse"
             hint="Vælg en eksisterende uddannelse, eller opret en ny."
@@ -619,6 +630,8 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               {isSaving ? "Gemmer…" : "Gem uddannelse og delmål"}
             </Button>
           </div>
+            </>
+          )}
           <div className="my-8 flex items-center gap-2">
             <span className="stitch-line" />
           </div>
@@ -1009,6 +1022,8 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               </Button>
             ))}
 
+          {isAdministrator(user?.role) && (
+            <>
           <div className="my-8 flex items-center gap-2">
             <span className="stitch-line" />
           </div>
@@ -1085,6 +1100,8 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
                 <Trash2 size={14} /> Slet hold permanent
               </Button>
             </div>
+          )}
+            </>
           )}
         </div>
       )}

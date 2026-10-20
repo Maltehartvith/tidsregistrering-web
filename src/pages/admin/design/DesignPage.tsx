@@ -7,6 +7,7 @@ import { defaultCardFromBackground, isValidHex } from "@/theme/colors";
 import type { Organization } from "@/types/organization";
 import { BrandingForm } from "@/pages/admin/design/components/BrandingForm";
 import { BrandPreview } from "@/pages/admin/design/components/BrandPreview";
+import { MailSettingsSection } from "@/pages/admin/design/components/MailSettingsSection";
 import { Button } from "@/components/ui/Button";
 
 const COLOR_KEYS = ["primary", "accent", "background", "card"] as const;
@@ -102,7 +103,7 @@ export function DesignPage() {
   return (
     <AdminPageWrapper
       title="Design"
-      subtitle="Navn, logo og farver, som kursister og administratorer ser"
+      subtitle="Navn, logo, farver og den email invitationer sendes fra"
     >
       <div className="grid gap-6 md:grid-cols-2">
         <BrandingForm
@@ -135,6 +136,8 @@ export function DesignPage() {
           </Button>
         </div>
       </div>
+
+      <MailSettingsSection />
     </AdminPageWrapper>
   );
 }

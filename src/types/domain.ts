@@ -17,6 +17,7 @@ export interface Program {
   key: string;
   name: string;
   targets: Record<string, number>;
+  createdByUserId?: string | null;
 }
 
 export interface ProgramDraft {

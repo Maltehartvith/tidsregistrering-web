@@ -30,20 +30,14 @@ export function AuditLogsProvider({ children }: { children: ReactNode }) {
   }, [user?.role]);
 
   const logEvent = useCallback(
-    async ({ actor, userId, courseId, description }: LogEventArgs) => {
+    async (_args: LogEventArgs) => {
       try {
-        const created = await auditLogsApi.createAuditLog({
-          actor,
-          userId,
-          courseId,
-          description,
-        });
-        setAuditLogs((prev) => [created, ...prev]);
+        await refreshAuditLogs();
       } catch {
-        /* logging must not block the primary action */
+        /* the change is already saved; the log list refreshes on next visit */
       }
     },
-    [],
+    [refreshAuditLogs],
   );
 
   return (
