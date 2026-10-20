@@ -93,7 +93,8 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
     isSaving: courseSaving,
   } = useCourses();
   const isSaving = catalogSaving || courseSaving;
-  const { students, createStudent, updateStudent, setSelectedStudent } = useStudents();
+  const { students, createStudent, updateStudent, setSelectedStudent } =
+    useStudents();
   const { entries } = useEntries();
   const { adminUsers, updateUser } = useUsers();
 
@@ -618,7 +619,9 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               {isSaving ? "Gemmer…" : "Gem uddannelse og delmål"}
             </Button>
           </div>
-
+          <div className="my-8 flex items-center gap-2">
+            <span className="stitch-line" />
+          </div>
           <div
             className="mb-1.5 block text-xs font-semibold text-ink-soft"
             style={{ marginBottom: 8 }}
@@ -698,10 +701,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               </button>
             </div>
           )}
-          <div
-            className="mt-4 flex items-center gap-2"
-            style={{ margin: "16px 0" }}
-          >
+          <div className="my-8 flex items-center gap-2">
             <span className="stitch-line" />
           </div>
 
@@ -796,141 +796,141 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               </Button>
             ))}
 
-          <div
-            className="mt-4 flex items-center gap-2"
-            style={{ margin: "16px 0" }}
-          >
+          <div className="my-8 flex items-center gap-2">
             <span className="stitch-line" />
           </div>
-
-          <div
-            className="mb-1.5 block text-xs font-semibold text-ink-soft"
-            style={{ marginBottom: 8 }}
-          >
-            Tilføj en enkelt kursist
+          <div className="text-sm font-semibold mb-4">
+            Tilføjning af kursister
           </div>
-          <div className="flex gap-3">
-            <Field label="Navn">
-              <Input
-                type="text"
-                value={addName ?? ""}
-                onChange={(e) => setAddName(e.target.value)}
-                placeholder="Fulde navn"
-              />
-            </Field>
-            <Field label="Email">
-              <Input
-                type="email"
-                value={addEmail ?? ""}
-                onChange={(e) => setAddEmail(e.target.value)}
-                placeholder="navn@email.dk"
-              />
-            </Field>
-          </div>
-          <button
-            className="inline-flex flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary-soft px-3 py-1.5 font-sans text-xs font-semibold text-primary"
-            onClick={addSingleStudent}
-          >
-            <User size={14} /> Tilføj kursist
-          </button>
-
-          {addResult && (
-            <div className="mb-1">
-              {addResult.error && (
-                <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
-                  <AlertTriangle size={14} /> {addResult.error}
-                </div>
-              )}
-              {addResult.duplicate && (
-                <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
-                  <AlertTriangle size={14} />{" "}
-                  {addResult.duplicate?.name || addResult.duplicate?.email}{" "}
-                  findes allerede som kursist og blev ikke oprettet på ny.
-                </div>
-              )}
-              {addResult.added && (
-                <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-ink">
-                  <Check size={14} /> {addResult.added?.name} tilføjet til{" "}
-                  {h.label}.
-                </div>
-              )}
-            </div>
-          )}
-
-          <div
-            className="mt-4 flex items-center gap-2"
-            style={{ margin: "16px 0" }}
-          >
-            <span className="stitch-line" />
-          </div>
-
-          <div
-            className="mb-1.5 block text-xs font-semibold text-ink-soft"
-            style={{ marginBottom: 8 }}
-          >
-            Tilføj flere kursister
-          </div>
-          <label className="inline-flex w-auto flex-none cursor-pointer items-center gap-2 rounded-md border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45">
-            <Upload size={14} />
-            {importingCourseId === h.id
-              ? "Importerer..."
-              : "Importér fra Excel"}
-            <input
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              style={{ display: "none" }}
-              onChange={handleImportFile}
-            />
-          </label>
-          <p
-            className="mt-1 block text-[11px] text-ink-soft"
-            style={{ margin: "6px 0 16px" }}
-          >
-            Filen skal have kolonnerne "Navn" og "Email". Kursister der allerede
-            findes (samme email), bliver ikke oprettet på ny.
-          </p>
-
-          {importResult && importResult.courseId === h.id && (
-            <div className="mb-1">
-              {importResult.error ? (
-                <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
-                  <AlertTriangle size={14} /> Kunne ikke læse "
-                  {importResult.fileName}". Tjek at filen er en gyldig Excel-
-                  eller CSV-fil.
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-ink">
-                    <FileSpreadsheet size={14} />{" "}
-                    {importResult.added?.length ?? 0} kursister importeret fra "
-                    {importResult.fileName}".
+          <div className="flex md:flex-row flex-col justify-between gap-4">
+            <div>
+              <div className="flex md:flex-row flex-col md:items-center gap-2 mb-4 md:mb-0">
+                <div>
+                  <div
+                    className="mb-1.5 block text-xs font-semibold text-ink-soft"
+                    style={{ marginBottom: 8 }}
+                  >
+                    Tilføj en enkelt kursist
                   </div>
-                  {(importResult.duplicates?.length ?? 0) > 0 && (
+                  <div className="flex gap-3 items-center">
+                    <Field label="Navn">
+                      <Input
+                        type="text"
+                        value={addName ?? ""}
+                        onChange={(e) => setAddName(e.target.value)}
+                        placeholder="Fulde navn"
+                      />
+                    </Field>
+                    <Field label="Email">
+                      <Input
+                        type="email"
+                        value={addEmail ?? ""}
+                        onChange={(e) => setAddEmail(e.target.value)}
+                        placeholder="navn@email.dk"
+                      />
+                    </Field>
+                  </div>
+                </div>
+                <Button
+                  variant="primary"
+                  className="h-fit md:mt-8"
+                  onClick={addSingleStudent}
+                >
+                  <User size={14} /> Tilføj kursist
+                </Button>
+              </div>
+
+              {addResult && (
+                <div className="mb-1">
+                  {addResult.error && (
                     <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
-                      <AlertTriangle size={14} />
-                      {importResult.duplicates?.length ?? 0} findes allerede og
-                      blev ikke oprettet:{" "}
-                      {importResult.duplicates
-                        ?.map((d) => d.name || d.email)
-                        .join(", ")}
+                      <AlertTriangle size={14} /> {addResult.error}
                     </div>
                   )}
-                  {(importResult.skipped?.length ?? 0) > 0 && (
+                  {addResult.duplicate && (
                     <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
-                      <AlertTriangle size={14} />
-                      {importResult.skipped?.length ?? 0} rækker manglede navn
-                      eller email og blev sprunget over.
+                      <AlertTriangle size={14} />{" "}
+                      {addResult.duplicate?.name || addResult.duplicate?.email}{" "}
+                      findes allerede som kursist og blev ikke oprettet på ny.
                     </div>
                   )}
-                </>
+                  {addResult.added && (
+                    <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-ink">
+                      <Check size={14} /> {addResult.added?.name} tilføjet til{" "}
+                      {h.label}.
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-          )}
 
-          <div
-            className="mt-4 flex items-center gap-2"
-            style={{ margin: "6px 0 16px" }}
-          >
+            <div className="hidden md:flex flex-col self-stretch">
+              <span className="stitch-line-vertical" />
+            </div>
+
+            <div>
+              <div
+                className="mb-1.5 block text-xs font-semibold text-ink-soft"
+                style={{ marginBottom: 8 }}
+              >
+                Tilføj flere kursister
+              </div>
+              <label className="inline-flex w-auto flex-none cursor-pointer items-center gap-2 rounded-md border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45">
+                <Upload size={14} />
+                {importingCourseId === h.id
+                  ? "Importerer..."
+                  : "Importér fra Excel"}
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  style={{ display: "none" }}
+                  onChange={handleImportFile}
+                />
+              </label>
+              <p className="mt-1 flex max-w-130 text-xs text-ink-soft">
+                Filen skal have kolonnerne "Navn" og "Email". Kursister der
+                allerede findes (samme email), bliver ikke oprettet på ny.
+              </p>
+
+              {importResult && importResult.courseId === h.id && (
+                <div className="mb-1">
+                  {importResult.error ? (
+                    <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
+                      <AlertTriangle size={14} /> Kunne ikke læse "
+                      {importResult.fileName}". Tjek at filen er en gyldig
+                      Excel- eller CSV-fil.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-ink">
+                        <FileSpreadsheet size={14} />{" "}
+                        {importResult.added?.length ?? 0} kursister importeret
+                        fra "{importResult.fileName}".
+                      </div>
+                      {(importResult.duplicates?.length ?? 0) > 0 && (
+                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
+                          <AlertTriangle size={14} />
+                          {importResult.duplicates?.length ?? 0} findes allerede
+                          og blev ikke oprettet:{" "}
+                          {importResult.duplicates
+                            ?.map((d) => d.name || d.email)
+                            .join(", ")}
+                        </div>
+                      )}
+                      {(importResult.skipped?.length ?? 0) > 0 && (
+                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
+                          <AlertTriangle size={14} />
+                          {importResult.skipped?.length ?? 0} rækker manglede
+                          navn eller email og blev sprunget over.
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="my-8 flex items-center gap-2">
             <span className="stitch-line" />
           </div>
 
@@ -948,22 +948,14 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
                   : undefined
               }
             >
-              <div className="relative">
-                <select
-                  value={draftFrom}
-                  onChange={(e) => setDraftFrom(e.target.value)}
-                >
-                  {windowCourses.map((oh) => (
-                    <option key={oh.id} value={oh.id}>
-                      {oh.label} · {oh.startYear}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={16}
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
-                />
-              </div>
+              <Selector
+                value={draftFrom}
+                onChange={(e) => setDraftFrom(e.target.value)}
+                options={windowCourses.map((oh) => ({
+                  value: oh.id,
+                  label: oh.label + " · " + oh.startYear,
+                }))}
+              />
             </Field>
           )}
           <p className="mb-3.5 text-[13px] leading-normal text-ink-soft">
@@ -1017,10 +1009,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               </Button>
             ))}
 
-          <div
-            className="mt-4 flex items-center gap-2"
-            style={{ margin: "20px 0" }}
-          >
+          <div className="my-8 flex items-center gap-2">
             <span className="stitch-line" />
           </div>
 

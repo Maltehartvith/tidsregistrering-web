@@ -28,11 +28,11 @@ export default function AdminPageWrapper({
           <div className={headerClassName}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="mb-0.5 font-display text-[28px] font-semibold">
+                <div className="mb-0.5 font-display text-2xl font-semibold">
                   {title}
                 </div>
                 {subtitle != null && (
-                  <div className="text-[13px] text-ink-soft">{subtitle}</div>
+                  <div className="text-sm text-ink-soft">{subtitle}</div>
                 )}
               </div>
               {actions}

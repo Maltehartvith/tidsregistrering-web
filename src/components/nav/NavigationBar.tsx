@@ -18,7 +18,7 @@ export function NavigationBarGhost({
     <div
       className={`sticky z-20 w-full shrink-0 overflow-hidden bg-card ${
         isTop
-          ? "top-0 border border-border md:rounded-b-md"
+          ? "top-0 border border-border md:rounded-b-lg"
           : "bottom-0 border-t border-border"
       }`}
       aria-hidden
@@ -61,7 +61,7 @@ export function NavigationBar({ position }: { position: "top" | "bottom" }) {
     <nav
       className={`sticky z-20 w-full shrink-0 overflow-hidden bg-card ${
         isTop
-          ? "top-0 border border-border md:rounded-b-md"
+          ? "top-0 border border-border md:rounded-b-lg"
           : "bottom-0 border-t border-border"
       }`}
       aria-label="Hovedmenu"

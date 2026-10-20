@@ -233,21 +233,24 @@ export default function LearningGoalsSection() {
         </div>
       ))}
 
-      <div className="mt-2.5 flex items-center gap-2 pt-2">
-        <div className="min-w-0 flex-1">
-          <Input
-            type="text"
-            value={newGoal}
-            onChange={(e) => setNewGoal(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") addGoal();
-            }}
-            placeholder="Nyt læringsmål, fx Vidensmål - ..."
-          />
+      <div className="mt-2.5 flex flex-col gap-2 pt-2">
+        <div className="text-sm font-semibold">Tilføj et nyt læringsmål</div>
+        <div className="flex items-center gap-2 w-full">
+          <div className="w-full">
+            <Input
+              type="text"
+              value={newGoal}
+              onChange={(e) => setNewGoal(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addGoal();
+              }}
+              placeholder="Vidensmål - Grundlæggende etiske principper i ..."
+            />
+          </div>
+          <Button variant="primary" size="small" onClick={addGoal}>
+            <PlusCircle size={14} /> Tilføj
+          </Button>
         </div>
-        <Button variant="primary" size="small" onClick={addGoal}>
-          <PlusCircle size={14} /> Tilføj
-        </Button>
       </div>
       {goalError && (
         <div

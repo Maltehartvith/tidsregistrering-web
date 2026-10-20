@@ -55,7 +55,7 @@ export function BrandPreview({ draft }: BrandPreviewProps) {
           <div className="mt-4 flex items-center gap-2">
             <span
               className="h-3 w-0.5 shrink-0 rounded-sm"
-              style={{ backgroundColor: "var(--surplus)" }}
+              style={{ backgroundColor: "var(--primary-400)" }}
             />
             <span className="stitch-line" />
           </div>

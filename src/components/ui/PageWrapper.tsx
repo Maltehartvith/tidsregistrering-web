@@ -38,7 +38,7 @@ const PageWrapper = ({
   return (
     <div className="md:mx-auto md:px-6 flex h-dvh w-full flex-col overflow-hidden md:max-w-[90vw]">
       {isDesktop && <Nav position="top" />}
-      <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-paper font-sans text-ink md:my-4 md:rounded-2xl md:shadow-[0_16px_24px_rgba(18,57,74,0.16)]">
+      <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-paper font-sans text-ink md:my-4 md:rounded-lg md:shadow-[0_16px_24px_rgba(18,57,74,0.16)]">
         {children}
         {!isDesktop && <Nav position="bottom" />}
       </div>

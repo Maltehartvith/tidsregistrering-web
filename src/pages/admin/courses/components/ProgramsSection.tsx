@@ -368,7 +368,7 @@ export function ProgramsSection({
                       </div>
                       {coursesUsingProgram.length === 0 ? (
                         <div
-                          className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5"
+                          className="flex flex-col gap-2 rounded-sm border-[1.5px] border-border bg-card px-3 py-2.5"
                           style={{ marginBottom: 6 }}
                         >
                           <p className="mt-1 block text-md text-ink-soft">
@@ -377,7 +377,7 @@ export function ProgramsSection({
                         </div>
                       ) : (
                         <div
-                          className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5"
+                          className="flex flex-col gap-2 rounded-sm border-[1.5px] border-border bg-card px-3 py-2.5"
                           style={{ marginBottom: 6 }}
                         >
                           {[...coursesUsingProgram]
@@ -463,7 +463,7 @@ export function ProgramsSection({
                         først:
                       </div>
                       <div
-                        className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5"
+                        className="flex flex-col gap-2 rounded-sm border-[1.5px] border-border bg-card px-3 py-2.5"
                         style={{ marginTop: 8 }}
                       >
                         {coursesUsingProgram.map((h) => (

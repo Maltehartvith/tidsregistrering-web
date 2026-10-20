@@ -10,6 +10,7 @@ import { useCourses } from "@/context/CoursesContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useEntries } from "@/context/EntriesContext";
 import { categoriesForCourseIds } from "@/domain/catalog";
+import { downloadCourseStudentsExcel } from "@/domain/exportStudents";
 import { totalsForStudent, targetsForStudent } from "@/domain/totals";
 import {
   activeCourseId,
@@ -61,10 +62,24 @@ export function StudentList() {
 
   const isLoading = isCoursesLoading || isStudentsLoading;
   const exportCourseLabel =
-    holdFilter === "alle"
-      ? "alle hold"
-      : (courses?.[holdFilter]?.label ?? "");
+    holdFilter === "alle" ? "alle hold" : (courses?.[holdFilter]?.label ?? "");
   const exportLabel = `Eksporter ${exportCourseLabel} til Excel`;
+  const canExport =
+    holdFilter === "alle"
+      ? Object.keys(courses || {}).length > 0
+      : Boolean(courses?.[holdFilter]);
+
+  const handleExport = () => {
+    if (!canExport) return;
+    downloadCourseStudentsExcel({
+      courseId: holdFilter,
+      students,
+      entries,
+      courses: courses || {},
+      programs,
+      categories: CATEGORIES,
+    });
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 pt-1">
@@ -91,13 +106,16 @@ export function StudentList() {
               <Button
                 variant="primary"
                 size="small"
-                disabled
-                className="pointer-events-none w-full"
+                disabled={!canExport}
+                className="w-full"
+                onClick={handleExport}
               >
                 <FileSpreadsheet size={14} className="shrink-0" />
-                <span className="shrink-0">Eksporter</span>
-                <span className="min-w-0 truncate">{exportCourseLabel}</span>
-                <span className="shrink-0">til Excel</span>
+                <div className="flex min-w-0 items-center">
+                  <span className="shrink-0">Eksporter&nbsp;</span>
+                  <span className="min-w-0 truncate">{exportCourseLabel}</span>
+                  <span className="shrink-0">&nbsp;til Excel</span>
+                </div>
               </Button>
             </span>
 

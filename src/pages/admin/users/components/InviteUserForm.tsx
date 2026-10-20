@@ -152,7 +152,7 @@ export function InviteUserForm() {
                 className={`flex cursor-pointer items-center justify-between text-[13px] font-semibold ${allCourses ? "mb-0" : "mb-2.5"}`}
               />
               {!allCourses && (
-                <div className="flex flex-col gap-2 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2.5">
+                <div className="flex flex-col gap-2 rounded-sm border-[1.5px] border-border bg-card px-3 py-2.5">
                   {Object.values(courses).map((course) => (
                     <label
                       key={course.id}

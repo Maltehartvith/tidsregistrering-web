@@ -83,7 +83,8 @@ export function AdminTabs() {
         {adminNavItems.map(({ key, to, label, Icon, isActive }) => (
           <Button
             key={key}
-            variant={isActive(pathname) ? "tabActive" : "tab"}
+            variant="secondary"
+            className={isActive(pathname) ? "bg-primary-100" : ""}
             onClick={() => navigate(to)}
           >
             <Icon size={14} /> {label}
