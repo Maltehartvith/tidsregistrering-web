@@ -3,7 +3,8 @@ export interface Course {
   key: string;
   label: string;
   startYear: number;
-  programId: string;
+  educationId: string;
+  targets: Record<string, number>;
   createdByUserId?: string | null;
 }
 

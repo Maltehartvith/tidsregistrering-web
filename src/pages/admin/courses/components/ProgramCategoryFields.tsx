@@ -117,3 +117,61 @@ export function ProgramCategoryFields({
     </div>
   );
 }
+
+type CourseGoalFieldsProps = {
+  targets: Record<string, number>;
+  /** Education maximum for each category key. The course cannot exceed these. */
+  ceilings: Record<string, number>;
+  onChange: (targets: Record<string, number>) => void;
+  categories: CategoriesMap;
+};
+
+/** Hour goals for one course. Categories come from the education and cannot be added here. */
+export function CourseGoalFields({
+  targets,
+  ceilings,
+  onChange,
+  categories,
+}: CourseGoalFieldsProps) {
+  const rows = categoriesInTargets(ceilings, categories);
+
+  return (
+    <div className="mb-3.5">
+      <span className="mb-1.5 block text-xs font-semibold text-ink-soft">
+        Holdets delmål
+      </span>
+      <div className="flex flex-col gap-2">
+        {rows.length === 0 && (
+          <p className="text-[13px] text-ink-soft">
+            Uddannelsen har ingen kategorier endnu.
+          </p>
+        )}
+        {rows.map((category) => {
+          const ceiling = ceilings[category.key] ?? 0;
+          return (
+            <Field
+              key={category.key}
+              label={category.short}
+              hint={`Højst ${ceiling} timer, som er uddannelsens mål.`}
+              className="mb-0"
+            >
+              <NumberInput
+                min={0}
+                max={ceiling}
+                step={1}
+                inputMode="numeric"
+                value={targets[category.key] ?? ceiling}
+                onChange={(e) => {
+                  const next = Math.min(ceiling, Math.max(0, Number(e.target.value)));
+                  onChange({ ...targets, [category.key]: next });
+                }}
+                placeholder="0"
+                required
+              />
+            </Field>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

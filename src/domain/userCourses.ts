@@ -1,8 +1,21 @@
 import type { User, UserCourse, UserCourseWrite } from "../types/user";
 
-/** Home course UUID, or null when the user has none active. */
+/** Courses the student can log hours on. */
+export function activeCourseIds(user: User): string[] {
+  return user.courses.filter((course) => course.active).map((course) => course.id);
+}
+
+/** First active course, used as a default when a form needs one. */
 export function activeCourseId(user: User): string | null {
-  return user.courses.find((course) => course.active)?.id ?? null;
+  return activeCourseIds(user)[0] ?? null;
+}
+
+export function isActiveOnCourse(user: User, courseId: string): boolean {
+  return user.courses.some((course) => course.id === courseId && course.active);
+}
+
+export function isEnrolledOnCourse(user: User, courseId: string): boolean {
+  return user.courses.some((course) => course.id === courseId);
 }
 
 /** Courses that are not the home course (former courseLinks). */

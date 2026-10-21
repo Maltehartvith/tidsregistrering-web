@@ -55,7 +55,7 @@ const ChangeCourseCard = ({ setShowMoveHold }: ChangeCourseCardProps) => {
         : []),
       ...rest.map((course) => ({
         id: course.id,
-        active: false,
+        active: course.active,
         included: course.included,
       })),
     ];

@@ -8,8 +8,8 @@ import { BrandLogo, BrandName, AppTitle } from "@/components/brand/Brand";
 import { BrandHeaderGhost } from "@/components/ui/Ghost";
 import { LoadingScreen } from "@/pages/auth/RequireAuth";
 import { useOwnUserQuery } from "@/hooks/users";
-import { programName } from "@/domain/totals";
-import { activeCourseId, hasCourses } from "@/domain/userCourses";
+import { educationName } from "@/domain/totals";
+import { activeCourseIds, hasCourses } from "@/domain/userCourses";
 import { initialViewPrefs, syncViewPrefClasses } from "@/theme/viewPrefs";
 import type { ViewPrefs } from "@/types/ui";
 import type { User } from "@/types/user";
@@ -32,8 +32,8 @@ export function StudentLayout() {
   const { user } = useAuth();
   const ownUser = useOwnUserQuery(Boolean(user));
   const { isLoading: brandingLoading } = useBranding();
-  const { programs, isLoading: catalogLoading } = useCatalog({
-    programs: true,
+  const { educations, isLoading: catalogLoading } = useCatalog({
+    educations: true,
   });
   const { courses, isLoading: coursesLoading } = useCourses();
   const [viewPrefs, setViewPrefs] = useState<ViewPrefs>(initialViewPrefs);
@@ -50,12 +50,14 @@ export function StudentLayout() {
 
   const student = profile ?? user;
   const enrolled = hasCourses(student);
-  const homeCourseId = activeCourseId(student);
-  const course = homeCourseId ? courses[homeCourseId] : undefined;
+  const loggingCourses = activeCourseIds(student)
+    .map((id) => courses[id])
+    .filter((course) => Boolean(course));
+  const course = loggingCourses[0];
   const headerLoading =
     enrolled &&
     (brandingLoading || coursesLoading || catalogLoading) &&
-    !course;
+    loggingCourses.length === 0;
 
   return (
     <PageWrapper>
@@ -70,12 +72,13 @@ export function StudentLayout() {
               </div>
               <div className="text-[0.8125rem] wrap-break-word text-ink-soft">
                 {student.name}
-                {course
+                {loggingCourses.length > 0
                   ? ` · ${
-                      programName(course, programs)
-                        ? `${programName(course, programs)} · `
+                      loggingCourses.length === 1 &&
+                      educationName(course, educations)
+                        ? `${educationName(course, educations)} · `
                         : ""
-                    }${course.label}`
+                    }${loggingCourses.map((item) => item.label).join(", ")}`
                   : ""}
               </div>
             </div>

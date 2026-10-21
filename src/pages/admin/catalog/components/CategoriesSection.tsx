@@ -11,7 +11,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { useCatalog } from "@/context/CatalogContext";
-import { useEntries } from "@/context/EntriesContext";
+import { useEntryUsage } from "@/hooks/entries";
 import { categoryKeyFromLabel } from "@/domain/catalog";
 import { CATEGORY_PALETTE } from "@/data/constants";
 import { Field } from "@/components/ui/Field";
@@ -28,14 +28,14 @@ export default function CategoriesSection() {
   const actor = useActorLabel();
   const {
     ALL_CATEGORIES: CATEGORIES,
-    programs,
+    educations,
     createCategory,
     updateCategory,
     reorderCategories,
     deleteCategory,
     isSaving,
-  } = useCatalog({ categories: true, programs: true });
-  const { entries } = useEntries();
+  } = useCatalog({ categories: true, educations: true });
+  const { data: usage } = useEntryUsage();
   const [editingCatKey, setEditingCatKey] = useState<string | null>(null); // en kategori-nøgle, "__new__" eller null
   const [categoryDraft, setCategoryDraft] = useState<Category | null>(null);
   const [catError, setCatError] = useState("");
@@ -47,8 +47,7 @@ export default function CategoriesSection() {
   const catList = Object.values(CATEGORIES);
   const activeCats = catList.filter((c) => !c.archived);
   const archivedCats = catList.filter((c) => c.archived);
-  const countFor = (key: string) =>
-    entries.filter((e) => e.category === key).length;
+  const countFor = (key: string) => usage.categories[key] ?? 0;
 
   const startEditCat = (c: Category) => {
     setEditingCatKey(c.key);
@@ -117,7 +116,7 @@ export default function CategoriesSection() {
 
     if (editingCatKey === "__new__") {
       const taken: Record<string, unknown> = { ...CATEGORIES };
-      for (const x of Object.values(programs)) {
+      for (const x of Object.values(educations)) {
         for (const k of Object.keys(x.targets || {})) {
           taken[k] = true;
         }

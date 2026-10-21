@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pencil, Trash2, Check, X, ChevronDown, Mail } from "lucide-react";
-import { programName } from "@/domain/totals";
+import { educationName } from "@/domain/totals";
 import { ADMIN_ROLES } from "@/data/constants";
 import { Field } from "@/components/ui/Field";
 import ToggleButton from "@/components/ui/ToggleButton";
@@ -17,7 +17,7 @@ import { GhostBlock } from "@/components/ui/Ghost";
 
 export function UserList() {
   const actor = useActorLabel();
-  const { programs } = useCatalog({ programs: true });
+  const { educations } = useCatalog({ educations: true });
   const { courses } = useCourses();
   const {
     adminUsers,
@@ -209,8 +209,8 @@ export function UserList() {
                             />
                             <span>
                               {course.label}
-                              {programName(course, programs)
-                                ? ` · ${programName(course, programs)}`
+                              {educationName(course, educations)
+                                ? ` · ${educationName(course, educations)}`
                                 : ""}
                             </span>
                           </label>

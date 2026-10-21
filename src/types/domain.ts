@@ -12,19 +12,23 @@ export interface Category {
 
 export type CategoriesMap = Record<string, Category>;
 
-export interface Program {
+export interface Education {
   id: string;
   key: string;
   name: string;
+  location?: string | null;
+  year?: number | null;
   targets: Record<string, number>;
   createdByUserId?: string | null;
 }
 
-export interface ProgramDraft {
+export interface EducationDraft {
   name: string;
+  location: string;
+  year: string;
   targets: Record<string, number>;
 }
-export type ProgramsMap = Record<string, Program>;
+export type EducationsMap = Record<string, Education>;
 
 export interface AuditEvent {
   id: string;

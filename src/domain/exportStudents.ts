@@ -1,7 +1,6 @@
 import * as XLSX from "xlsx";
 import type { Course, CourseMap } from "@/types/course";
-import type { CategoriesMap, ProgramsMap } from "@/types/domain";
-import type { TimeEntry } from "@/types/entry";
+import type { CategoriesMap, EducationsMap } from "@/types/domain";
 import type { User } from "@/types/user";
 import { categoriesForCourseIds } from "./catalog";
 import { totalsForStudentOnHold } from "./totals";
@@ -44,11 +43,14 @@ function columnWidths(rows: (string | number)[][]): XLSX.ColInfo[] {
 
 function coursesToExport(
   courseId: string,
+  educationId: string,
   courses: CourseMap,
 ): Course[] {
-  if (courseId === ALL_COURSES) return Object.values(courses);
-  const course = courses[courseId];
-  return course ? [course] : [];
+  const all = Object.values(courses).filter(
+    (course) => educationId === ALL_COURSES || course.educationId === educationId,
+  );
+  if (courseId === ALL_COURSES) return all;
+  return all.filter((course) => course.id === courseId);
 }
 
 function studentsOnCourse(students: User[], courseId: string): User[] {
@@ -62,15 +64,14 @@ function studentsOnCourse(students: User[], courseId: string): User[] {
 function rowsForCourse(
   courseId: string,
   students: User[],
-  entries: TimeEntry[],
   courses: CourseMap,
-  programs: ProgramsMap,
+  educations: EducationsMap,
   categories: CategoriesMap,
 ): (string | number)[][] {
   const courseCategories = categoriesForCourseIds(
     [courseId],
     courses,
-    programs,
+    educations,
     categories,
   );
   const headers = [
@@ -79,12 +80,7 @@ function rowsForCourse(
     ...courseCategories.map((category) => category.label),
   ];
   const body = studentsOnCourse(students, courseId).map((student) => {
-    const totals = totalsForStudentOnHold(
-      student,
-      entries,
-      courseId,
-      categories,
-    );
+    const totals = totalsForStudentOnHold(student, courseId, categories);
     return [
       student.name,
       student.email,
@@ -96,20 +92,20 @@ function rowsForCourse(
 
 export function downloadCourseStudentsExcel({
   courseId,
+  educationId = ALL_COURSES,
   students,
-  entries,
   courses,
-  programs,
+  educations,
   categories,
 }: {
   courseId: string;
+  educationId?: string;
   students: User[];
-  entries: TimeEntry[];
   courses: CourseMap;
-  programs: ProgramsMap;
+  educations: EducationsMap;
   categories: CategoriesMap;
 }): void {
-  const selectedCourses = coursesToExport(courseId, courses);
+  const selectedCourses = coursesToExport(courseId, educationId, courses);
   if (selectedCourses.length === 0) return;
 
   const workbook = XLSX.utils.book_new();
@@ -119,9 +115,8 @@ export function downloadCourseStudentsExcel({
     const rows = rowsForCourse(
       course.id,
       students,
-      entries,
       courses,
-      programs,
+      educations,
       categories,
     );
     const sheet = XLSX.utils.aoa_to_sheet(rows);
@@ -133,9 +128,14 @@ export function downloadCourseStudentsExcel({
     );
   }
   const date = new Date().toISOString().split("T")[0];
-  const fileLabel =
+  const educationLabel =
+    educationId !== ALL_COURSES
+      ? fileSafe(educations[educationId]?.name || "uddannelse")
+      : "";
+  const courseLabel =
     courseId === ALL_COURSES
       ? "alle-hold"
       : fileSafe(courses[courseId]?.key || courses[courseId]?.label || "hold");
+  const fileLabel = [educationLabel, courseLabel].filter(Boolean).join("-");
   XLSX.writeFile(workbook, `kursister-${fileLabel}-${date}.xlsx`);
 }

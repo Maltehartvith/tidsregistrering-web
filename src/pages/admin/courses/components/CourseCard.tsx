@@ -16,16 +16,17 @@ import {
 import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
 import { useStudents } from "@/context/StudentsContext";
-import { useEntries } from "@/context/EntriesContext";
 import { useUsers } from "@/context/UsersContext";
 import { formatTargets } from "@/domain/catalog";
 import {
   coursesWithinTransferWindow,
-  programName,
+  educationName,
+  hoursOnCourse,
   targetsForCourse,
 } from "@/domain/totals";
 import {
-  activeCourseId,
+  isActiveOnCourse,
+  isEnrolledOnCourse,
   kursistCoursesWrite,
   previousCourses,
   staffCourseIds,
@@ -44,8 +45,11 @@ import { useAuth } from "@/context/AuthContext";
 import { isAdministrator } from "@/api/queryKeys";
 import { useActionFeedback } from "@/hooks/queryHelpers";
 import { Selector } from "@/components/ui/Selector";
-import { programKeyFromName } from "@/pages/admin/courses/components/ProgramsSection";
-import { ProgramCategoryFields } from "@/pages/admin/courses/components/ProgramCategoryFields";
+import { educationKeyFromName } from "@/pages/admin/courses/components/ProgramsSection";
+import {
+  CourseGoalFields,
+  ProgramCategoryFields,
+} from "@/pages/admin/courses/components/ProgramCategoryFields";
 import SectionHeader from "../../components/SectionHeader";
 
 const NEW_PROGRAM = {
@@ -81,13 +85,12 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   const recordFeedback = useActionFeedback();
   const {
     CATEGORIES,
-    programs,
-    createProgram: createProgramApi,
-    updateProgram: updateProgramApi,
+    educations,
+    createEducation: createEducationApi,
     isSaving: catalogSaving,
   } = useCatalog({
     categories: true,
-    programs: true,
+    educations: true,
   });
   const {
     courses,
@@ -98,7 +101,6 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   const isSaving = catalogSaving || courseSaving;
   const { students, createStudent, updateStudent, setSelectedStudent } =
     useStudents();
-  const { entries } = useEntries();
   const { adminUsers, updateUser } = useUsers();
 
   const [draftOn, setDraftOn] = useState(false);
@@ -135,11 +137,11 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
     setAddName("");
     setAddEmail("");
     setEditProgramId(
-      course?.programId || Object.values(programs)[0]?.id || NEW_PROGRAM.value,
+      course?.educationId || Object.values(educations)[0]?.id || NEW_PROGRAM.value,
     );
     setNewProgramName("");
     setProgramError("");
-    setEditTargets({ ...targetsForCourse(course, programs) });
+    setEditTargets({ ...targetsForCourse(course, educations) });
     setAddUserId("");
     setTransferSourceId("");
     setConfirmTransferRoster(false);
@@ -152,14 +154,14 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   const canEditCourse =
     isAdministrator(user?.role) || h.createdByUserId === user?.id;
 
-  const programOptions = Object.values(programs).map((program) => ({
-    value: program.id,
-    label: program.name,
+  const programOptions = Object.values(educations).map((education) => ({
+    value: education.id,
+    label: education.name,
   }));
   const creatingNewProgram = editProgramId === NEW_PROGRAM.value;
   const selectedProgram = creatingNewProgram
     ? null
-    : (programs[editProgramId] ?? null);
+    : (educations[editProgramId] ?? null);
 
   const coursesToWrite = (rows: AppUser["courses"]): UserCourseWrite[] =>
     rows.map((course) => ({
@@ -174,25 +176,27 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
 
     let programId = selectedProgram?.id ?? null;
     let programLabel = selectedProgram?.name ?? "";
+    let createdEducation = false;
 
     if (creatingNewProgram || !programId) {
+      createdEducation = true;
       const trimmed = newProgramName.trim();
       if (!trimmed) {
         setProgramError("Angiv et navn til den nye uddannelse.");
         return;
       }
-      const programKey = programKeyFromName(trimmed);
+      const programKey = educationKeyFromName(trimmed);
       if (
-        Object.values(programs).some(
-          (program) =>
-            program.key === programKey ||
-            program.name.toLowerCase() === trimmed.toLowerCase(),
+        Object.values(educations).some(
+          (education) =>
+            education.key === programKey ||
+            education.name.toLowerCase() === trimmed.toLowerCase(),
         )
       ) {
         setProgramError("Der findes allerede en uddannelse med det navn.");
         return;
       }
-      const createdProgram = await createProgramApi(
+      const createdProgram = await createEducationApi(
         { key: programKey, name: trimmed, targets: editTargets },
         {
           logArgs: {
@@ -204,31 +208,21 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
       programLabel = createdProgram.name;
       setEditProgramId(createdProgram.id);
       setNewProgramName("");
-    } else if (
-      programId &&
-      (isAdministrator(user?.role) ||
-        selectedProgram?.createdByUserId === user?.id)
-    ) {
-      await updateProgramApi(
-        programId,
-        { targets: editTargets },
-        {
-          logArgs: {
-            description: `${actor} opdaterede totalmål for uddannelsen "${programLabel}" til ${formatTargets(editTargets, CATEGORIES)}`,
-          },
-        },
-      );
     }
 
     setProgramError("");
     await updateCourse(
       courseId,
-      { programId },
+      { educationId: programId, targets: editTargets },
       {
-        toastSuccessMessage: `Uddannelse og totalmål gemt for ${course.label}`,
+        toastSuccessMessage: createdEducation
+          ? `Uddannelse oprettet, og delmål gemt for ${course.label}`
+          : `Holdets delmål gemt for ${course.label}`,
         logArgs: {
           courseId,
-          description: `${actor} satte ${course.label} til uddannelsen "${programLabel}" med totalmål ${formatTargets(editTargets, CATEGORIES)}`,
+          description: createdEducation
+            ? `${actor} satte ${course.label} til den nye uddannelse "${programLabel}" med delmål ${formatTargets(editTargets, CATEGORIES)}`
+            : `${actor} satte ${course.label}s delmål under "${programLabel}" til ${formatTargets(editTargets, CATEGORIES)}`,
         },
       },
     );
@@ -240,7 +234,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
     const targetCourseId = courseId;
     const sourceLabel = courses[sourceCourseId].label;
     const targetLabel = courses[targetCourseId].label;
-    const moved = students.filter((s) => activeCourseId(s) === sourceCourseId);
+    const moved = students.filter((s) => isActiveOnCourse(s, sourceCourseId));
     await Promise.all(
       moved.map((s) => {
         const rest = s.courses.filter(
@@ -253,7 +247,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
             { id: sourceCourseId, active: false, included: true },
             ...rest.map((course) => ({
               id: course.id,
-              active: false,
+              active: course.active,
               included: course.included,
             })),
           ],
@@ -315,7 +309,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
 
   const deleteCourse = async () => {
     const currentMembers = students.filter(
-      (s) => activeCourseId(s) === courseId,
+      (s) => isEnrolledOnCourse(s, courseId),
     );
     if (currentMembers.length > 0) return;
     const holdBeingDeleted = courses[courseId];
@@ -349,7 +343,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   };
 
   const applyToCourse = async () => {
-    const members = students.filter((s) => activeCourseId(s) === courseId);
+    const members = students.filter((s) => isActiveOnCourse(s, courseId));
     await Promise.all(
       members.map((s) => {
         const existing = s.courses;
@@ -398,7 +392,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
   const removeFromCourse = async (fromCourseId: string) => {
     let hoursWithdrawnTotal = 0;
     let affectedCount = 0;
-    const members = students.filter((s) => activeCourseId(s) === courseId);
+    const members = students.filter((s) => isActiveOnCourse(s, courseId));
     await Promise.all(
       members.map((s) => {
         const existing = s.courses;
@@ -406,9 +400,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
         if (!link) return Promise.resolve();
         affectedCount += 1;
         if (link.included) {
-          hoursWithdrawnTotal += entries
-            .filter((e) => e.userId === s.id && e.courseId === fromCourseId)
-            .reduce((sum, e) => sum + Number(e.hours), 0);
+          hoursWithdrawnTotal += hoursOnCourse(s, fromCourseId);
         }
         return updateStudent(s.id, {
           courses: coursesToWrite(
@@ -528,7 +520,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
     reader.readAsArrayBuffer(file);
   };
 
-  const members = students.filter((s) => activeCourseId(s) === h.id);
+  const members = students.filter((s) => isActiveOnCourse(s, h.id));
   const onCount = members.filter((s) =>
     previousCourses(s).some((course) => course.included),
   ).length;
@@ -547,7 +539,9 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
         <div>
           <div className="text-sm font-semibold">{h.label}</div>
           <div className="mt-px text-xs text-ink-soft">
-            {programName(h, programs) ? `${programName(h, programs)} · ` : ""}
+            {educationName(h, educations)
+              ? `${educationName(h, educations)} · `
+              : ""}
             Oprettet {h.startYear} · {members.length} kursister
           </div>
         </div>
@@ -586,8 +580,13 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
                   setEditTargets({});
                 } else {
                   setNewProgramName("");
-                  const program = programs[next];
-                  setEditTargets(program ? { ...program.targets } : {});
+                  const education = educations[next];
+                  const sameEducation = next === courses[courseId]?.educationId;
+                  setEditTargets(
+                    sameEducation
+                      ? { ...targetsForCourse(courses[courseId], educations) }
+                      : { ...(education?.targets ?? {}) },
+                  );
                 }
               }}
               options={[...programOptions, NEW_PROGRAM]}
@@ -608,17 +607,22 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               {programError}
             </div>
           )}
-          <ProgramCategoryFields
-            label="Uddannelsens totalmål"
-            hint={
-              creatingNewProgram
-                ? "Totalmål for den nye uddannelse — gælder for alle hold knyttet til den."
-                : "Rediger uddannelsens totalmål. Gælder for alle hold under den valgte uddannelse."
-            }
-            targets={editTargets}
-            onChange={setEditTargets}
-            categories={CATEGORIES}
-          />
+          {creatingNewProgram ? (
+            <ProgramCategoryFields
+              label="Totalmål for den nye uddannelse"
+              hint="Uddannelsens mål er loftet. Dette hold starter med de samme tal."
+              targets={editTargets}
+              onChange={setEditTargets}
+              categories={CATEGORIES}
+            />
+          ) : (
+            <CourseGoalFields
+              targets={editTargets}
+              ceilings={selectedProgram?.targets ?? {}}
+              onChange={setEditTargets}
+              categories={CATEGORIES}
+            />
+          )}
           <div className="mb-4 flex gap-2.5">
             <Button
               variant="primary"
@@ -627,7 +631,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               disabled={isSaving}
               aria-busy={isSaving}
             >
-              {isSaving ? "Gemmer…" : "Gem uddannelse og delmål"}
+              {isSaving ? "Gemmer…" : "Gem holdets delmål"}
             </Button>
           </div>
             </>
@@ -754,11 +758,11 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
                   <AlertTriangle size={14} />
                   {
                     students.filter(
-                      (s) => activeCourseId(s) === transferSourceId,
+                      (s) => isActiveOnCourse(s, transferSourceId),
                     ).length
                   }{" "}
                   {students.filter(
-                    (s) => activeCourseId(s) === transferSourceId,
+                    (s) => isActiveOnCourse(s, transferSourceId),
                   ).length > 1
                     ? "kursister"
                     : "kursist"}{" "}
@@ -779,7 +783,7 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
                   >
                     Ja, overfør{" "}
                     {students.filter(
-                      (s) => activeCourseId(s) === transferSourceId,
+                      (s) => isActiveOnCourse(s, transferSourceId),
                     ).length > 1
                       ? "kursisterne"
                       : "kursisten"}
@@ -792,16 +796,16 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
                 className="flex-1 mt-2 mx-auto"
                 onClick={() => setConfirmTransferRoster(true)}
                 disabled={
-                  students.filter((s) => activeCourseId(s) === transferSourceId)
+                  students.filter((s) => isActiveOnCourse(s, transferSourceId))
                     .length === 0
                 }
               >
                 <ArrowRightLeft size={14} /> Overfør{" "}
                 {
-                  students.filter((s) => activeCourseId(s) === transferSourceId)
+                  students.filter((s) => isActiveOnCourse(s, transferSourceId))
                     .length
                 }{" "}
-                {students.filter((s) => activeCourseId(s) === transferSourceId)
+                {students.filter((s) => isActiveOnCourse(s, transferSourceId))
                   .length > 1
                   ? "kursister"
                   : "kursist"}{" "}

@@ -5,9 +5,9 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import type { CategoriesMap, ProgramsMap, Category, Program } from "../types/domain";
+import type { CategoriesMap, EducationsMap, Category, Education } from "../types/domain";
 import type { CategoryWrite } from "../api/categories";
-import type { ProgramWrite } from "../api/programs";
+import type { EducationWrite } from "../api/educations";
 import type { MutationFeedback } from "@/types/log";
 import { withFeedback } from "../hooks/queryHelpers";
 import { useHoldQuery } from "@/hooks/queryGate";
@@ -29,22 +29,22 @@ import {
   useReorderLearningGoals,
 } from "../hooks/learningGoals";
 import {
-  useCreateProgram,
-  useDeleteProgram,
-  useProgramsQuery,
-  useProgramsSetter,
-  useUpdateProgram,
-} from "../hooks/programs";
+  useCreateEducation,
+  useDeleteEducation,
+  useEducationsQuery,
+  useEducationsSetter,
+  useUpdateEducation,
+} from "../hooks/educations";
 
 export interface CatalogContextValue {
   CATEGORIES: CategoriesMap;
   ALL_CATEGORIES: CategoriesMap;
   LEARNING_GOALS: string[];
-  programs: ProgramsMap;
+  educations: EducationsMap;
   isLoading: boolean;
   setCategories: Dispatch<SetStateAction<CategoriesMap>>;
   setLearningGoals: Dispatch<SetStateAction<string[]>>;
-  setPrograms: Dispatch<SetStateAction<ProgramsMap>>;
+  setEducations: Dispatch<SetStateAction<EducationsMap>>;
   createCategory: (
     category: CategoryWrite,
     feedback?: MutationFeedback<Category> | null,
@@ -79,16 +79,16 @@ export interface CatalogContextValue {
     text: string,
     feedback?: MutationFeedback<string[]> | null,
   ) => Promise<void>;
-  createProgram: (
-    program: ProgramWrite,
-    feedback?: MutationFeedback<Program> | null,
-  ) => Promise<Program>;
-  updateProgram: (
+  createEducation: (
+    education: EducationWrite,
+    feedback?: MutationFeedback<Education> | null,
+  ) => Promise<Education>;
+  updateEducation: (
     id: string,
-    program: Partial<ProgramWrite>,
-    feedback?: MutationFeedback<Program> | null,
-  ) => Promise<Program>;
-  deleteProgram: (
+    education: Partial<EducationWrite>,
+    feedback?: MutationFeedback<Education> | null,
+  ) => Promise<Education>;
+  deleteEducation: (
     id: string,
     feedback?: MutationFeedback<void> | null,
   ) => Promise<void>;
@@ -100,11 +100,11 @@ const CatalogContext = createContext<CatalogContextValue | null>(null);
 export function CatalogProvider({ children }: { children: ReactNode }) {
   const categoriesQuery = useCategoriesQuery();
   const learningGoalsQuery = useLearningGoalsQuery();
-  const programsQuery = useProgramsQuery();
+  const educationsQuery = useEducationsQuery();
 
   const setCategories = useCategoriesSetter();
   const setLearningGoals = useLearningGoalsSetter();
-  const setPrograms = useProgramsSetter();
+  const setEducations = useEducationsSetter();
 
   const createCategoryMutation = useCreateCategory();
   const updateCategoryMutation = useUpdateCategory();
@@ -116,13 +116,13 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
   const reorderLearningGoalsMutation = useReorderLearningGoals();
   const deleteLearningGoalMutation = useDeleteLearningGoal();
 
-  const createProgramMutation = useCreateProgram();
-  const updateProgramMutation = useUpdateProgram();
-  const deleteProgramMutation = useDeleteProgram();
+  const createEducationMutation = useCreateEducation();
+  const updateEducationMutation = useUpdateEducation();
+  const deleteEducationMutation = useDeleteEducation();
 
   const categories = categoriesQuery.data;
   const learningGoals = learningGoalsQuery.data;
-  const programs = programsQuery.data;
+  const educations = educationsQuery.data;
 
   return (
     <CatalogContext.Provider
@@ -130,14 +130,14 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
         CATEGORIES: activeCategoriesOf(categories),
         ALL_CATEGORIES: categories,
         LEARNING_GOALS: learningGoals,
-        programs,
+        educations,
         isLoading:
           categoriesQuery.isLoading ||
           learningGoalsQuery.isLoading ||
-          programsQuery.isLoading,
+          educationsQuery.isLoading,
         setCategories,
         setLearningGoals,
-        setPrograms,
+        setEducations,
         createCategory: (category, feedback) =>
           createCategoryMutation.mutateAsync(withFeedback(category, feedback)),
         updateCategory: (key, category, feedback) =>
@@ -170,14 +170,16 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
             withFeedback(text, feedback),
           );
         },
-        createProgram: (program, feedback) =>
-          createProgramMutation.mutateAsync(withFeedback(program, feedback)),
-        updateProgram: (id, program, feedback) =>
-          updateProgramMutation.mutateAsync(
-            withFeedback({ id, program }, feedback),
+        createEducation: (education, feedback) =>
+          createEducationMutation.mutateAsync(
+            withFeedback(education, feedback),
           ),
-        deleteProgram: (id, feedback) =>
-          deleteProgramMutation.mutateAsync(withFeedback(id, feedback)),
+        updateEducation: (id, education, feedback) =>
+          updateEducationMutation.mutateAsync(
+            withFeedback({ id, education }, feedback),
+          ),
+        deleteEducation: (id, feedback) =>
+          deleteEducationMutation.mutateAsync(withFeedback(id, feedback)),
         isSaving:
           createCategoryMutation.isPending ||
           updateCategoryMutation.isPending ||
@@ -187,9 +189,9 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
           renameLearningGoalMutation.isPending ||
           reorderLearningGoalsMutation.isPending ||
           deleteLearningGoalMutation.isPending ||
-          createProgramMutation.isPending ||
-          updateProgramMutation.isPending ||
-          deleteProgramMutation.isPending,
+          createEducationMutation.isPending ||
+          updateEducationMutation.isPending ||
+          deleteEducationMutation.isPending,
       }}
     >
       {children}
@@ -199,13 +201,13 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
 
 export type CatalogScope = {
   categories?: boolean;
-  programs?: boolean;
+  educations?: boolean;
   goals?: boolean;
 };
 
 export function useCatalog(scope: CatalogScope = {}) {
   useHoldQuery("categories", scope.categories === true);
-  useHoldQuery("programs", scope.programs === true);
+  useHoldQuery("educations", scope.educations === true);
   useHoldQuery("learningGoals", scope.goals === true);
   const ctx = useContext(CatalogContext);
   if (!ctx) {

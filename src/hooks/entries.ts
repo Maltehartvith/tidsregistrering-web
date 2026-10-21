@@ -1,81 +1,54 @@
-import type { QueryClient } from "@tanstack/react-query";
-import type { TimeEntry } from "../types/entry";
+import type { EntryQuery, EntryPage, EntryUsage } from "../api/entries";
 import * as entriesApi from "../api/entries";
-import { isStaffRole, queryKeys } from "../api/queryKeys";
-import { useAuth } from "../context/AuthContext";
-import {
-  useDomainMutation,
-  useDomainQuery,
-  useQuerySetter,
-} from "./queryHelpers";
-import { useQueryHeld } from "./queryGate";
+import { queryKeys } from "../api/queryKeys";
+import { useDomainMutation, useDomainQuery } from "./queryHelpers";
+import { useHoldQuery, useQueryHeld } from "./queryGate";
 
-const EMPTY: TimeEntry[] = [];
+const EMPTY_PAGE: EntryPage = { items: [], total: 0, page: 1, pageSize: 20 };
+const EMPTY_USAGE: EntryUsage = { categories: {}, goals: {} };
 
-function writeEntries(
-  queryClient: QueryClient,
-  update: (prev: TimeEntry[]) => TimeEntry[],
-) {
-  queryClient.setQueriesData<TimeEntry[]>(
-    { queryKey: queryKeys.entries },
-    (prev) => update(prev ?? []),
-  );
-}
-
-export function useEntriesQuery() {
-  const { user } = useAuth();
+export function useEntryPage(query: EntryQuery, enabled = true) {
+  useHoldQuery("entries", enabled);
   const held = useQueryHeld("entries");
-  const staff = isStaffRole(user?.role);
 
   return useDomainQuery({
-    queryKey: [...queryKeys.entries, staff ? "all" : "self"],
-    queryFn: async () => {
-      const entries = await entriesApi.listEntries();
-      if (staff || !user) return entries;
-      return entries.filter((entry) => entry.userId === user.id);
-    },
-    empty: EMPTY,
-    enabled: held,
+    queryKey: [...queryKeys.entries, "page", query],
+    queryFn: () => entriesApi.listEntries(query),
+    empty: { ...EMPTY_PAGE, page: query.page ?? 1, pageSize: query.pageSize ?? 20 },
+    enabled: held && enabled,
   });
 }
 
-export function useEntriesSetter() {
-  return useQuerySetter<TimeEntry[]>(queryKeys.entries, EMPTY);
+export function useEntryUsage(enabled = true) {
+  useHoldQuery("entries", enabled);
+  const held = useQueryHeld("entries");
+
+  return useDomainQuery({
+    queryKey: [...queryKeys.entries, "usage"],
+    queryFn: entriesApi.entryUsage,
+    empty: EMPTY_USAGE,
+    enabled: held && enabled,
+  });
 }
 
 export function useCreateEntry() {
   return useDomainMutation({
     mutationFn: entriesApi.createEntry,
-    invalidateKeys: [queryKeys.entries],
-    applyResult: (queryClient, data) => {
-      writeEntries(queryClient, (prev) =>
-        prev.some((entry) => entry.id === data.id) ? prev : [data, ...prev],
-      );
-    },
+    invalidateKeys: [queryKeys.entries, queryKeys.students, queryKeys.users],
   });
 }
 
 export function useUpdateEntry() {
   return useDomainMutation({
-    mutationFn: ({ id, entry }: { id: string; entry: Partial<TimeEntry> }) =>
+    mutationFn: ({ id, entry }: { id: string; entry: Record<string, unknown> }) =>
       entriesApi.updateEntry(id, entry),
-    invalidateKeys: [queryKeys.entries],
-    applyResult: (queryClient, data) => {
-      writeEntries(queryClient, (prev) =>
-        prev.map((entry) => (entry.id === data.id ? data : entry)),
-      );
-    },
+    invalidateKeys: [queryKeys.entries, queryKeys.students, queryKeys.users],
   });
 }
 
 export function useDeleteEntry() {
   return useDomainMutation({
     mutationFn: (id: string) => entriesApi.deleteEntry(id),
-    invalidateKeys: [queryKeys.entries],
-    applyResult: (queryClient, _data, id) => {
-      writeEntries(queryClient, (prev) =>
-        prev.filter((entry) => entry.id !== id),
-      );
-    },
+    invalidateKeys: [queryKeys.entries, queryKeys.students, queryKeys.users],
   });
 }

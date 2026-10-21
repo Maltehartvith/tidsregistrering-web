@@ -1,26 +1,14 @@
-import {
-  createContext,
-  useContext,
-  type ReactNode,
-  type Dispatch,
-  type SetStateAction,
-} from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import type { TimeEntry } from "../types/entry";
 import type { MutationFeedback } from "@/types/log";
 import { withFeedback } from "../hooks/queryHelpers";
-import { useHoldQuery } from "@/hooks/queryGate";
 import {
   useCreateEntry,
   useDeleteEntry,
-  useEntriesQuery,
-  useEntriesSetter,
   useUpdateEntry,
 } from "../hooks/entries";
 
 export interface EntriesContextValue {
-  entries: TimeEntry[];
-  isLoading: boolean;
-  setEntries: Dispatch<SetStateAction<TimeEntry[]>>;
   createEntry: (
     entry: Omit<TimeEntry, "id"> & { id?: string },
     feedback?: MutationFeedback<TimeEntry> | null,
@@ -40,8 +28,6 @@ export interface EntriesContextValue {
 const EntriesContext = createContext<EntriesContextValue | null>(null);
 
 export function EntriesProvider({ children }: { children: ReactNode }) {
-  const { data: entries, isLoading } = useEntriesQuery();
-  const setEntries = useEntriesSetter();
   const createMutation = useCreateEntry();
   const updateMutation = useUpdateEntry();
   const deleteMutation = useDeleteEntry();
@@ -49,13 +35,12 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   return (
     <EntriesContext.Provider
       value={{
-        entries,
-        isLoading,
-        setEntries,
         createEntry: (entry, feedback) =>
           createMutation.mutateAsync(withFeedback(entry, feedback)),
         updateEntry: (id, entry, feedback) =>
-          updateMutation.mutateAsync(withFeedback({ id, entry }, feedback)),
+          updateMutation.mutateAsync(
+            withFeedback({ id, entry: entry as Record<string, unknown> }, feedback),
+          ),
         deleteEntry: (id, feedback) =>
           deleteMutation.mutateAsync(withFeedback(id, feedback)),
         isSaving:
@@ -69,8 +54,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useEntries(options?: { list?: boolean }) {
-  useHoldQuery("entries", options?.list !== false);
+export function useEntries() {
   const ctx = useContext(EntriesContext);
   if (!ctx) {
     throw new Error("useEntries must be used within EntriesProvider");

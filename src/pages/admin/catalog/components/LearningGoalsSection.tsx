@@ -10,7 +10,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { useCatalog } from "@/context/CatalogContext";
-import { useEntries } from "@/context/EntriesContext";
+import { useEntryUsage } from "@/hooks/entries";
 import { useActorLabel } from "@/domain/actor";
 import SectionHeader from "../../components/SectionHeader";
 import { TextArea } from "@/components/ui/TextArea";
@@ -27,7 +27,7 @@ export default function LearningGoalsSection() {
     deleteLearningGoal,
     isSaving,
   } = useCatalog({ goals: true });
-  const { entries } = useEntries();
+  const { data: usage } = useEntryUsage();
   const [editingGoalIndex, setEditingGoalIndex] = useState<number | null>(null);
   const [goalDraft, setGoalDraft] = useState("");
   const [newGoal, setNewGoal] = useState("");
@@ -75,7 +75,7 @@ export default function LearningGoalsSection() {
       return;
     }
     if (text !== old) {
-      const affected = entries.filter((e) => e.learningGoal === old).length;
+      const affected = usage.goals[old] ?? 0;
       await renameLearningGoal(old, text, {
         toastSuccessMessage:
           affected > 0
@@ -97,7 +97,7 @@ export default function LearningGoalsSection() {
       return;
     }
     const text = LEARNING_GOALS[i];
-    const affected = entries.filter((e) => e.learningGoal === text).length;
+    const affected = usage.goals[text] ?? 0;
     await deleteLearningGoal(text, {
       toastSuccessMessage: "Læringsmål fjernet",
       logArgs: {

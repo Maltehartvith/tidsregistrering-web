@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PlusCircle, ChevronDown, User } from "lucide-react";
-import { programName } from "@/domain/totals";
+import { educationName } from "@/domain/totals";
 import { ADMIN_ROLES } from "@/data/constants";
 import { Field } from "@/components/ui/Field";
 import ToggleButton from "@/components/ui/ToggleButton";
@@ -17,7 +17,7 @@ import { Selector } from "@/components/ui/Selector";
 
 export function InviteUserForm() {
   const actor = useActorLabel();
-  const { programs } = useCatalog({ programs: true });
+  const { educations } = useCatalog({ educations: true });
   const { courses } = useCourses();
   const { adminUsers, createUser, isSaving } = useUsers();
   const [showInvite, setShowInvite] = useState(false);
@@ -165,8 +165,8 @@ export function InviteUserForm() {
                       />
                       <span>
                         {course.label}
-                        {programName(course, programs)
-                          ? ` · ${programName(course, programs)}`
+                        {educationName(course, educations)
+                          ? ` · ${educationName(course, educations)}`
                           : ""}
                       </span>
                     </label>

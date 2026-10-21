@@ -2,29 +2,45 @@ import { Check, ClockCheck, Pencil, PlusCircle, Trash2, X } from "lucide-react";
 import SectionHeader from "@/pages/admin/components/SectionHeader";
 import { Button } from "@/components/ui/Button";
 import { TimeEntry } from "@/types/entry";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { emptyForm } from "@/domain/entryForm";
 import { categoryOf } from "@/domain/catalog";
 import { EntryForm } from "@/components/ui/EntryForm";
 import { courseLabel } from "@/domain/totals";
-import { activeCourseId } from "@/domain/userCourses";
 import { useActorLabel } from "@/domain/actor";
 import { useEntries } from "@/context/EntriesContext";
+import { useEntryPage } from "@/hooks/entries";
+import { EntryPager } from "@/components/ui/EntryPager";
+import type { Course } from "@/types/course";
 import { useStudents } from "@/context/StudentsContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
 
 const Registrations = () => {
   const { selectedStudent } = useStudents();
-  const { entries, createEntry, updateEntry, deleteEntry, isSaving } =
-    useEntries();
+  const { createEntry, updateEntry, deleteEntry, isSaving } = useEntries();
+  const [page, setPage] = useState(1);
   const { ALL_CATEGORIES: allCategories, LEARNING_GOALS: learningGoals } =
     useCatalog({ categories: true, goals: true });
   const { courses } = useCourses();
   const actor = useActorLabel();
-  const homeCourseId = selectedStudent
-    ? activeCourseId(selectedStudent)
-    : null;
+  const history = useEntryPage(
+    {
+      userId: selectedStudent?.id,
+      page,
+      pageSize: 20,
+    },
+    Boolean(selectedStudent),
+  );
+  const courseOptions = (selectedStudent?.courses ?? [])
+    .filter((course) => course.active)
+    .map((course) => courses[course.id])
+    .filter((course): course is Course => Boolean(course));
+  const homeCourseId = courseOptions[0]?.id ?? "";
+
+  useEffect(() => {
+    setPage(1);
+  }, [selectedStudent?.id]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(() =>
@@ -38,14 +54,7 @@ const Registrations = () => {
 
   if (!selectedStudent) return null;
 
-  const studentEntries = entries
-    .filter((e) => e.userId === selectedStudent.id)
-    .sort((a, b) => (a.date < b.date ? 1 : -1));
-
-  const courseOptions = [
-    ...(homeCourseId && courses[homeCourseId] ? [courses[homeCourseId]] : []),
-    ...Object.values(courses).filter((h) => h.id !== homeCourseId),
-  ];
+  const studentEntries = history.data.items;
 
   const startEdit = (entry: TimeEntry) => {
     setEditingId(entry.id as string);
@@ -243,6 +252,12 @@ const Registrations = () => {
           </div>
         );
       })}
+      <EntryPager
+        page={history.data.page}
+        pageSize={history.data.pageSize}
+        total={history.data.total}
+        onPage={setPage}
+      />
     </div>
   );
 };

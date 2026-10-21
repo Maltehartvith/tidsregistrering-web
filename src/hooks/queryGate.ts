@@ -4,7 +4,7 @@ import { useEffect, useSyncExternalStore } from "react";
 export type QueryGate =
   | "categories"
   | "learningGoals"
-  | "programs"
+  | "educations"
   | "courses"
   | "students"
   | "entries"
@@ -13,7 +13,7 @@ export type QueryGate =
 const counts: Record<QueryGate, number> = {
   categories: 0,
   learningGoals: 0,
-  programs: 0,
+  educations: 0,
   courses: 0,
   students: 0,
   entries: 0,

@@ -4,7 +4,7 @@ import Input from "@/components/ui/Input";
 import { useCourses } from "@/context/CoursesContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useActorLabel } from "@/domain/actor";
-import { activeCourseId } from "@/domain/userCourses";
+import { activeCourseIds } from "@/domain/userCourses";
 import { MutationFeedback } from "@/types/log";
 import { User } from "@/types/user";
 import { ArrowLeft, Pencil } from "lucide-react";
@@ -145,10 +145,10 @@ const PersonalInfo = () => {
               <div className="text-[13px] text-ink-soft">
                 {selectedStudent.email}
                 {(() => {
-                  const homeId = activeCourseId(selectedStudent);
-                  return homeId && courses[homeId]
-                    ? ` · ${courses[homeId].label}`
-                    : "";
+                  const labels = activeCourseIds(selectedStudent)
+                    .map((id) => courses[id]?.label)
+                    .filter(Boolean);
+                  return labels.length > 0 ? ` · ${labels.join(", ")}` : "";
                 })()}
               </div>
             </div>

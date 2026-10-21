@@ -8,14 +8,12 @@ import {
 import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
 import { useStudents } from "@/context/StudentsContext";
-import { useEntries } from "@/context/EntriesContext";
 import { categoriesForCourseIds } from "@/domain/catalog";
 import { downloadCourseStudentsExcel } from "@/domain/exportStudents";
-import { totalsForStudent, targetsForStudent } from "@/domain/totals";
+import { totalsForCourses, targetsForEducation, targetsForCourse } from "@/domain/totals";
 import {
-  activeCourseId,
+  activeCourseIds,
   includedCourseIds,
-  previousCourses,
 } from "@/domain/userCourses";
 import { formatDiff } from "@/domain/format";
 import { Button } from "@/components/ui/Button";
@@ -23,9 +21,9 @@ import { GhostBlock } from "@/components/ui/Ghost";
 import Input from "@/components/ui/Input";
 
 export function StudentList() {
-  const { CATEGORIES, programs } = useCatalog({
+  const { CATEGORIES, educations } = useCatalog({
     categories: true,
-    programs: true,
+    educations: true,
   });
   const { courses, isLoading: isCoursesLoading } = useCourses();
   const {
@@ -34,11 +32,23 @@ export function StudentList() {
     setSelectedStudent,
     isLoading: isStudentsLoading,
   } = useStudents();
-  const { entries } = useEntries();
+  const [educationFilter, setEducationFilter] = useState("alle");
   const [holdFilter, setHoldFilter] = useState("alle");
   const [query, setQuery] = useState("");
 
+  const visibleCourses = Object.values(courses || {}).filter(
+    (course) =>
+      educationFilter === "alle" || course.educationId === educationFilter,
+  );
+
+  const studentMatchesEducation = (s: (typeof students)[number]) =>
+    educationFilter === "alle" ||
+    s.courses.some(
+      (course) => courses?.[course.id]?.educationId === educationFilter,
+    );
+
   const filtered = students
+    .filter(studentMatchesEducation)
     .filter(
       (s) =>
         holdFilter === "alle" ||
@@ -47,12 +57,10 @@ export function StudentList() {
     .filter((s) => {
       if (!query.trim()) return true;
       const q = query.toLowerCase();
-      const homeId = activeCourseId(s);
-      const courseLabelText = (
-        (homeId && courses?.[homeId]?.label) ||
-        (homeId && courses?.[homeId]?.key) ||
-        ""
-      ).toLowerCase();
+      const courseLabelText = activeCourseIds(s)
+        .map((id) => courses?.[id]?.label || courses?.[id]?.key || "")
+        .join(" ")
+        .toLowerCase();
       return (
         s.name.toLowerCase().includes(q) ||
         s.email.toLowerCase().includes(q) ||
@@ -61,22 +69,28 @@ export function StudentList() {
     });
 
   const isLoading = isCoursesLoading || isStudentsLoading;
-  const exportCourseLabel =
-    holdFilter === "alle" ? "alle hold" : (courses?.[holdFilter]?.label ?? "");
+  const exportCourseLabel = [
+    educationFilter === "alle"
+      ? ""
+      : educations[educationFilter]?.name,
+    holdFilter === "alle" ? "alle hold" : courses?.[holdFilter]?.label,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const exportLabel = `Eksporter ${exportCourseLabel} til Excel`;
   const canExport =
-    holdFilter === "alle"
-      ? Object.keys(courses || {}).length > 0
-      : Boolean(courses?.[holdFilter]);
+    visibleCourses.length > 0 &&
+    (holdFilter === "alle" ||
+      visibleCourses.some((course) => course.id === holdFilter));
 
   const handleExport = () => {
     if (!canExport) return;
     downloadCourseStudentsExcel({
       courseId: holdFilter,
-      students,
-      entries,
+      educationId: educationFilter,
+      students: filtered,
       courses: courses || {},
-      programs,
+      educations,
       categories: CATEGORIES,
     });
   };
@@ -129,13 +143,40 @@ export function StudentList() {
 
             <div className="flex flex-wrap gap-1">
               <Button
+                variant={educationFilter === "alle" ? "primary" : "secondary"}
+                onClick={() => {
+                  setEducationFilter("alle");
+                  setHoldFilter("alle");
+                }}
+                className="rounded-full! px-3! py-2! text-xs!"
+              >
+                Alle uddannelser
+              </Button>
+              {Object.values(educations).map((education) => (
+                <Button
+                  key={education.id}
+                  variant={
+                    educationFilter === education.id ? "primary" : "secondary"
+                  }
+                  className="rounded-full! px-3! py-2! text-xs!"
+                  onClick={() => {
+                    setEducationFilter(education.id);
+                    setHoldFilter("alle");
+                  }}
+                >
+                  {education.name}
+                </Button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              <Button
                 variant={holdFilter === "alle" ? "primary" : "secondary"}
                 onClick={() => setHoldFilter("alle")}
                 className="rounded-full! px-3! py-2! text-xs!"
               >
                 Alle hold
               </Button>
-              {Object.values(courses || {}).map((h) => (
+              {visibleCourses.map((h) => (
                 <Button
                   key={h.id}
                   variant={holdFilter === h.id ? "primary" : "secondary"}
@@ -154,20 +195,42 @@ export function StudentList() {
           )}
           <div className="scrollbar-bottom-margin mr-1 min-h-0 flex-1 overflow-y-auto pr-1">
             {filtered.map((s) => {
-              const homeId = activeCourseId(s);
-              const totals = totalsForStudent(s, entries, CATEGORIES);
-              const targets = targetsForStudent(
-                s,
-                courses || {},
-                programs,
-                CATEGORIES,
-              );
+              const viewCourseIds =
+                holdFilter !== "alle"
+                  ? [holdFilter]
+                  : educationFilter !== "alle"
+                    ? s.courses
+                        .filter(
+                          (course) =>
+                            course.included &&
+                            courses?.[course.id]?.educationId === educationFilter,
+                        )
+                        .map((course) => course.id)
+                    : includedCourseIds(s);
+              const totals = totalsForCourses(s, viewCourseIds, CATEGORIES);
+              const educationIds = [
+                ...new Set(
+                  viewCourseIds
+                    .map((id) => courses?.[id]?.educationId)
+                    .filter((id): id is string => Boolean(id)),
+                ),
+              ];
+              const targets =
+                viewCourseIds.length === 1
+                  ? targetsForCourse(courses?.[viewCourseIds[0]], educations)
+                  : educationIds.length === 1
+                    ? targetsForEducation(educationIds[0], educations)
+                    : {};
               const studentCategories = categoriesForCourseIds(
-                includedCourseIds(s),
+                viewCourseIds,
                 courses || {},
-                programs,
+                educations,
                 CATEGORIES,
               );
+              const courseNames = activeCourseIds(s)
+                .map((id) => courses?.[id]?.label || courses?.[id]?.key)
+                .filter(Boolean)
+                .join(", ");
               return (
                 <button
                   key={s.id}
@@ -178,13 +241,13 @@ export function StudentList() {
                     <div className="text-sm font-semibold">{s.name}</div>
                     <div className="mt-px text-xs text-ink-soft">
                       {s.email}
-                      {homeId
-                        ? ` · ${courses?.[homeId]?.label || courses?.[homeId]?.key || ""}`
-                        : ""}
+                      {courseNames ? ` · ${courseNames}` : ""}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-3">
                       {studentCategories.map((c) => {
-                        const diff = totals[c.key] - targets[c.key];
+                        const goal = targets[c.key];
+                        if (typeof goal !== "number") return null;
+                        const diff = totals[c.key] - goal;
                         return (
                           <span
                             key={c.key}
@@ -205,7 +268,7 @@ export function StudentList() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    {previousCourses(s).some((course) => course.included) && (
+                    {s.courses.some((course) => !course.active && course.included) && (
                       <ArrowRightLeft
                         size={14}
                         className="shrink-0 text-secondary"

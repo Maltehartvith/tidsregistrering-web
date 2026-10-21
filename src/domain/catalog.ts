@@ -1,5 +1,6 @@
 import type { CourseMap } from "../types/course";
-import type { CategoriesMap, Category, ProgramsMap } from "../types/domain";
+import type { CategoriesMap, Category, EducationsMap } from "../types/domain";
+import { targetsForCourse } from "./totals";
 
 export function activeCategoriesOf(categories: CategoriesMap): CategoriesMap {
   return Object.fromEntries(Object.entries(categories).filter(([, c]) => !c.archived));
@@ -21,7 +22,7 @@ export function categoryOf(allCategories: CategoriesMap, key: string): Category 
   );
 }
 
-/** Categories whose key is stored on a program. Missing keys are not part of it. */
+/** Categories whose key is stored on a target map. Missing keys are not part of it. */
 export function categoriesInTargets(
   targets: Record<string, number> | undefined,
   categories: CategoriesMap,
@@ -32,18 +33,16 @@ export function categoriesInTargets(
   );
 }
 
-/** Active categories on the programs of the given courses, in catalog order. */
+/** Categories on the given courses, in catalog order. */
 export function categoriesForCourseIds(
   courseIds: string[],
   courses: CourseMap,
-  programs: ProgramsMap,
+  educations: EducationsMap,
   categories: CategoriesMap,
 ): Category[] {
   const keys = new Set<string>();
   for (const courseId of courseIds) {
-    const programId = courses[courseId]?.programId;
-    const targets = programId ? programs[programId]?.targets : undefined;
-    if (!targets) continue;
+    const targets = targetsForCourse(courses[courseId], educations);
     for (const key of Object.keys(targets)) {
       if (categories[key]) keys.add(key);
     }

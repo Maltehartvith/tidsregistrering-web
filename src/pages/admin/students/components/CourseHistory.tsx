@@ -1,22 +1,22 @@
 import { useActorLabel } from "@/domain/actor";
 import { categoriesForCourseIds } from "@/domain/catalog";
 import type { MutationFeedback } from "@/types/log";
+import { courseLabel, educationName, hoursOnCourse } from "@/domain/totals";
 import {
-  coursesWithinTransferWindow,
-  courseLabel,
-  programName,
-  targetsForCourse,
-  targetsForStudent,
-  totalsForStudent,
-  totalsForStudentOnHold,
-} from "@/domain/totals";
-import { activeCourseId, previousCourses } from "@/domain/userCourses";
+  choiceById,
+  courseIdsForChoice,
+  scopeChoices,
+  targetsForChoice,
+  totalsForChoice,
+} from "@/domain/hourScope";
+import { activeCourseIds, previousCourses } from "@/domain/userCourses";
 import type { User, UserCourseWrite } from "@/types/user";
 import { Check, Clock3, PlusCircle, X } from "lucide-react";
 import { useState } from "react";
 import ChangeCourseCard from "./ChangeCourseCard";
 import { Button } from "@/components/ui/Button";
 import ToggleButton from "@/components/ui/ToggleButton";
+import { ScopeBar } from "@/components/ui/ScopeBar";
 import { CategoryCard } from "@/components/ui/CategoryCard";
 import { CategoryCardGhost } from "@/components/ui/Ghost";
 import { Selector } from "@/components/ui/Selector";
@@ -24,20 +24,17 @@ import SectionHeader from "@/pages/admin/components/SectionHeader";
 import { useStudents } from "@/context/StudentsContext";
 import { useCourses } from "@/context/CoursesContext";
 import { useCatalog } from "@/context/CatalogContext";
-import { useEntries } from "@/context/EntriesContext";
-
 const CourseHistory = () => {
   const { selectedStudent, updateStudent: persistStudent } = useStudents();
   const { courses, isLoading: coursesLoading } = useCourses();
   const {
     CATEGORIES: categories,
-    programs,
+    educations,
     isLoading: catalogLoading,
   } = useCatalog({
     categories: true,
-    programs: true,
+    educations: true,
   });
-  const { entries } = useEntries();
   const actor = useActorLabel();
 
   const [scope, setScope] = useState("uddannelse");
@@ -53,61 +50,27 @@ const CourseHistory = () => {
 
   if (!selectedStudent) return null;
 
-  const homeCourseId = activeCourseId(selectedStudent);
+  const homeCourseId = activeCourseIds(selectedStudent)[0] ?? null;
   const currentCourse = homeCourseId ? courses[homeCourseId] : undefined;
   const previous = previousCourses(selectedStudent);
 
-  const studentEntries = entries.filter((e) => e.userId === selectedStudent.id);
-
-  const totalsWholeProgram = totalsForStudent(
-    selectedStudent,
-    studentEntries,
-    categories,
-  );
-  const targetsWholeProgram = targetsForStudent(
-    selectedStudent,
-    courses,
-    programs,
-    categories,
-  );
-  const includedPrevious = previous.filter((course) => course.included);
-  const includedCourses = [
-    ...(homeCourseId
-      ? selectedStudent.courses.filter(
-          (course) => course.id === homeCourseId && course.included,
-        )
-      : []),
-    ...includedPrevious,
-  ];
-  const selectedCourseId = includedCourses.some((course) => course.id === scope)
+  const choices = scopeChoices(selectedStudent, courses, educations);
+  const selectedId = choices.some((choice) => choice.id === scope)
     ? scope
-    : null;
-  const totals = selectedCourseId
-    ? totalsForStudentOnHold(
-        selectedStudent,
-        studentEntries,
-        selectedCourseId,
-        categories,
-      )
-    : totalsWholeProgram;
-  const targets = selectedCourseId
-    ? targetsForCourse(courses[selectedCourseId], programs)
-    : targetsWholeProgram;
-  const scopeCourseIds = selectedCourseId
-    ? [selectedCourseId]
-    : includedCourses.map((course) => course.id);
+    : (choices[0]?.id ?? "");
+  const choice = choiceById(choices, selectedId);
+  const totals = totalsForChoice(selectedStudent, choice, courses, categories);
+  const targets = targetsForChoice(choice, courses, educations);
+  const scopeCourseIds = courseIdsForChoice(selectedStudent, choice, courses);
   const categoriesList = categoriesForCourseIds(
     scopeCourseIds,
     courses,
-    programs,
+    educations,
     categories,
   );
   const cardsLoading =
     (catalogLoading || coursesLoading) && categoriesList.length === 0;
-  const availableCoursesToAdd = coursesWithinTransferWindow(
-    homeCourseId,
-    courses,
-  ).filter(
+  const availableCoursesToAdd = Object.values(courses).filter(
     (h) => !selectedStudent.courses.some((course) => course.id === h.id),
   );
 
@@ -130,7 +93,7 @@ const CourseHistory = () => {
     await patchCourses(
       [
         ...toWrite(selectedStudent.courses),
-        { id: hold.id, active: false, included: true },
+        { id: hold.id, active: true, included: true },
       ],
       {
         toastSuccessMessage: `${label} tilføjet`,
@@ -147,9 +110,7 @@ const CourseHistory = () => {
     const row = previous.find((course) => course.id === courseId);
     const wasIncluded = Boolean(row?.included);
     const hoursFromHold = wasIncluded
-      ? studentEntries
-          .filter((e) => e.courseId === courseId)
-          .reduce((sum, e) => sum + Number(e.hours), 0)
+      ? hoursOnCourse(selectedStudent, courseId)
       : 0;
     const label = courses[courseId]?.label || courses[courseId]?.key || "Hold";
     await patchCourses(
@@ -209,31 +170,37 @@ const CourseHistory = () => {
       />
       <div className="mb-4 rounded-lg border border-border bg-card px-4.5 py-4">
         <p className="mb-3.5 text-[13px] leading-normal text-ink-soft">
-          Kursister kan have gået på et andet hold eller kursus tidligere i
-          uddannelsen. Her ses alle hold {selectedStudent.name} har været
-          tilknyttet, og I kan bestemme hvilke af dem der skal tælle med i
-          timeregnskabet. Kun hold oprettet inden for 5 år af{" "}
-          {currentCourse?.label || "Intet hold"} kan tilføjes, da uddannelsen
-          forløber over op til 5 år.
+          {selectedStudent.name} kan være på flere hold på én gang. Her ses alle
+          holdene, og I kan bestemme hvilke der tæller med i timeregnskabet.
         </p>
 
-        <div className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0">
-          <div>
-            <div className="text-sm font-semibold" style={{ fontSize: 13 }}>
-              {currentCourse?.label || "Intet hold"} ·{" "}
-              {currentCourse?.startYear ?? ""}
+        {selectedStudent.courses.filter((course) => course.active).length === 0 && (
+          <div className="text-sm text-ink-soft">Intet aktivt hold.</div>
+        )}
+        {selectedStudent.courses
+          .filter((course) => course.active)
+          .map((link) => (
+            <div
+              key={link.id}
+              className="flex items-center justify-between gap-2.5 border-b border-border py-2.5 last:border-b-0"
+            >
+              <div>
+                <div className="text-sm font-semibold" style={{ fontSize: 13 }}>
+                  {courseLabel(link.id, courses)} ·{" "}
+                  {courses[link.id]?.startYear ?? ""}
+                </div>
+                <div className="mt-px text-xs text-ink-soft">
+                  {educationName(courses[link.id], educations)
+                    ? `${educationName(courses[link.id], educations)} · `
+                    : ""}
+                  Aktivt hold · kan registrere timer
+                </div>
+              </div>
+              <span className="shrink-0 rounded-full border border-primary px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-primary">
+                Aktivt
+              </span>
             </div>
-            <div className="mt-px text-xs text-ink-soft">
-              {programName(currentCourse, programs)
-                ? `${programName(currentCourse, programs)} · `
-                : ""}
-              Nuværende hold · tæller altid med
-            </div>
-          </div>
-          <span className="shrink-0 rounded-full border border-primary px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-primary">
-            Nuværende
-          </span>
-        </div>
+          ))}
 
         {showMoveHold ? (
           <ChangeCourseCard setShowMoveHold={setShowMoveHold} />
@@ -263,8 +230,8 @@ const CourseHistory = () => {
                   {courses[link.id]?.startYear || ""}
                 </div>
                 <div className="mt-px text-xs text-ink-soft">
-                  {programName(courses[link.id], programs)
-                    ? `${programName(courses[link.id], programs)} · `
+                  {educationName(courses[link.id], educations)
+                    ? `${educationName(courses[link.id], educations)} · `
                     : ""}
                   {included
                     ? "Tæller med i regnskabet"
@@ -333,32 +300,12 @@ const CourseHistory = () => {
             className="mt-1 block text-[11px] text-ink-soft"
             style={{ marginTop: 10 }}
           >
-            Ingen flere hold inden for 5-års-vinduet at tilføje.
+            Kursisten er allerede på alle hold.
           </p>
         )}
       </div>
 
-      {includedCourses.length > 1 && (
-        <div className="flex flex-wrap gap-2" style={{ marginBottom: 12 }}>
-          <Button
-            variant={selectedCourseId ? "secondary" : "primary"}
-            size="small"
-            onClick={() => setScope("uddannelse")}
-          >
-            Hele uddannelsen
-          </Button>
-          {includedCourses.map((course) => (
-            <Button
-              key={course.id}
-              variant={scope === course.id ? "primary" : "secondary"}
-              size="small"
-              onClick={() => setScope(course.id)}
-            >
-              {courseLabel(course.id, courses)}
-            </Button>
-          ))}
-        </div>
-      )}
+      <ScopeBar choices={choices} value={selectedId} onChange={setScope} />
 
       <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 2xl:grid-cols-3 md:gap-3">
         {cardsLoading ? (

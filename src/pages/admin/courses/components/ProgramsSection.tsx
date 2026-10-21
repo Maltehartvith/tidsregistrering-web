@@ -12,7 +12,8 @@ import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
 import { formatTargets } from "@/domain/catalog";
 import { Field } from "@/components/ui/Field";
-import { Program, ProgramDraft } from "@/types/domain";
+import { NumberInput } from "@/components/ui/NumberInput";
+import { Education, EducationDraft } from "@/types/domain";
 import { useActorLabel } from "@/domain/actor";
 import { useAuth } from "@/context/AuthContext";
 import { isAdministrator } from "@/api/queryKeys";
@@ -23,8 +24,8 @@ import Input from "@/components/ui/Input";
 import { GhostBlock } from "@/components/ui/Ghost";
 import { ProgramCategoryFields } from "@/pages/admin/courses/components/ProgramCategoryFields";
 
-/** Builds a stable program key from a (trimmed) display name. */
-export const programKeyFromName = (name: string) =>
+/** Builds a stable education key from a (trimmed) display name. */
+export const educationKeyFromName = (name: string) =>
   name
     .trim()
     .toLowerCase()
@@ -46,17 +47,19 @@ export function ProgramsSection({
   const { user } = useAuth();
   const {
     CATEGORIES,
-    programs,
-    createProgram: createProgramApi,
-    updateProgram,
-    deleteProgram: deleteProgramApi,
+    educations,
+    createEducation: createEducationApi,
+    updateEducation,
+    deleteEducation: deleteEducationApi,
     isSaving,
     isLoading,
-  } = useCatalog({ categories: true, programs: true });
+  } = useCatalog({ categories: true, educations: true });
   const { courses } = useCourses();
 
   const [showCreateProgram, setShowCreateProgram] = useState(false);
   const [standaloneProgramName, setStandaloneProgramName] = useState("");
+  const [standaloneLocation, setStandaloneLocation] = useState("");
+  const [standaloneYear, setStandaloneYear] = useState("");
   const [standaloneProgramTargets, setStandaloneProgramTargets] = useState<
     Record<string, number>
   >({});
@@ -65,18 +68,27 @@ export function ProgramsSection({
     string | null
   >(null);
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
-  const [programDraft, setProgramDraft] = useState<ProgramDraft | null>(null);
+  const [programDraft, setProgramDraft] = useState<EducationDraft | null>(null);
   const [programError, setProgramError] = useState("");
 
   const createProgramLocal = async (
     name: string,
     targets: Record<string, number>,
-    feedback?: MutationFeedback<Program> | null,
+    location = "",
+    year = "",
+    feedback?: MutationFeedback<Education> | null,
   ) => {
     const trimmed = name.trim();
-    const key = programKeyFromName(trimmed);
-    const created = await createProgramApi(
-      { key, name: trimmed, targets },
+    const key = educationKeyFromName(trimmed);
+    const parsedYear = year.trim() ? Number(year) : null;
+    const created = await createEducationApi(
+      {
+        key,
+        name: trimmed,
+        targets,
+        location: location.trim() || null,
+        year: parsedYear,
+      },
       {
         toastSuccessMessage: feedback?.toastSuccessMessage,
         logArgs: feedback?.logArgs ?? {
@@ -93,29 +105,43 @@ export function ProgramsSection({
       return;
     }
     if (
-      Object.values(programs).some(
+      Object.values(educations).some(
         (p) =>
           p.name.toLowerCase() === standaloneProgramName.trim().toLowerCase() ||
-          p.key === programKeyFromName(standaloneProgramName),
+          p.key === educationKeyFromName(standaloneProgramName),
       )
     ) {
       setCreateProgramError("Der findes allerede en uddannelse med det navn.");
       return;
     }
-    await createProgramLocal(standaloneProgramName, standaloneProgramTargets, {
-      toastSuccessMessage: `Uddannelsen "${standaloneProgramName.trim()}" oprettet`,
-    });
+    if (standaloneYear.trim() && !Number(standaloneYear)) {
+      setCreateProgramError("År skal være et tal, fx 2026.");
+      return;
+    }
+    await createProgramLocal(
+      standaloneProgramName,
+      standaloneProgramTargets,
+      standaloneLocation,
+      standaloneYear,
+      {
+        toastSuccessMessage: `Uddannelsen "${standaloneProgramName.trim()}" oprettet`,
+      },
+    );
     setStandaloneProgramName("");
+    setStandaloneLocation("");
+    setStandaloneYear("");
     setStandaloneProgramTargets({});
     setCreateProgramError("");
     setShowCreateProgram(false);
   };
 
-  const startEditProgram = (p: Program) => {
+  const startEditProgram = (p: Education) => {
     if (!p) return;
     setEditingProgramId(p.id);
     setProgramDraft({
       name: p.name,
+      location: p.location ?? "",
+      year: p.year ? String(p.year) : "",
       targets: { ...p.targets },
     });
     setProgramError("");
@@ -124,14 +150,14 @@ export function ProgramsSection({
 
   const saveProgramEdit = async (programId: string) => {
     if (!programDraft) return;
-    const old = programs[programId];
+    const old = educations[programId];
     const name = programDraft.name.trim();
     if (!name) {
       setProgramError("Angiv et navn til uddannelsen.");
       return;
     }
     if (
-      Object.values(programs).some(
+      Object.values(educations).some(
         (p) =>
           p.id !== programId && p.name.toLowerCase() === name.toLowerCase(),
       )
@@ -146,8 +172,16 @@ export function ProgramsSection({
       setProgramError("Totalmålene skal være 0 eller mere.");
       return;
     }
+    const parsedYear = programDraft.year.trim() ? Number(programDraft.year) : null;
+    if (programDraft.year.trim() && !parsedYear) {
+      setProgramError("År skal være et tal, fx 2026.");
+      return;
+    }
     const changes = [];
     if (old.name !== name) changes.push(`navn fra "${old.name}" til "${name}"`);
+    if ((old.location ?? "") !== programDraft.location.trim())
+      changes.push("sted");
+    if ((old.year ?? null) !== parsedYear) changes.push("år");
     if (
       formatTargets(old.targets, CATEGORIES) !==
       formatTargets(nextTargets, CATEGORIES)
@@ -156,9 +190,16 @@ export function ProgramsSection({
         `totalmål fra ${formatTargets(old.targets, CATEGORIES)} til ${formatTargets(nextTargets, CATEGORIES)}`,
       );
     }
-    await updateProgram(
+    await updateEducation(
       programId,
-      { name, targets: nextTargets },
+      {
+        name,
+        targets: nextTargets,
+        location: programDraft.location.trim() || null,
+        year: parsedYear,
+        locationSpecified: true,
+        yearSpecified: true,
+      },
       {
         toastSuccessMessage: `Uddannelsen "${name}" gemt`,
         logArgs:
@@ -174,10 +215,10 @@ export function ProgramsSection({
   };
 
   const deleteProgram = async (programId: string) => {
-    const inUse = Object.values(courses).some((h) => h.programId === programId);
+    const inUse = Object.values(courses).some((h) => h.educationId === programId);
     if (inUse) return;
-    const programBeingDeleted = programs[programId];
-    await deleteProgramApi(programId, {
+    const programBeingDeleted = educations[programId];
+    await deleteEducationApi(programId, {
       toastSuccessMessage: `${programBeingDeleted.name} slettet`,
       logArgs: {
         description: `${actor} slettede uddannelsen "${programBeingDeleted.name}" (blev ikke brugt af noget hold)`,
@@ -231,6 +272,27 @@ export function ProgramsSection({
                     placeholder="Uddannelsens navn"
                   />
                 </Field>
+                <div className="flex gap-3">
+                  <Field label="Sted" hint="Valgfrit. Hvor uddannelsen foregår.">
+                    <Input
+                      type="text"
+                      value={standaloneLocation}
+                      onChange={(e) => setStandaloneLocation(e.target.value)}
+                      placeholder="Fx Aarhus"
+                    />
+                  </Field>
+                  <Field label="År" hint="Valgfrit. Kun årstallet.">
+                    <NumberInput
+                      value={standaloneYear}
+                      onChange={(e) => setStandaloneYear(e.target.value)}
+                      min={2000}
+                      max={2100}
+                      step={1}
+                      inputMode="numeric"
+                      placeholder="2026"
+                    />
+                  </Field>
+                </div>
                 <ProgramCategoryFields
                   label="Totalmål"
                   hint="Det samlede timekrav for hele uddannelsen — til reference. De enkelte hold får deres egne delmål."
@@ -266,9 +328,9 @@ export function ProgramsSection({
               </div>
             </div>
           )}
-          {Object.values(programs).map((p) => {
+          {Object.values(educations).map((p) => {
             const coursesUsingProgram = Object.values(courses).filter(
-              (h) => h.programId === p.id,
+              (h) => h.educationId === p.id,
             );
             const isBlocked = coursesUsingProgram.length > 0;
             return (
@@ -289,6 +351,9 @@ export function ProgramsSection({
                       <div className="mt-px text-xs text-ink-soft">
                         Totalmål: {formatTargets(p.targets, CATEGORIES)} timer ·{" "}
                         {coursesUsingProgram.length} hold
+                        {[p.location, p.year].filter(Boolean).length > 0
+                          ? ` · ${[p.location, p.year].filter(Boolean).join(" · ")}`
+                          : ""}
                       </div>
                     </div>
                     {editingProgramId === p.id ? null : !isBlocked &&
@@ -352,6 +417,37 @@ export function ProgramsSection({
                           }
                         />
                       </Field>
+                      <div className="flex gap-3">
+                        <Field label="Sted">
+                          <Input
+                            type="text"
+                            value={programDraft.location}
+                            onChange={(e) =>
+                              setProgramDraft({
+                                ...programDraft,
+                                location: e.target.value,
+                              })
+                            }
+                            placeholder="Fx Aarhus"
+                          />
+                        </Field>
+                        <Field label="År">
+                          <NumberInput
+                            value={programDraft.year}
+                            onChange={(e) =>
+                              setProgramDraft({
+                                ...programDraft,
+                                year: e.target.value,
+                              })
+                            }
+                            min={2000}
+                            max={2100}
+                            step={1}
+                            inputMode="numeric"
+                            placeholder="2026"
+                          />
+                        </Field>
+                      </div>
                       <ProgramCategoryFields
                         label="Totalmål for hele uddannelsen"
                         targets={programDraft.targets}
@@ -420,7 +516,7 @@ export function ProgramsSection({
                                 </button>
                                 <span className="mt-px text-xs text-ink-soft">
                                   Start {h.startYear} · delmål{" "}
-                                  {formatTargets(p.targets, CATEGORIES)}
+                                  {formatTargets(h.targets, CATEGORIES)}
                                 </span>
                               </div>
                             ))}

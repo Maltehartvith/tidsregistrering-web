@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/Button";
-import { useEntries } from "@/context/EntriesContext";
+import { useEntryPage } from "@/hooks/entries";
 import { useStudents } from "@/context/StudentsContext";
 import { useActorLabel } from "@/domain/actor";
 import { useAuth } from "@/context/AuthContext";
@@ -12,14 +12,15 @@ const DangerZone = () => {
   const [confirmDeleteStudent, setConfirmDeleteStudent] = useState(false);
   const { selectedStudent, setSelectedStudent, deleteStudent, isSaving } =
     useStudents();
-  const { entries } = useEntries();
+  const history = useEntryPage(
+    { userId: selectedStudent?.id, page: 1, pageSize: 1 },
+    Boolean(selectedStudent),
+  );
   const actor = useActorLabel();
   const { user } = useAuth();
   if (!selectedStudent || !isAdministrator(user?.role)) return null;
 
-  const registrationCount = entries.filter(
-    (entry) => entry.userId === selectedStudent.id,
-  ).length;
+  const registrationCount = history.data.total;
 
   const handleDeleteStudent = async () => {
     await deleteStudent(selectedStudent.id, {

@@ -4,124 +4,107 @@ import {
   EntryRowGhost,
   GhostBlock,
 } from "@/components/ui/Ghost";
+import { ScopeBar } from "@/components/ui/ScopeBar";
 import { useBranding } from "@/context/BrandingContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
-import { useEntries } from "@/context/EntriesContext";
 import { categoriesForCourseIds, categoryOf } from "@/domain/catalog";
 import {
-  programName,
-  courseLabel,
-  totalsForStudentOnHold,
-  targetsForStudent,
-  targetsForCourse,
-  totalsForStudent,
-} from "@/domain/totals";
+  choiceById,
+  courseIdsForChoice,
+  scopeChoices,
+  targetsForChoice,
+  totalsForChoice,
+} from "@/domain/hourScope";
 import {
-  activeCourseId,
-  hasCourses,
-  previousCourses,
-} from "@/domain/userCourses";
+  courseLabel,
+  educationName,
+  educationPlace,
+} from "@/domain/totals";
+import { activeCourseIds, hasCourses } from "@/domain/userCourses";
+import { useEntryPage } from "@/hooks/entries";
 import { useState } from "react";
 import { useStudentOutlet } from "./StudentLayout";
-import { Button } from "@/components/ui/Button";
 
 export const OverviewTab = () => {
   const { student } = useStudentOutlet();
   const { courses, isLoading: coursesLoading } = useCourses();
   const { contactEmail } = useBranding();
-  const { entries, isLoading: entriesLoading } = useEntries();
-
   const {
     CATEGORIES,
     ALL_CATEGORIES,
-    programs,
+    educations,
     isLoading: catalogLoading,
-  } = useCatalog({ categories: true, programs: true });
-  const homeCourseId = activeCourseId(student);
-  const includedPrevious = previousCourses(student).filter(
-    (course) => course.included,
-  );
-
-  const [scope, setScope] = useState("uddannelse");
-  const totalsWholeProgram = totalsForStudent(student, entries, CATEGORIES);
-  const targetsWholeProgram = targetsForStudent(
-    student,
-    courses,
-    programs,
-    CATEGORIES,
-  );
-  const homeCourse = homeCourseId ? courses[homeCourseId] : undefined;
-  const includedCourses = [
-    ...(homeCourseId
-      ? student.courses.filter(
-          (row) => row.id === homeCourseId && row.included,
-        )
-      : []),
-    ...includedPrevious,
-  ];
-  const selectedCourseId = includedCourses.some((row) => row.id === scope)
+  } = useCatalog({ categories: true, educations: true });
+  const loggingCourses = activeCourseIds(student)
+    .map((id) => courses[id])
+    .filter((course) => Boolean(course));
+  const choices = scopeChoices(student, courses, educations);
+  const [scope, setScope] = useState("");
+  const selectedId = choices.some((choice) => choice.id === scope)
     ? scope
-    : null;
-  const totals = selectedCourseId
-    ? totalsForStudentOnHold(student, entries, selectedCourseId, CATEGORIES)
-    : totalsWholeProgram;
-  const targets = selectedCourseId
-    ? targetsForCourse(courses[selectedCourseId], programs)
-    : targetsWholeProgram;
-
-  const myEntries = entries.filter((e) => e.userId === student.id);
-
-  const recentEntries = [...myEntries]
-    .sort((a, b) => (a.date < b.date ? 1 : -1))
-    .slice(0, 3);
-
-  const course = homeCourse;
-  const contactHref = contactEmail
-    ? `mailto:${contactEmail}?subject=${encodeURIComponent(`Henvendelse fra ${student.name} (${courseLabel(homeCourseId, courses)})`)}&body=${encodeURIComponent(
-        `Hej\n\n[Skriv din besked her]\n\n---\nNavn: ${student.name}\nEmail: ${student.email}\nHold: ${courseLabel(homeCourseId, courses)}\nUddannelse: ${programName(course, programs) || "-"}\n`,
-      )}`
-    : "";
-
-  const scopeCourseIds = selectedCourseId
-    ? [selectedCourseId]
-    : includedCourses.map((row) => row.id);
+    : (choices[0]?.id ?? "");
+  const choice = choiceById(choices, selectedId);
+  const recent = useEntryPage({
+    userId: student.id,
+    page: 1,
+    pageSize: 3,
+    courseId: choice?.kind === "course" ? choice.courseId : undefined,
+  });
+  const totals = totalsForChoice(student, choice, courses, CATEGORIES);
+  const targets = targetsForChoice(choice, courses, educations);
+  const scopeCourseIds = courseIdsForChoice(student, choice, courses);
   const categoriesList = categoriesForCourseIds(
     scopeCourseIds,
     courses,
-    programs,
+    educations,
     CATEGORIES,
   );
   const cardsLoading =
     (catalogLoading || coursesLoading) && categoriesList.length === 0;
+  const courseNames = loggingCourses
+    .map((course) => courseLabel(course.id, courses))
+    .join(", ");
+  const contactHref = contactEmail
+    ? `mailto:${contactEmail}?subject=${encodeURIComponent(`Henvendelse fra ${student.name} (${courseNames || "intet hold"})`)}&body=${encodeURIComponent(
+        `Hej\n\n[Skriv din besked her]\n\n---\nNavn: ${student.name}\nEmail: ${student.email}\nHold: ${courseNames || "-"}\n`,
+      )}`
+    : "";
 
   return (
     <>
       <div className="mb-4 rounded-md border border-border bg-card px-4.5 py-3.5">
         <div className="flex items-start justify-between gap-2.5">
-          <div>
-            <div
-              className="mb-1.5 block text-xs font-semibold text-ink-soft"
-              style={{ marginBottom: 4 }}
-            >
-              Mit hold
+          <div className="min-w-0">
+            <div className="mb-1.5 block text-xs font-semibold text-ink-soft">
+              {loggingCourses.length > 1 ? "Mine hold" : "Mit hold"}
             </div>
-            {homeCourseId && coursesLoading && !course ? (
+            {coursesLoading && loggingCourses.length === 0 && hasCourses(student) ? (
               <>
                 <GhostBlock className="mb-1 h-4 w-40" />
                 <GhostBlock className="h-3 w-28" />
               </>
-            ) : course ? (
-              <>
-                <div className="text-sm font-semibold" style={{ fontSize: 15 }}>
-                  {course.label} · {course.startYear}
-                </div>
-                {programName(course, programs) && (
-                  <div className="mt-px text-xs text-ink-soft">
-                    {programName(course, programs)}
+            ) : loggingCourses.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {loggingCourses.map((course) => (
+                  <div key={course.id}>
+                    <div className="text-sm font-semibold">
+                      {course.label} · {course.startYear}
+                    </div>
+                    {(educationName(course, educations) ||
+                      educationPlace(course, educations)) && (
+                      <div className="mt-px text-xs text-ink-soft">
+                        {[
+                          educationName(course, educations),
+                          educationPlace(course, educations),
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                    )}
                   </div>
-                )}
-              </>
+                ))}
+              </div>
             ) : !hasCourses(student) ? (
               <p className="text-sm leading-normal text-ink-soft">
                 Du er endnu ikke blevet tilskrevet et hold. Hvis dette er en
@@ -143,15 +126,6 @@ export const OverviewTab = () => {
             ) : null}
           </div>
         </div>
-        {includedPrevious.length > 0 && (
-          <div className="mt-2.5 text-xs leading-normal text-ink-soft">
-            Timer fra{" "}
-            {includedPrevious
-              .map((row) => courseLabel(row.id, courses))
-              .join(", ")}{" "}
-            tæller også med i dit regnskab.
-          </div>
-        )}
         {contactEmail && hasCourses(student) && (
           <a
             className="mt-2.5 inline-block text-xs text-ink-soft underline underline-offset-2 hover:text-ink"
@@ -162,33 +136,7 @@ export const OverviewTab = () => {
         )}
       </div>
 
-      {includedCourses.length > 1 && (
-        <div className="flex flex-wrap gap-2" style={{ marginBottom: 12 }}>
-          <Button
-            variant="pill"
-            style={{
-              background: selectedCourseId ? "var(--card)" : "var(--ink)",
-              color: selectedCourseId ? "var(--ink)" : "var(--card)",
-            }}
-            onClick={() => setScope("uddannelse")}
-          >
-            Hele uddannelsen
-          </Button>
-          {includedCourses.map((row) => (
-            <Button
-              key={row.id}
-              variant="pill"
-              style={{
-                background: scope === row.id ? "var(--ink)" : "var(--card)",
-                color: scope === row.id ? "var(--card)" : "var(--ink)",
-              }}
-              onClick={() => setScope(row.id)}
-            >
-              {courseLabel(row.id, courses)}
-            </Button>
-          ))}
-        </div>
-      )}
+      <ScopeBar choices={choices} value={selectedId} onChange={setScope} />
       <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
         {cardsLoading ? (
           [0, 1, 2].map((i) => <CategoryCardGhost key={i} />)
@@ -211,14 +159,14 @@ export const OverviewTab = () => {
       <div className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink">
         Seneste registreringer
       </div>
-      {entriesLoading && recentEntries.length === 0 ? (
+      {recent.isLoading && recent.data.items.length === 0 ? (
         [0, 1, 2].map((i) => <EntryRowGhost key={i} />)
-      ) : recentEntries.length === 0 ? (
+      ) : recent.data.items.length === 0 ? (
         <div className="px-2.5 py-10 text-center text-[13px] text-ink-soft">
           Ingen registreringer endnu.
         </div>
       ) : (
-        recentEntries.map((e) => {
+        recent.data.items.map((e) => {
           const cat = categoryOf(ALL_CATEGORIES, e.category);
           return (
             <div
@@ -230,6 +178,9 @@ export const OverviewTab = () => {
                 style={{ background: cat.color }}
               />
               <span className="min-w-0 flex-1 truncate">{cat.short}</span>
+              <span className="shrink-0 text-xs text-ink-soft">
+                {courseLabel(e.courseId, courses)}
+              </span>
               <span className="shrink-0 font-mono text-[11px] text-ink-soft">
                 {e.date}
               </span>

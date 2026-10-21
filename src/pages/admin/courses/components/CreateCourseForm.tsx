@@ -5,13 +5,16 @@ import { useCourses } from "@/context/CoursesContext";
 import { formatTargets } from "@/domain/catalog";
 import { Field } from "@/components/ui/Field";
 import { useActorLabel } from "@/domain/actor";
-import { programKeyFromName } from "@/pages/admin/courses/components/ProgramsSection";
+import { educationKeyFromName } from "@/pages/admin/courses/components/ProgramsSection";
 import SectionHeader from "../../components/SectionHeader";
 import { Button } from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Selector } from "@/components/ui/Selector";
-import { ProgramCategoryFields } from "@/pages/admin/courses/components/ProgramCategoryFields";
+import {
+  CourseGoalFields,
+  ProgramCategoryFields,
+} from "@/pages/admin/courses/components/ProgramCategoryFields";
 
 const NEW_PROGRAM = {
   value: "__new__",
@@ -33,19 +36,19 @@ export function CreateCourseForm({
   const actor = useActorLabel();
   const {
     CATEGORIES,
-    programs,
-    createProgram: createProgramApi,
+    educations,
+    createEducation: createEducationApi,
     isSaving: catalogSaving,
-  } = useCatalog({ categories: true, programs: true });
+  } = useCatalog({ categories: true, educations: true });
   const {
     courses,
     createCourse: createCourseApi,
     isSaving: courseSaving,
   } = useCourses();
 
-  const programOptions = Object.values(programs).map((program) => ({
-    value: program.id,
-    label: program.name,
+  const programOptions = Object.values(educations).map((education) => ({
+    value: education.id,
+    label: education.name,
   }));
   const [showCreate, setShowCreate] = useState(false);
   const [newCourseId, setNewCourseId] = useState("");
@@ -64,7 +67,7 @@ export function CreateCourseForm({
   const creatingNewProgram = newCourseProgramId === NEW_PROGRAM.value;
   const selectedProgram = creatingNewProgram
     ? null
-    : (programs[newCourseProgramId] ?? null);
+    : (educations[newCourseProgramId] ?? null);
 
   const resetForm = () => {
     setNewCourseId("");
@@ -95,18 +98,18 @@ export function CreateCourseForm({
         setCreateError("Angiv et navn til den nye uddannelse.");
         return;
       }
-      const programKey = programKeyFromName(trimmed);
+      const programKey = educationKeyFromName(trimmed);
       if (
-        Object.values(programs).some(
-          (program) =>
-            program.key === programKey ||
-            program.name.toLowerCase() === trimmed.toLowerCase(),
+        Object.values(educations).some(
+          (education) =>
+            education.key === programKey ||
+            education.name.toLowerCase() === trimmed.toLowerCase(),
         )
       ) {
         setCreateError("Der findes allerede en uddannelse med det navn.");
         return;
       }
-      const createdProgram = await createProgramApi(
+      const createdProgram = await createEducationApi(
         { key: programKey, name: trimmed, targets: newCourseTargets },
         {
           logArgs: {
@@ -124,7 +127,12 @@ export function CreateCourseForm({
         key,
         label: `Hold ${key}`,
         startYear: year,
-        programId,
+        educationId: programId,
+        targets: creatingNewProgram
+          ? newCourseTargets
+          : Object.keys(newCourseTargets).length > 0
+            ? newCourseTargets
+            : { ...(selectedProgram?.targets ?? {}) },
       },
       {
         toastSuccessMessage: `Hold ${key} oprettet`,
@@ -198,7 +206,9 @@ export function CreateCourseForm({
                     setNewCourseTargets({});
                   } else {
                     setNewProgramName("");
-                    setNewCourseTargets({});
+                    setNewCourseTargets({
+                      ...(educations[next]?.targets ?? {}),
+                    });
                   }
                 }}
               />
@@ -216,8 +226,20 @@ export function CreateCourseForm({
             {creatingNewProgram && (
               <ProgramCategoryFields
                 label="Totalmål for den nye uddannelse"
-                hint="Holdet bruger uddannelsens totalmål. Delmål sættes her ved oprettelse."
+                hint="Uddannelsens mål er loftet. Holdet starter med de samme tal, og kan sættes lavere bagefter."
                 targets={newCourseTargets}
+                onChange={setNewCourseTargets}
+                categories={CATEGORIES}
+              />
+            )}
+            {!creatingNewProgram && selectedProgram && (
+              <CourseGoalFields
+                targets={
+                  Object.keys(newCourseTargets).length > 0
+                    ? newCourseTargets
+                    : selectedProgram.targets
+                }
+                ceilings={selectedProgram.targets}
                 onChange={setNewCourseTargets}
                 categories={CATEGORIES}
               />

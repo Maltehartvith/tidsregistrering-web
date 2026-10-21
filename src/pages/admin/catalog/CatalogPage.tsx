@@ -2,7 +2,7 @@ import AdminPageWrapper from "@/pages/admin/components/AdminPageWrapper";
 import CategoriesSection from "@/pages/admin/catalog/components/CategoriesSection";
 import LearningGoalsSection from "@/pages/admin/catalog/components/LearningGoalsSection";
 import { useCatalog } from "@/context/CatalogContext";
-import { useEntries } from "@/context/EntriesContext";
+import { useEntryUsage } from "@/hooks/entries";
 import { GhostBlock } from "@/components/ui/Ghost";
 
 function CatalogSectionGhost({ rows = 4 }: { rows?: number }) {
@@ -20,10 +20,10 @@ function CatalogSectionGhost({ rows = 4 }: { rows?: number }) {
 export function CatalogPage() {
   const { isLoading: isCatalogLoading } = useCatalog({
     categories: true,
-    programs: true,
+    educations: true,
     goals: true,
   });
-  const { isLoading: isEntriesLoading } = useEntries();
+  const { isLoading: isEntriesLoading } = useEntryUsage();
   const isLoading = isCatalogLoading || isEntriesLoading;
 
   return (

@@ -32,14 +32,14 @@ export function EntryForm({
   showHoldField?: boolean;
   holdOptions?: Course[];
 }) {
-  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS, programs } = useCatalog({
+  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS, educations } = useCatalog({
     categories: true,
-    programs: true,
+    educations: true,
     goals: true,
   });
   const { courses } = useCourses();
   const relevant = values.courseId
-    ? categoriesForCourseIds([values.courseId], courses, programs, CATEGORIES)
+    ? categoriesForCourseIds([values.courseId], courses, educations, CATEGORIES)
     : [];
   const relevantKeys = relevant.map((category) => category.key).join("\0");
   const prevCourseId = useRef(values.courseId);
@@ -70,6 +70,7 @@ export function EntryForm({
 
   // Egen validering med tydelige danske beskeder (browserens egne bobler er lette at overse)
   const validate = () => {
+    if (showHoldField && !values.courseId) return "Vælg et hold.";
     if (cat?.requiresTherapist && !String(values.therapist || "").trim())
       return "Udfyld navn på terapeut.";
     if (!values.date) return "Vælg en dato.";

@@ -1,39 +1,59 @@
 import { Check, Pencil, Search, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
 import { useEntries } from "@/context/EntriesContext";
 import { CategoryPill } from "@/components/ui/CategoryPill";
 import { EntryForm } from "@/components/ui/EntryForm";
+import { EntryPager } from "@/components/ui/EntryPager";
 import Input from "@/components/ui/Input";
 import { categoriesForCourseIds, categoryOf } from "@/domain/catalog";
 import { emptyForm } from "@/domain/entryForm";
 import { courseLabel } from "@/domain/totals";
-import { activeCourseId } from "@/domain/userCourses";
+import { activeCourseIds } from "@/domain/userCourses";
+import { useEntryPage } from "@/hooks/entries";
+import type { Course } from "@/types/course";
 import { TimeEntry } from "@/types/entry";
 import { useStudentOutlet } from "./StudentLayout";
 
 export const HistoryTab = () => {
   const { student } = useStudentOutlet();
-  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS, programs } = useCatalog({
+  const { CATEGORIES, ALL_CATEGORIES, LEARNING_GOALS, educations } = useCatalog({
     categories: true,
-    programs: true,
+    educations: true,
     goals: true,
   });
   const { courses } = useCourses();
-  const { entries, updateEntry, deleteEntry, isSaving } = useEntries();
-  const homeCourseId = activeCourseId(student);
+  const { updateEntry, deleteEntry, isSaving } = useEntries();
+  const courseOptions = activeCourseIds(student)
+    .map((id) => courses[id])
+    .filter((course): course is Course => Boolean(course));
+  const defaultCourseId = courseOptions[0]?.id ?? "";
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(() =>
-    emptyForm(homeCourseId, {}, LEARNING_GOALS),
+    emptyForm(defaultCourseId, {}, LEARNING_GOALS),
   );
   const [filterCat, setFilterCat] = useState("alle");
   const [filterHold, setFilterHold] = useState("alle");
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const pageSize = 20;
 
-  const myEntries = entries.filter((e) => e.userId === student.id);
+  useEffect(() => {
+    setPage(1);
+  }, [filterCat, filterHold, query]);
+
+  const history = useEntryPage({
+    userId: student.id,
+    page,
+    pageSize,
+    category: filterCat,
+    courseId: filterHold === "alle" ? undefined : filterHold,
+    q: query,
+  });
+  const myEntries = history.data.items;
 
   const startEdit = (entry: TimeEntry) => {
     setEditingId(entry.id ?? null);
@@ -61,7 +81,7 @@ export const HistoryTab = () => {
   };
 
   const removeEntry = async (id: string) => {
-    const removed = entries.find((e) => e.id === id);
+    const removed = myEntries.find((e) => e.id === id);
     await deleteEntry(id, {
       toastSuccessMessage: "Registrering slettet",
       logArgs: removed
@@ -74,29 +94,8 @@ export const HistoryTab = () => {
     setConfirmId(null);
   };
 
-  const myHoldIds = Array.from(
-    new Set(
-      [
-        ...student.courses.map((course) => course.id),
-        ...myEntries.map((entry) => entry.courseId),
-      ].filter((id): id is string => Boolean(id)),
-    ),
-  );
-
-  const filteredEntries = myEntries
-    .filter((e) => filterCat === "alle" || e.category === filterCat)
-    .filter((e) => filterHold === "alle" || e.courseId === filterHold)
-    .filter((e) => {
-      if (!query.trim()) return true;
-      const q = query.toLowerCase();
-      return (
-        e.therapist?.toLowerCase().includes(q) ||
-        e.notes?.toLowerCase().includes(q) ||
-        e.learningGoal.toLowerCase().includes(q) ||
-        categoryOf(ALL_CATEGORIES, e.category).label.toLowerCase().includes(q)
-      );
-    })
-    .sort((a, b) => (a.date < b.date ? 1 : -1));
+  const myHoldIds = student.courses.map((course) => course.id);
+  const filteredEntries = myEntries;
   return (
     <>
       <div className="mb-2.5 mt-5.5 font-display text-[15px] font-semibold text-ink">
@@ -118,7 +117,7 @@ export const HistoryTab = () => {
         {categoriesForCourseIds(
           student.courses.map((course) => course.id),
           courses,
-          programs,
+          educations,
           CATEGORIES,
         ).map((c) => (
           <CategoryPill
@@ -190,6 +189,8 @@ export const HistoryTab = () => {
                 onCancel={() => setEditingId(null)}
                 submitLabel="Gem ændring"
                 submitting={isSaving}
+                showHoldField={courseOptions.length > 1}
+                holdOptions={courseOptions}
               />
             </div>
           );
@@ -224,11 +225,9 @@ export const HistoryTab = () => {
                     Terapeut: {e.therapist}
                   </div>
                 )}
-                {e.courseId !== homeCourseId && (
-                  <div className="mt-0.5 text-xs text-ink-soft">
-                    Overført fra {courseLabel(e.courseId, courses)}
-                  </div>
-                )}
+                <div className="mt-0.5 text-xs text-ink-soft">
+                  Hold: {courseLabel(e.courseId, courses)}
+                </div>
               </div>
               {confirmId === e.id ? (
                 <div className="flex items-center gap-1.5 text-xs">
@@ -274,6 +273,12 @@ export const HistoryTab = () => {
           </div>
         );
       })}
+      <EntryPager
+        page={history.data.page}
+        pageSize={history.data.pageSize}
+        total={history.data.total}
+        onPage={setPage}
+      />
     </>
   );
 };
