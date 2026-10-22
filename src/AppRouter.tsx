@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { CoursesPage } from "@/pages/admin/courses/CoursesPage";
 import { CatalogPage } from "@/pages/admin/catalog/CatalogPage";
 import { DesignPage } from "@/pages/admin/design/DesignPage";
-import { UsersPage } from "@/pages/admin/users/UsersPage";
+import { DirectoryPage } from "@/pages/admin/directory/DirectoryPage";
 import { LoginView } from "@/pages/login-view/LoginView";
 import { InviteAcceptPage } from "@/pages/login-view/InviteAcceptPage";
 import {
@@ -114,12 +114,16 @@ export function AppRouter() {
         }
       />
       <Route
-        path={routes.adminUsers}
+        path={routes.adminDirectory}
         element={
-          <RequireRole roles={["administrator"]}>
-            <UsersPage />
-          </RequireRole>
+          <RequireStaff>
+            <DirectoryPage />
+          </RequireStaff>
         }
+      />
+      <Route
+        path={routes.adminUsers}
+        element={<Navigate to={routes.adminDirectory} replace />}
       />
 
       <Route path="*" element={<FallbackRedirect />} />

@@ -28,10 +28,10 @@ function hoursFromUserCourses(
     Object.values(categories).map((cat) => [
       cat.key,
       rows.reduce((sum, course) => {
-        const match = course.categories.find(
-          (row) => row.id === cat.id || row.short === cat.short,
-        );
-        return sum + (match?.hours ?? 0);
+        const match =
+          course.categories.find((row) => row.id === cat.id) ??
+          course.categories.find((row) => row.short && row.short === cat.short);
+        return sum + Number(match?.hours ?? 0);
       }, 0),
     ]),
   );

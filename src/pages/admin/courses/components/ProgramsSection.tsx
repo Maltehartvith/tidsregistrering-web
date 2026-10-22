@@ -3,10 +3,8 @@ import {
   PlusCircle,
   Pencil,
   Trash2,
-  Check,
-  X,
-  AlertTriangle,
   Book,
+  ChevronDown,
 } from "lucide-react";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
@@ -20,6 +18,7 @@ import { isAdministrator } from "@/api/queryKeys";
 import type { MutationFeedback } from "@/types/log";
 import SectionHeader from "../../components/SectionHeader";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 import Input from "@/components/ui/Input";
 import { GhostBlock } from "@/components/ui/Ghost";
 import { ProgramCategoryFields } from "@/pages/admin/courses/components/ProgramCategoryFields";
@@ -70,6 +69,7 @@ export function ProgramsSection({
   const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [programDraft, setProgramDraft] = useState<EducationDraft | null>(null);
   const [programError, setProgramError] = useState("");
+  const [openEducationId, setOpenEducationId] = useState<string | null>(null);
 
   const createProgramLocal = async (
     name: string,
@@ -227,6 +227,15 @@ export function ProgramsSection({
     setConfirmDeleteProgramId(null);
   };
 
+  const programPendingDelete = confirmDeleteProgramId
+    ? educations[confirmDeleteProgramId]
+    : undefined;
+  const coursesUsingPendingDelete = confirmDeleteProgramId
+    ? Object.values(courses).filter(
+        (h) => h.educationId === confirmDeleteProgramId,
+      )
+    : [];
+
   return (
     <>
       <div className="my-2 flex items-center justify-between">
@@ -332,21 +341,23 @@ export function ProgramsSection({
             const coursesUsingProgram = Object.values(courses).filter(
               (h) => h.educationId === p.id,
             );
-            const isBlocked = coursesUsingProgram.length > 0;
+            const isOpen = openEducationId === p.id;
+            const canManage =
+              isAdministrator(user?.role) || p.createdByUserId === user?.id;
             return (
               <div
                 className="mb-2.5 overflow-hidden rounded-lg border border-border bg-card"
                 key={p.id}
               >
-                <div
-                  className="border-t border-border px-4 pb-4 pt-3.5"
-                  style={{ borderTop: "none" }}
-                >
-                  <div
-                    className="flex items-center justify-between gap-2.5 border-b border-border  last:border-b-0"
-                    style={{ paddingTop: 0 }}
+                <div className="flex items-center gap-1 pr-3">
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 cursor-pointer items-center justify-between gap-2.5 border-0 bg-transparent px-4 py-3.5 text-left font-sans"
+                    onClick={() =>
+                      setOpenEducationId(isOpen ? null : p.id)
+                    }
                   >
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-sm font-semibold">{p.name}</div>
                       <div className="mt-px text-xs text-ink-soft">
                         Totalmål: {formatTargets(p.targets, CATEGORIES)} timer ·{" "}
@@ -356,53 +367,39 @@ export function ProgramsSection({
                           : ""}
                       </div>
                     </div>
-                    {editingProgramId === p.id ? null : !isBlocked &&
-                      confirmDeleteProgramId === p.id ? (
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <span>Slet?</span>
-                        <button
-                          className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
-                          onClick={() => deleteProgram(p.id)}
-                        >
-                          <Check size={14} />
-                        </button>
-                        <button
-                          className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary disabled:cursor-default disabled:opacity-35"
-                          onClick={() => setConfirmDeleteProgramId(null)}
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ) : (
-                      isAdministrator(user?.role) ||
-                      p.createdByUserId === user?.id ? (
-                      <div className="flex shrink-0 gap-1.5">
-                        <Button
-                          variant="icon"
-                          size="icon"
-                          disabled={editingProgramId !== null}
-                          onClick={() => startEditProgram(p)}
-                          title="Redigér uddannelse"
-                        >
-                          <Pencil size={14} />
-                        </Button>
-                        <Button
-                          variant="icon"
-                          size="icon"
-                          disabled={editingProgramId !== null}
-                          onClick={() =>
-                            setConfirmDeleteProgramId(
-                              confirmDeleteProgramId === p.id ? null : p.id,
-                            )
-                          }
-                          title="Slet uddannelse"
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
-                      ) : null
-                    )}
-                  </div>
+                    <ChevronDown
+                      size={16}
+                      className={`shrink-0 text-ink-soft transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  {canManage && (
+                    <Button
+                      variant="icon"
+                      size="icon"
+                      className="shrink-0 text-red-700 hover:border-red-700 hover:text-red-700"
+                      title="Slet uddannelse"
+                      aria-label={`Slet ${p.name}`}
+                      onClick={() => setConfirmDeleteProgramId(p.id)}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  )}
+                </div>
+                {isOpen && (
+                <div className="border-t border-border px-4 pb-4 pt-3.5">
+                  {canManage && editingProgramId !== p.id && (
+                    <div className="mb-3 flex justify-end">
+                      <Button
+                        variant="icon"
+                        size="icon"
+                        disabled={editingProgramId !== null}
+                        onClick={() => startEditProgram(p)}
+                        title="Redigér uddannelse"
+                      >
+                        <Pencil size={14} />
+                      </Button>
+                    </div>
+                  )}
                   {editingProgramId === p.id && programDraft && (
                     <div className="mt-3">
                       <Field label="Navn">
@@ -556,48 +553,77 @@ export function ProgramsSection({
                       </div>
                     </div>
                   )}
-                  {isBlocked && confirmDeleteProgramId === p.id && (
-                    <div className="mb-1" style={{ marginTop: 10 }}>
-                      <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
-                        <AlertTriangle size={14} />
-                        Kan ikke slettes — bruges stadig af{" "}
-                        {coursesUsingProgram.length} hold. Flyt eller slet dem
-                        først:
-                      </div>
-                      <div
-                        className="flex flex-col gap-2 rounded-sm border-[1.5px] border-border bg-card px-3 py-2.5"
-                        style={{ marginTop: 8 }}
-                      >
-                        {coursesUsingProgram.map((h) => (
-                          <button
-                            className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-primary"
-                            style={{ margin: 0, textAlign: "left" }}
-                            onClick={() => {
-                              if (openCourseId !== h.id) onToggleCourse(h.id);
-                              setTimeout(
-                                () =>
-                                  document
-                                    .getElementById(`hold-card-${h.id}`)
-                                    ?.scrollIntoView({
-                                      behavior: "smooth",
-                                      block: "start",
-                                    }),
-                                60,
-                              );
-                            }}
-                            title="Tryk for at hoppe til holdet"
-                          >
-                            {h.label}
-                          </button>
-                        ))}
-                      </div>
+                  {editingProgramId !== p.id && (
+                    <div className="flex flex-col gap-2">
+                      {coursesUsingProgram.length === 0 ? (
+                        <p className="text-[13px] text-ink-soft">
+                          Ingen hold bruger uddannelsen endnu.
+                        </p>
+                      ) : (
+                        coursesUsingProgram
+                          .slice()
+                          .sort(
+                            (a, b) =>
+                              a.startYear - b.startYear ||
+                              a.label.localeCompare(b.label),
+                          )
+                          .map((h) => (
+                            <button
+                              key={h.id}
+                              type="button"
+                              className="flex cursor-pointer items-baseline justify-between gap-2 border-0 bg-transparent p-0 text-left font-sans"
+                              onClick={() => {
+                                if (openCourseId !== h.id) onToggleCourse(h.id);
+                                setTimeout(
+                                  () =>
+                                    document
+                                      .getElementById(`hold-card-${h.id}`)
+                                      ?.scrollIntoView({
+                                        behavior: "smooth",
+                                        block: "start",
+                                      }),
+                                  60,
+                                );
+                              }}
+                            >
+                              <span className="text-[13px] font-semibold text-primary">
+                                {h.label}
+                              </span>
+                              <span className="text-xs text-ink-soft">
+                                Start {h.startYear} · delmål{" "}
+                                {formatTargets(h.targets, CATEGORIES)}
+                              </span>
+                            </button>
+                          ))
+                      )}
                     </div>
                   )}
                 </div>
+                )}
               </div>
             );
           })}
         </div>
+      )}
+      {programPendingDelete && (
+        <ConfirmDeleteModal
+          title="Slet uddannelse"
+          name={programPendingDelete.name}
+          description={
+            <>
+              Uddannelsen "{programPendingDelete.name}" slettes permanent. Dette
+              kan ikke fortrydes.
+            </>
+          }
+          blockedReason={
+            coursesUsingPendingDelete.length > 0
+              ? `Kan ikke slettes — bruges stadig af ${coursesUsingPendingDelete.length} hold. Flyt eller slet dem først.`
+              : undefined
+          }
+          isSaving={isSaving}
+          onConfirm={() => deleteProgram(programPendingDelete.id)}
+          onClose={() => setConfirmDeleteProgramId(null)}
+        />
       )}
     </>
   );

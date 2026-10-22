@@ -10,13 +10,15 @@ import { useCourses } from "@/context/CoursesContext";
 import { useStudents } from "@/context/StudentsContext";
 import { categoriesForCourseIds } from "@/domain/catalog";
 import { downloadCourseStudentsExcel } from "@/domain/exportStudents";
-import { totalsForCourses, targetsForEducation, targetsForCourse } from "@/domain/totals";
+import { educationScopeId, targetsForChoice } from "@/domain/hourScope";
+import { totalsForCourses, targetsForCourse } from "@/domain/totals";
 import {
   activeCourseIds,
   includedCourseIds,
 } from "@/domain/userCourses";
 import { formatDiff } from "@/domain/format";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import { GhostBlock } from "@/components/ui/Ghost";
 import Input from "@/components/ui/Input";
 
@@ -35,6 +37,7 @@ export function StudentList() {
   const [educationFilter, setEducationFilter] = useState("alle");
   const [holdFilter, setHoldFilter] = useState("alle");
   const [query, setQuery] = useState("");
+  const { showToast } = useToast();
 
   const visibleCourses = Object.values(courses || {}).filter(
     (course) =>
@@ -85,13 +88,15 @@ export function StudentList() {
 
   const handleExport = () => {
     if (!canExport) return;
-    downloadCourseStudentsExcel({
+    void downloadCourseStudentsExcel({
       courseId: holdFilter,
       educationId: educationFilter,
       students: filtered,
       courses: courses || {},
       educations,
       categories: CATEGORIES,
+    }).catch(() => {
+      showToast("Kunne ikke lave Excel-filen.", 4000, "error");
     });
   };
 
@@ -219,7 +224,17 @@ export function StudentList() {
                 viewCourseIds.length === 1
                   ? targetsForCourse(courses?.[viewCourseIds[0]], educations)
                   : educationIds.length === 1
-                    ? targetsForEducation(educationIds[0], educations)
+                    ? targetsForChoice(
+                        {
+                          id: educationScopeId(educationIds[0]),
+                          label: "Hele uddannelsen",
+                          kind: "education",
+                          educationId: educationIds[0],
+                        },
+                        courses || {},
+                        educations,
+                        s,
+                      )
                     : {};
               const studentCategories = categoriesForCourseIds(
                 viewCourseIds,

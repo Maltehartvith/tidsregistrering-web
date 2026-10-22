@@ -52,7 +52,7 @@ export const OverviewTab = () => {
     courseId: choice?.kind === "course" ? choice.courseId : undefined,
   });
   const totals = totalsForChoice(student, choice, courses, CATEGORIES);
-  const targets = targetsForChoice(choice, courses, educations);
+  const targets = targetsForChoice(choice, courses, educations, student);
   const scopeCourseIds = courseIdsForChoice(student, choice, courses);
   const categoriesList = categoriesForCourseIds(
     scopeCourseIds,

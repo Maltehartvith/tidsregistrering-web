@@ -169,7 +169,7 @@ export const Selector = ({
         aria-expanded={open}
         aria-controls={listId}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full min-w-0 cursor-pointer items-center rounded-md border border-border bg-card py-2 pr-10 pl-3 text-left font-sans text-sm text-ink outline-none focus-visible:border-primary"
+        className="flex w-full min-w-0 cursor-pointer items-center rounded-md border-[1.5px] border-border bg-card py-2 pr-10 pl-3 text-left font-sans text-sm text-ink outline-none focus-visible:border-primary"
       >
         <span className="min-w-0 flex-1 truncate">
           {selectedLabel || placeholder || "Vælg…"}

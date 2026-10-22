@@ -9,6 +9,7 @@ import type {
   AdminRoleKey,
   User,
   UserCourseWrite,
+  UserRole,
   UserStatus,
 } from "../types/user";
 import type { CreatedUser } from "../api/users";
@@ -43,7 +44,7 @@ export interface UsersContextValue {
     input: {
       name: string;
       email: string;
-      role: AdminRoleKey;
+      role: UserRole;
       allCourses?: boolean;
       courses?: UserCourseWrite[];
       password?: string;

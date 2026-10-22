@@ -40,5 +40,7 @@ export interface User {
   organizationId?: string;
   status: UserStatus;
   allCourses: boolean;
+  invitedByUserId?: string | null;
+  invitePending?: boolean;
   courses: UserCourse[];
 }

@@ -11,7 +11,7 @@ export default function SectionHeader({
 }: SectionHeaderProps) {
   return (
     <div
-      className={`flex items-center gap-2 font-display text-[15px] font-semibold text-ink ${className ?? ""}`}
+      className={`flex items-center gap-2 font-display text-md font-semibold text-ink ${className ?? ""}`}
     >
       {icon}
       {title}

@@ -1,6 +1,5 @@
 import { useLayoutEffect, useState } from "react";
-import * as XLSX from "xlsx";
-import { useNavigate } from "react-router-dom";
+import { readRosterFile } from "@/domain/readRosterFile";
 import {
   PlusCircle,
   Trash2,
@@ -9,9 +8,8 @@ import {
   AlertTriangle,
   ChevronDown,
   ArrowRightLeft,
-  User,
   Upload,
-  FileSpreadsheet,
+  Plus,
 } from "lucide-react";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCourses } from "@/context/CoursesContext";
@@ -27,7 +25,6 @@ import {
 import {
   isActiveOnCourse,
   isEnrolledOnCourse,
-  kursistCoursesWrite,
   previousCourses,
   staffCourseIds,
   staffCoursesWrite,
@@ -38,19 +35,22 @@ import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import Input from "@/components/ui/Input";
 import ToggleButton from "@/components/ui/ToggleButton";
-import { routes } from "@/routes";
 import type { User as AppUser, UserCourseWrite } from "@/types/user";
 import { useActorLabel } from "@/domain/actor";
 import { useAuth } from "@/context/AuthContext";
 import { isAdministrator } from "@/api/queryKeys";
+import { useApplyRoster, usePreviewRoster } from "@/hooks/courses";
+import { withFeedback } from "@/hooks/queryHelpers";
 import { useActionFeedback } from "@/hooks/queryHelpers";
+import { Modal } from "@/components/ui/Modal";
+import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
+import type { RosterPersonInput, RosterPlan } from "@/api/courses";
 import { Selector } from "@/components/ui/Selector";
 import { educationKeyFromName } from "@/pages/admin/courses/components/ProgramsSection";
 import {
   CourseGoalFields,
   ProgramCategoryFields,
 } from "@/pages/admin/courses/components/ProgramCategoryFields";
-import SectionHeader from "../../components/SectionHeader";
 
 const NEW_PROGRAM = {
   value: "__new__",
@@ -63,23 +63,9 @@ type CourseCardProps = {
   onToggle: () => void;
 };
 
-type AddResult = {
-  error?: string;
-  duplicate?: { name: string; email: string };
-  added?: { name: string; email: string };
-};
-
-type ImportResult = {
-  courseId?: string;
-  error?: string;
-  fileName?: string;
-  added?: AppUser[];
-  duplicates?: { name: string; email: string }[];
-  skipped?: { name: string; email: string }[];
-};
+type NewStudentRow = { name: string; email: string };
 
 export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
-  const navigate = useNavigate();
   const actor = useActorLabel();
   const { user } = useAuth();
   const recordFeedback = useActionFeedback();
@@ -99,19 +85,23 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
     isSaving: courseSaving,
   } = useCourses();
   const isSaving = catalogSaving || courseSaving;
-  const { students, createStudent, updateStudent, setSelectedStudent } =
-    useStudents();
+  const { students, updateStudent } = useStudents();
   const { adminUsers, updateUser } = useUsers();
 
   const [draftOn, setDraftOn] = useState(false);
   const [draftFrom, setDraftFrom] = useState("");
-  const [importResult, setImportResult] = useState<ImportResult | null>(null);
-  const [importingCourseId, setImportingCourseId] = useState<string | null>(
-    null,
-  );
-  const [addName, setAddName] = useState<string | null>(null);
-  const [addEmail, setAddEmail] = useState<string | null>(null);
-  const [addResult, setAddResult] = useState<AddResult | null>(null);
+  const previewRoster = usePreviewRoster();
+  const applyRoster = useApplyRoster();
+  const [showAddStudents, setShowAddStudents] = useState(false);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [newStudentRows, setNewStudentRows] = useState<NewStudentRow[]>([
+    { name: "", email: "" },
+  ]);
+  const [addError, setAddError] = useState("");
+  const [importPlan, setImportPlan] = useState<RosterPlan | null>(null);
+  const [importPeople, setImportPeople] = useState<RosterPersonInput[]>([]);
+  const [importFileName, setImportFileName] = useState("");
   const [confirmDeleteCourseId, setConfirmDeleteCourseId] = useState<
     string | null
   >(null);
@@ -132,10 +122,6 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
     const course = courses[courseId];
     setDraftOn(false);
     setDraftFrom(coursesWithinTransferWindow(courseId, courses)[0]?.id || "");
-    setImportResult(null);
-    setAddResult(null);
-    setAddName("");
-    setAddEmail("");
     setEditProgramId(
       course?.educationId || Object.values(educations)[0]?.id || NEW_PROGRAM.value,
     );
@@ -420,104 +406,111 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
     onToggle();
   };
 
-  const addSingleStudent = async () => {
-    if (!addName || !addEmail) {
-      setAddResult({ error: "Udfyld både navn og email." });
+  const closeAddStudents = () => {
+    setShowAddStudents(false);
+    setStudentSearch("");
+    setSelectedStudentIds([]);
+    setNewStudentRows([{ name: "", email: "" }]);
+    setAddError("");
+  };
+
+  const submitAddedStudents = async () => {
+    const people: RosterPersonInput[] = [
+      ...selectedStudentIds.map((userId) => ({ userId })),
+      ...newStudentRows
+        .map((row) => ({ name: row.name.trim(), email: row.email.trim() }))
+        .filter((row) => row.name || row.email),
+    ];
+    if (people.length === 0) {
+      setAddError("Vælg mindst én kursist, eller udfyld navn og email.");
       return;
     }
-    const name = addName.trim();
-    const email = addEmail.trim();
-    const exists = students.some(
-      (s) => s.email.toLowerCase() === email.toLowerCase(),
+    const incomplete = people.some(
+      (person) => !person.userId && (!person.name || !person.email),
     );
-    if (exists) {
-      setAddResult({ duplicate: { name, email } });
+    if (incomplete) {
+      setAddError("Nye kursister skal have både navn og email.");
       return;
     }
-    await createStudent(
-      {
-        name,
-        email,
-        courses: kursistCoursesWrite(courseId),
-      },
-      {
-        toastSuccessMessage: `${name} tilføjet til ${courses[courseId].label}`,
-        logArgs: (student) => ({
-          userId: student.id,
-          courseId,
-          description: `${actor} tilføjede ${name} til ${courses[courseId].label}`,
-        }),
-      },
-    );
-    setAddResult({ added: { name, email } });
-    setAddName("");
-    setAddEmail("");
+    setAddError("");
+    try {
+      const plan = await applyRoster.mutateAsync(
+        withFeedback(
+          { courseId, people },
+          {
+            toastSuccessMessage: `Kursister tilføjet til ${courses[courseId].label}`,
+            logArgs: {
+              courseId,
+              description: `${actor} tilføjede kursister til ${courses[courseId].label}`,
+            },
+          },
+        ),
+      );
+      if (plan.invalid.length > 0 || plan.notStudents.length > 0) {
+        const problems = [...plan.invalid, ...plan.notStudents]
+          .map((person) => person.email || person.name)
+          .filter(Boolean)
+          .join(", ");
+        setAddError(
+          problems
+            ? `Disse blev ikke tilføjet: ${problems}`
+            : "Nogle rækker kunne ikke tilføjes.",
+        );
+        return;
+      }
+      closeAddStudents();
+    } catch {
+      /* mutationen viser allerede fejl-toast */
+    }
   };
 
   const handleImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target?.files?.[0];
     event.target.value = "";
     if (!file) return;
-    setImportingCourseId(courseId);
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
+    void (async () => {
       try {
-        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+        const people = await readRosterFile(file);
+        const plan = await previewRoster.mutateAsync(
+          withFeedback({ courseId, people }),
+        );
+        setImportPeople(people);
+        setImportFileName(file.name);
+        setImportPlan(plan);
+      } catch {
+        setImportFileName(file.name);
+        setImportPeople([]);
+        setImportPlan({
+          existing: [],
+          invite: [],
+          alreadyOnCourse: [],
+          notStudents: [],
+          invalid: [{ name: file.name, email: "", userId: null, note: "Kunne ikke læse filen." }],
+        });
+      }
+    })();
+  };
 
-        const added: AppUser[] = [];
-        const duplicates: { name: string; email: string }[] = [];
-        const skipped: { name: string; email: string }[] = [];
-        const knownEmails = new Set(students.map((s) => s.email.toLowerCase()));
-
-        for (const row of rows) {
-          const rowData = Object.fromEntries(
-            Object.entries(row as Record<string, unknown>).map(
-              ([key, value]) => [key.trim().toLowerCase(), value],
-            ),
-          );
-          const name = String(rowData["navn"] ?? rowData["name"] ?? "").trim();
-          const email = String(
-            rowData["email"] ?? rowData["e-mail"] ?? rowData["mail"] ?? "",
-          ).trim();
-          if (!name || !email) {
-            skipped.push({ name, email });
-            continue;
-          }
-          if (knownEmails.has(email.toLowerCase())) {
-            duplicates.push({ name, email });
-            continue;
-          }
-          const created = await createStudent({
-            name,
-            email,
-            courses: kursistCoursesWrite(courseId),
-          });
-          knownEmails.add(email.toLowerCase());
-          added.push(created);
-        }
-
-        if (added.length > 0) {
-          recordFeedback({
+  const confirmImport = async () => {
+    if (importPeople.length === 0) return;
+    try {
+      await applyRoster.mutateAsync(
+        withFeedback(
+          { courseId, people: importPeople },
+          {
+            toastSuccessMessage: `Import bekræftet for ${courses[courseId].label}`,
             logArgs: {
               courseId,
-              description: `${actor} importerede ${added.length} kursister til ${courses[courseId].label} fra Excel`,
+              description: `${actor} importerede kursister til ${courses[courseId].label} fra Excel`,
             },
-          });
-        }
-        setImportResult({
-          added,
-          duplicates,
-          skipped,
-        });
-      } catch (err) {
-        setImportResult({ error: "Fejl ved import af Excel-fil" });
-      }
-      setImportingCourseId(null);
-    };
-    reader.readAsArrayBuffer(file);
+          },
+        ),
+      );
+      setImportPlan(null);
+      setImportPeople([]);
+    } catch {
+      /* mutationen viser allerede fejl-toast */
+    }
   };
 
   const members = students.filter((s) => isActiveOnCourse(s, h.id));
@@ -532,34 +525,49 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
       key={h.id}
       id={`hold-card-${h.id}`}
     >
-      <button
-        className="flex justify-between w-full cursor-pointer items-center gap-2.5 border-0 bg-transparent px-4 py-3.5 text-left font-sans"
-        onClick={onToggle}
-      >
-        <div>
-          <div className="text-sm font-semibold">{h.label}</div>
-          <div className="mt-px text-xs text-ink-soft">
-            {educationName(h, educations)
-              ? `${educationName(h, educations)} · `
-              : ""}
-            Oprettet {h.startYear} · {members.length} kursister
+      <div className="flex items-center gap-1 pr-3">
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 cursor-pointer items-center justify-between gap-2.5 border-0 bg-transparent px-4 py-3.5 text-left font-sans"
+          onClick={onToggle}
+        >
+          <div className="min-w-0">
+            <div className="text-sm font-semibold">{h.label}</div>
+            <div className="mt-px text-xs text-ink-soft">
+              {educationName(h, educations)
+                ? `${educationName(h, educations)} · `
+                : ""}
+              Oprettet {h.startYear} · {members.length} kursister
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {onCount > 0 && (
-            <span
-              className="flex items-center gap-1 font-mono text-[11px] font-semibold"
-              style={{ color: "var(--secondary)" }}
-            >
-              <ArrowRightLeft size={12} /> {onCount}/{members.length} overfører
-            </span>
-          )}
-          <ChevronDown
-            size={16}
-            className={`shrink-0 text-ink-soft transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
-          />
-        </div>
-      </button>
+          <div className="flex items-center gap-2">
+            {onCount > 0 && (
+              <span
+                className="flex items-center gap-1 font-mono text-[11px] font-semibold"
+                style={{ color: "var(--secondary)" }}
+              >
+                <ArrowRightLeft size={12} /> {onCount}/{members.length} overfører
+              </span>
+            )}
+            <ChevronDown
+              size={16}
+              className={`shrink-0 text-ink-soft transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
+            />
+          </div>
+        </button>
+        {isAdministrator(user?.role) && (
+          <Button
+            variant="icon"
+            size="icon"
+            className="shrink-0 text-red-700 hover:border-red-700 hover:text-red-700"
+            title="Slet hold"
+            aria-label={`Slet ${h.label}`}
+            onClick={() => setConfirmDeleteCourseId(h.id)}
+          >
+            <Trash2 size={14} />
+          </Button>
+        )}
+      </div>
 
       {isOpen && (
         <div className="border-t border-border px-4 pb-4 pt-3.5">
@@ -819,134 +827,25 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
           <div className="text-sm font-semibold mb-4">
             Tilføjning af kursister
           </div>
-          <div className="flex md:flex-row flex-col justify-between gap-4">
-            <div>
-              <div className="flex md:flex-row flex-col md:items-center gap-2 mb-4 md:mb-0">
-                <div>
-                  <div
-                    className="mb-1.5 block text-xs font-semibold text-ink-soft"
-                    style={{ marginBottom: 8 }}
-                  >
-                    Tilføj en enkelt kursist
-                  </div>
-                  <div className="flex gap-3 items-center">
-                    <Field label="Navn">
-                      <Input
-                        type="text"
-                        value={addName ?? ""}
-                        onChange={(e) => setAddName(e.target.value)}
-                        placeholder="Fulde navn"
-                      />
-                    </Field>
-                    <Field label="Email">
-                      <Input
-                        type="email"
-                        value={addEmail ?? ""}
-                        onChange={(e) => setAddEmail(e.target.value)}
-                        placeholder="navn@email.dk"
-                      />
-                    </Field>
-                  </div>
-                </div>
-                <Button
-                  variant="primary"
-                  className="h-fit md:mt-8"
-                  onClick={addSingleStudent}
-                >
-                  <User size={14} /> Tilføj kursist
-                </Button>
-              </div>
-
-              {addResult && (
-                <div className="mb-1">
-                  {addResult.error && (
-                    <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
-                      <AlertTriangle size={14} /> {addResult.error}
-                    </div>
-                  )}
-                  {addResult.duplicate && (
-                    <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
-                      <AlertTriangle size={14} />{" "}
-                      {addResult.duplicate?.name || addResult.duplicate?.email}{" "}
-                      findes allerede som kursist og blev ikke oprettet på ny.
-                    </div>
-                  )}
-                  {addResult.added && (
-                    <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-ink">
-                      <Check size={14} /> {addResult.added?.name} tilføjet til{" "}
-                      {h.label}.
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="hidden md:flex flex-col self-stretch">
-              <span className="stitch-line-vertical" />
-            </div>
-
-            <div>
-              <div
-                className="mb-1.5 block text-xs font-semibold text-ink-soft"
-                style={{ marginBottom: 8 }}
-              >
-                Tilføj flere kursister
-              </div>
-              <label className="inline-flex w-auto flex-none cursor-pointer items-center gap-2 rounded-md border-[1.5px] border-border bg-transparent px-4 py-3 font-sans text-sm font-semibold text-ink-soft transition-opacity active:opacity-75 disabled:cursor-default disabled:opacity-45">
-                <Upload size={14} />
-                {importingCourseId === h.id
-                  ? "Importerer..."
-                  : "Importér fra Excel"}
-                <input
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  style={{ display: "none" }}
-                  onChange={handleImportFile}
-                />
-              </label>
-              <p className="mt-1 flex max-w-130 text-xs text-ink-soft">
-                Filen skal have kolonnerne "Navn" og "Email". Kursister der
-                allerede findes (samme email), bliver ikke oprettet på ny.
-              </p>
-
-              {importResult && importResult.courseId === h.id && (
-                <div className="mb-1">
-                  {importResult.error ? (
-                    <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
-                      <AlertTriangle size={14} /> Kunne ikke læse "
-                      {importResult.fileName}". Tjek at filen er en gyldig
-                      Excel- eller CSV-fil.
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-ink">
-                        <FileSpreadsheet size={14} />{" "}
-                        {importResult.added?.length ?? 0} kursister importeret
-                        fra "{importResult.fileName}".
-                      </div>
-                      {(importResult.duplicates?.length ?? 0) > 0 && (
-                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
-                          <AlertTriangle size={14} />
-                          {importResult.duplicates?.length ?? 0} findes allerede
-                          og blev ikke oprettet:{" "}
-                          {importResult.duplicates
-                            ?.map((d) => d.name || d.email)
-                            .join(", ")}
-                        </div>
-                      )}
-                      {(importResult.skipped?.length ?? 0) > 0 && (
-                        <div className="flex items-start gap-1.5 py-2 text-xs leading-normal text-secondary">
-                          <AlertTriangle size={14} />
-                          {importResult.skipped?.length ?? 0} rækker manglede
-                          navn eller email og blev sprunget over.
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="primary" size="small" onClick={() => setShowAddStudents(true)}>
+              <Plus size={14} /> Tilføj kursister
+            </Button>
+            <label className="inline-flex w-auto flex-none cursor-pointer items-center gap-2 rounded-md border-[1.5px] border-border bg-transparent px-3 py-2 font-sans text-sm font-semibold text-ink-soft">
+              <Upload size={14} />
+              {previewRoster.isPending ? "Læser fil…" : "Importér fra Excel"}
+              <input
+                type="file"
+                accept=".xlsx,.csv"
+                style={{ display: "none" }}
+                onChange={handleImportFile}
+              />
+            </label>
           </div>
+          <p className="mt-2 max-w-130 text-xs text-ink-soft">
+            Filen skal være .xlsx eller .csv med kolonnerne "Navn" og "Email".
+            Ingenting oprettes, før importen er bekræftet.
+          </p>
           <div className="my-8 flex items-center gap-2">
             <span className="stitch-line" />
           </div>
@@ -1026,89 +925,210 @@ export function CourseCard({ courseId, isOpen, onToggle }: CourseCardProps) {
               </Button>
             ))}
 
-          {isAdministrator(user?.role) && (
-            <>
-          <div className="my-8 flex items-center gap-2">
-            <span className="stitch-line" />
-          </div>
-
-          <SectionHeader
-            icon={<AlertTriangle size={20} />}
-            title="Faresone"
-            className="text-red-800 mb-4"
-          />
-
-          {members.length > 0 ? (
-            <>
-              <p
-                className="mb-3.5 text-[13px] leading-normal text-ink-soft"
-                style={{ marginTop: -6 }}
-              >
-                Holdet kan ikke slettes, så længe der er {members.length}{" "}
-                kursister tilknyttet. Flyt dem til et andet hold, eller slet dem
-                permanent, én for én, fra deres kursistdetalje — klik på en
-                kursist herunder for at gå direkte dertil.
-              </p>
-              <div
-                className="flex flex-col gap-2 rounded-md border-[1.5px] border-border bg-card px-3 py-2.5"
-                style={{ marginBottom: 12 }}
-              >
-                {members.map((m) => (
-                  <button
-                    key={m.id}
-                    className="mt-3.5 cursor-pointer border-0 bg-transparent text-center font-sans text-[13px] font-semibold text-primary"
-                    style={{ margin: 0, textAlign: "left" }}
-                    onClick={() => {
-                      setSelectedStudent(m);
-                      navigate(routes.adminStudent(m.id));
-                    }}
-                  >
-                    {m.name}
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : confirmDeleteCourseId === h.id ? (
-            <div className="p-5 bg-red-600/20 border border-red-600/30 border-dashed rounded-xl">
-              <div className="font-mono uppercase tracking-[0.08em] text-black-400">
-                Bekræft sletning
-              </div>
-              <p className="mb-3.5 text-[13px] leading-normal text-black-400">
-                {h.label} slettes permanent. Kursister, der historisk har fået
-                overført timer herfra til et andet, aktivt hold, beholder deres
-                timer — holdnavnet vises blot som "(slettet)" i deres historik.
-              </p>
-              <div className="mt-4 flex justify-center gap-10 ">
-                <Button
-                  variant="secondary"
-                  onClick={() => setConfirmDeleteCourseId(null)}
-                >
-                  Annuller
-                </Button>
-                <Button
-                  variant="primary"
-                  className="bg-red-700 text-white hover:bg-red-800"
-                  onClick={deleteCourse}
-                >
-                  Ja, slet permanent
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center">
-              <Button
-                className=" bg-red-700 text-white hover:bg-red-800"
-                variant="primary"
-                onClick={() => setConfirmDeleteCourseId(h.id)}
-              >
-                <Trash2 size={14} /> Slet hold permanent
-              </Button>
-            </div>
-          )}
-            </>
-          )}
         </div>
       )}
+      {confirmDeleteCourseId === h.id && (
+        <ConfirmDeleteModal
+          title="Slet hold"
+          name={h.label}
+          description={
+            <>
+              {h.label} slettes permanent. Kursister, der historisk har fået
+              overført timer herfra til et andet, aktivt hold, beholder deres
+              timer — holdnavnet vises blot som "(slettet)" i deres historik.
+            </>
+          }
+          blockedReason={
+            members.length > 0
+              ? `Holdet kan ikke slettes, så længe der er ${members.length} kursister tilknyttet. Flyt dem til et andet hold, eller slet dem permanent fra deres kursistdetalje.`
+              : undefined
+          }
+          isSaving={isSaving}
+          onConfirm={deleteCourse}
+          onClose={() => setConfirmDeleteCourseId(null)}
+        />
+      )}
+      {showAddStudents && (
+        <Modal title={`Tilføj kursister til ${h.label}`} onClose={closeAddStudents}>
+          <Field label="Søg">
+            <Input
+              type="search"
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+              placeholder="Navn eller email"
+            />
+          </Field>
+          <div className="mb-4 max-h-52 overflow-y-auto rounded-md border border-border">
+            {students
+              .filter((student) => {
+                const q = studentSearch.trim().toLowerCase();
+                if (!q) return true;
+                return (
+                  student.name.toLowerCase().includes(q) ||
+                  student.email.toLowerCase().includes(q)
+                );
+              })
+              .map((student) => {
+                const onCourse = isActiveOnCourse(student, h.id);
+                const checked =
+                  onCourse || selectedStudentIds.includes(student.id);
+                return (
+                  <label
+                    key={student.id}
+                    className="flex cursor-pointer items-center gap-2 border-b border-border px-3 py-2 text-[13px] last:border-b-0"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={onCourse}
+                      onChange={() =>
+                        setSelectedStudentIds((current) =>
+                          current.includes(student.id)
+                            ? current.filter((id) => id !== student.id)
+                            : [...current, student.id],
+                        )
+                      }
+                    />
+                    <span>
+                      <span className="font-semibold">{student.name}</span>
+                      <span className="text-ink-soft"> · {student.email}</span>
+                      {onCourse && (
+                        <span className="text-ink-soft"> · allerede på holdet</span>
+                      )}
+                    </span>
+                  </label>
+                );
+              })}
+          </div>
+          <div className="mb-2 text-xs font-semibold text-ink-soft">
+            Nye kursister, som ikke findes endnu
+          </div>
+          {newStudentRows.map((row, index) => (
+            <div key={index} className="mb-2 flex gap-2">
+              <Input
+                type="text"
+                value={row.name}
+                placeholder="Fulde navn"
+                onChange={(e) =>
+                  setNewStudentRows((current) =>
+                    current.map((item, itemIndex) =>
+                      itemIndex === index ? { ...item, name: e.target.value } : item,
+                    ),
+                  )
+                }
+              />
+              <Input
+                type="email"
+                value={row.email}
+                placeholder="navn@email.dk"
+                onChange={(e) =>
+                  setNewStudentRows((current) =>
+                    current.map((item, itemIndex) =>
+                      itemIndex === index
+                        ? { ...item, email: e.target.value }
+                        : item,
+                    ),
+                  )
+                }
+              />
+            </div>
+          ))}
+          <Button
+            variant="secondary"
+            size="small"
+            className="mb-3"
+            onClick={() =>
+              setNewStudentRows((current) => [...current, { name: "", email: "" }])
+            }
+          >
+            <Plus size={14} /> Tilføj endnu en
+          </Button>
+          {addError && (
+            <div className="mb-3 flex items-start gap-1.5 text-xs text-secondary">
+              <AlertTriangle size={14} /> {addError}
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" size="small" onClick={closeAddStudents}>
+              Annuller
+            </Button>
+            <Button
+              variant="primary"
+              size="small"
+              onClick={submitAddedStudents}
+              disabled={applyRoster.isPending}
+            >
+              {applyRoster.isPending ? "Tilføjer…" : "Tilføj valgte"}
+            </Button>
+          </div>
+        </Modal>
+      )}
+      {importPlan && (
+        <Modal
+          title={`Bekræft import fra ${importFileName || "Excel"}`}
+          onClose={() => setImportPlan(null)}
+        >
+          <RosterLines
+            title="Nye kursister, som inviteres og oprettes"
+            people={importPlan.invite}
+          />
+          <RosterLines
+            title="Findes allerede og tilføjes holdet"
+            people={importPlan.existing}
+          />
+          <RosterLines
+            title="Allerede på holdet"
+            people={importPlan.alreadyOnCourse}
+          />
+          <RosterLines
+            title="Findes, men er ikke kursister"
+            people={importPlan.notStudents}
+          />
+          <RosterLines title="Springer over" people={importPlan.invalid} />
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="secondary" size="small" onClick={() => setImportPlan(null)}>
+              Annuller
+            </Button>
+            <Button
+              variant="primary"
+              size="small"
+              onClick={confirmImport}
+              disabled={
+                applyRoster.isPending ||
+                (importPlan.existing.length === 0 && importPlan.invite.length === 0)
+              }
+            >
+              {applyRoster.isPending ? "Tilføjer…" : "Bekræft"}
+            </Button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function RosterLines({
+  title,
+  people,
+}: {
+  title: string;
+  people: { name: string; email: string; note?: string | null }[];
+}) {
+  if (people.length === 0) return null;
+  return (
+    <div className="mb-3">
+      <div className="mb-1 text-xs font-semibold text-ink-soft">
+        {title} ({people.length})
+      </div>
+      <ul className="text-[13px]">
+        {people.map((person, index) => (
+          <li key={`${person.email}-${index}`}>
+            {person.name || "Uden navn"}
+            {person.email ? ` · ${person.email}` : ""}
+            {person.note ? ` · ${person.note}` : ""}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

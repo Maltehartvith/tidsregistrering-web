@@ -167,7 +167,7 @@ export function themeVars(
     "--surplus": secondary[500],
     "--paper": paper[100],
     "--card": card[100],
-    "--border": mixHex(b.background, "#000000", 0.09),
+    "--border": mixHex(b.background, "#000000", 0.2),
     // Short-lived compat aliases
     "--blue": primary[800],
     "--blue-soft": primary[100],

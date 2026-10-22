@@ -8,7 +8,8 @@ export type QueryGate =
   | "courses"
   | "students"
   | "entries"
-  | "users";
+  | "users"
+  | "directory";
 
 const counts: Record<QueryGate, number> = {
   categories: 0,
@@ -18,6 +19,7 @@ const counts: Record<QueryGate, number> = {
   students: 0,
   entries: 0,
   users: 0,
+  directory: 0,
 };
 
 const listeners = new Set<() => void>();

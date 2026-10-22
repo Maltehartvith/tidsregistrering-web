@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { Course, CourseMap } from "../types/course";
-import type { CourseWrite } from "../api/courses";
+import type { CourseWrite, RosterPersonInput } from "../api/courses";
 import * as coursesApi from "../api/courses";
 import { queryKeys } from "../api/queryKeys";
 import {
@@ -54,6 +54,32 @@ export function useUpdateCourse() {
       coursesApi.updateCourse(id, course),
     invalidateKeys: [queryKeys.courses],
     applyResult: (queryClient, data) => putCourse(queryClient, data),
+  });
+}
+
+export function usePreviewRoster() {
+  return useDomainMutation({
+    mutationFn: ({
+      courseId,
+      people,
+    }: {
+      courseId: string;
+      people: RosterPersonInput[];
+    }) => coursesApi.previewRoster(courseId, people),
+    invalidateKeys: [],
+  });
+}
+
+export function useApplyRoster() {
+  return useDomainMutation({
+    mutationFn: ({
+      courseId,
+      people,
+    }: {
+      courseId: string;
+      people: RosterPersonInput[];
+    }) => coursesApi.applyRoster(courseId, people),
+    invalidateKeys: [queryKeys.students, queryKeys.users],
   });
 }
 

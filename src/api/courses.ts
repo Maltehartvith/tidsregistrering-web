@@ -27,3 +27,44 @@ export async function updateCourse(
 export async function deleteCourse(id: string): Promise<void> {
   await request(`/courses/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
+
+export type RosterPersonInput = {
+  name?: string;
+  email?: string;
+  userId?: string;
+};
+
+export type RosterPerson = {
+  name: string;
+  email: string;
+  userId?: string | null;
+  note?: string | null;
+};
+
+export type RosterPlan = {
+  existing: RosterPerson[];
+  invite: RosterPerson[];
+  alreadyOnCourse: RosterPerson[];
+  notStudents: RosterPerson[];
+  invalid: RosterPerson[];
+};
+
+export async function previewRoster(
+  courseId: string,
+  people: RosterPersonInput[],
+): Promise<RosterPlan> {
+  return request<RosterPlan>(
+    `/courses/${encodeURIComponent(courseId)}/roster/preview`,
+    { method: "POST", body: JSON.stringify({ people }) },
+  );
+}
+
+export async function applyRoster(
+  courseId: string,
+  people: RosterPersonInput[],
+): Promise<RosterPlan> {
+  return request<RosterPlan>(`/courses/${encodeURIComponent(courseId)}/roster`, {
+    method: "POST",
+    body: JSON.stringify({ people }),
+  });
+}

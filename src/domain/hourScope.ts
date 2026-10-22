@@ -87,10 +87,21 @@ export function targetsForChoice(
   choice: ScopeChoice | undefined,
   courses: CourseMap,
   educations: EducationsMap,
+  student?: User,
 ): Record<string, number> {
   if (!choice) return {};
   if (choice.kind === "course") return targetsForCourse(courses[choice.courseId ?? ""], educations);
-  return targetsForEducation(choice.educationId, educations);
+  if (!student) return targetsForEducation(choice.educationId, educations);
+  const sums: Record<string, number> = {};
+  for (const row of student.courses) {
+    if (!row.included) continue;
+    const course = courses[row.id];
+    if (!course || course.educationId !== choice.educationId) continue;
+    for (const [key, hours] of Object.entries(targetsForCourse(course, educations))) {
+      sums[key] = (sums[key] ?? 0) + Number(hours);
+    }
+  }
+  return sums;
 }
 
 export function courseIdsForChoice(

@@ -56,7 +56,7 @@ export function useUsersSetter() {
 export function useCreateUser() {
   return useDomainMutation({
     mutationFn: usersApi.createUser,
-    invalidateKeys: [queryKeys.users],
+    invalidateKeys: [queryKeys.users, queryKeys.students],
     applyResult: (queryClient, data) => {
       if (!isStaffRole(data.role)) return;
       writeUsers(queryClient, (prev) =>
@@ -90,6 +90,26 @@ export function useDeleteUser() {
     applyResult: (queryClient, _data, id) => {
       writeUsers(queryClient, (prev) => prev.filter((user) => user.id !== id));
     },
+  });
+}
+
+export function useCancelInvite() {
+  return useDomainMutation({
+    mutationFn: usersApi.cancelInvite,
+    invalidateKeys: [queryKeys.users],
+    errorMessage: "Kunne ikke annullere invitationen",
+  });
+}
+
+export function useDirectoryQuery() {
+  const { user } = useAuth();
+  const held = useQueryHeld("directory");
+
+  return useDomainQuery({
+    queryKey: [...queryKeys.users, "directory"],
+    queryFn: () => usersApi.listUsers(),
+    empty: EMPTY,
+    enabled: held && isStaffRole(user?.role),
   });
 }
 

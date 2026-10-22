@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/Button";
 import {
   Users2,
   Building2,
-  ShieldCheck,
+  Contact,
   ListChecks,
   Palette,
 } from "lucide-react";
@@ -21,12 +21,11 @@ export const adminNavItems = [
     isActive: (path: string) => path.startsWith(routes.adminStudents),
   },
   {
-    key: "users",
-    to: routes.adminUsers,
-    label: "Administratorer",
-    Icon: ShieldCheck,
-    administratorOnly: true,
-    isActive: (path: string) => path.startsWith(routes.adminUsers),
+    key: "directory",
+    to: routes.adminDirectory,
+    label: "Brugere",
+    Icon: Contact,
+    isActive: (path: string) => path.startsWith(routes.adminDirectory),
   },
   {
     key: "course",

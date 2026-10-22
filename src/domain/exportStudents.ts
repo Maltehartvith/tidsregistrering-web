@@ -1,4 +1,5 @@
-import * as XLSX from "xlsx";
+import writeXlsxFile from "write-excel-file/browser";
+import type { SheetData } from "write-excel-file/browser";
 import type { Course, CourseMap } from "@/types/course";
 import type { CategoriesMap, EducationsMap } from "@/types/domain";
 import type { User } from "@/types/user";
@@ -27,7 +28,7 @@ function fileSafe(value: string): string {
 const EXCEL_MDW = 6;
 const COLUMN_PADDING_PX = 4;
 
-function columnWidths(rows: (string | number)[][]): XLSX.ColInfo[] {
+function columnWidths(rows: (string | number)[][]): number[] {
   if (rows.length === 0) return [];
   const colCount = Math.max(...rows.map((row) => row.length), 0);
   return Array.from({ length: colCount }, (_, col) => {
@@ -37,7 +38,7 @@ function columnWidths(rows: (string | number)[][]): XLSX.ColInfo[] {
       if (value == null) continue;
       maxChars = Math.max(maxChars, String(value).length);
     }
-    return { wch: maxChars + COLUMN_PADDING_PX / EXCEL_MDW };
+    return Math.ceil(maxChars + COLUMN_PADDING_PX / EXCEL_MDW);
   });
 }
 
@@ -90,7 +91,7 @@ function rowsForCourse(
   return [headers, ...body];
 }
 
-export function downloadCourseStudentsExcel({
+export async function downloadCourseStudentsExcel({
   courseId,
   educationId = ALL_COURSES,
   students,
@@ -104,14 +105,12 @@ export function downloadCourseStudentsExcel({
   courses: CourseMap;
   educations: EducationsMap;
   categories: CategoriesMap;
-}): void {
+}): Promise<void> {
   const selectedCourses = coursesToExport(courseId, educationId, courses);
   if (selectedCourses.length === 0) return;
 
-  const workbook = XLSX.utils.book_new();
   const usedNames = new Set<string>();
-
-  for (const course of selectedCourses) {
+  const sheets = selectedCourses.map((course) => {
     const rows = rowsForCourse(
       course.id,
       students,
@@ -119,14 +118,12 @@ export function downloadCourseStudentsExcel({
       educations,
       categories,
     );
-    const sheet = XLSX.utils.aoa_to_sheet(rows);
-    sheet["!cols"] = columnWidths(rows);
-    XLSX.utils.book_append_sheet(
-      workbook,
-      sheet,
-      uniqueExcelSheetName(course.key || course.label, usedNames),
-    );
-  }
+    return {
+      sheet: uniqueExcelSheetName(course.key || course.label, usedNames),
+      columns: columnWidths(rows).map((width) => ({ width })),
+      data: rows as SheetData,
+    };
+  });
   const date = new Date().toISOString().split("T")[0];
   const educationLabel =
     educationId !== ALL_COURSES
@@ -137,5 +134,5 @@ export function downloadCourseStudentsExcel({
       ? "alle-hold"
       : fileSafe(courses[courseId]?.key || courses[courseId]?.label || "hold");
   const fileLabel = [educationLabel, courseLabel].filter(Boolean).join("-");
-  XLSX.writeFile(workbook, `kursister-${fileLabel}-${date}.xlsx`);
+  await writeXlsxFile(sheets).toFile(`kursister-${fileLabel}-${date}.xlsx`);
 }

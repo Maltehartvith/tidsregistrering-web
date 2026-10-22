@@ -60,7 +60,7 @@ const CourseHistory = () => {
     : (choices[0]?.id ?? "");
   const choice = choiceById(choices, selectedId);
   const totals = totalsForChoice(selectedStudent, choice, courses, categories);
-  const targets = targetsForChoice(choice, courses, educations);
+  const targets = targetsForChoice(choice, courses, educations, selectedStudent);
   const scopeCourseIds = courseIdsForChoice(selectedStudent, choice, courses);
   const categoriesList = categoriesForCourseIds(
     scopeCourseIds,
@@ -107,25 +107,30 @@ const CourseHistory = () => {
   };
 
   const removeCourseLink = async (courseId: string) => {
-    const row = previous.find((course) => course.id === courseId);
+    const row = selectedStudent.courses.find((course) => course.id === courseId);
     const wasIncluded = Boolean(row?.included);
     const hoursFromHold = wasIncluded
       ? hoursOnCourse(selectedStudent, courseId)
       : 0;
     const label = courses[courseId]?.label || courses[courseId]?.key || "Hold";
+    const wasActive = Boolean(row?.active);
     await patchCourses(
       toWrite(
         selectedStudent.courses.filter((course) => course.id !== courseId),
       ),
       {
-        toastSuccessMessage: wasIncluded
-          ? `Overførsel fjernet — ${hoursFromHold} timer trukket tilbage`
-          : `${label} fjernet fra holdhistorik`,
+        toastSuccessMessage: wasActive
+          ? `${label} fjernet`
+          : wasIncluded
+            ? `Overførsel fjernet — ${hoursFromHold} timer trukket tilbage`
+            : `${label} fjernet fra holdhistorik`,
         logArgs: {
           userId: selectedStudent.id,
-          description: wasIncluded
-            ? `${actor} fjernede overførslen fra ${label} for ${selectedStudent.name} — ${hoursFromHold} timer blev trukket ud af regnskabet igen`
-            : `${actor} fjernede ${label} fra ${selectedStudent.name}s holdhistorik`,
+          description: wasActive
+            ? `${actor} fjernede det aktive hold ${label} fra ${selectedStudent.name}`
+            : wasIncluded
+              ? `${actor} fjernede overførslen fra ${label} for ${selectedStudent.name} — ${hoursFromHold} timer blev trukket ud af regnskabet igen`
+              : `${actor} fjernede ${label} fra ${selectedStudent.name}s holdhistorik`,
         },
       },
     );
@@ -196,9 +201,37 @@ const CourseHistory = () => {
                   Aktivt hold · kan registrere timer
                 </div>
               </div>
-              <span className="shrink-0 rounded-full border border-primary px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-primary">
-                Aktivt
-              </span>
+              {confirmRemoveCourseId === link.id ? (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span>Fjern holdet?</span>
+                  <Button
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary"
+                    onClick={() => removeCourseLink(link.id)}
+                  >
+                    <Check size={14} />
+                  </Button>
+                  <Button
+                    className="flex cursor-pointer rounded-lg border-[1.5px] border-border bg-paper p-1.5 text-ink-soft hover:border-primary hover:text-primary"
+                    onClick={() => setConfirmRemoveCourseId(null)}
+                  >
+                    <X size={14} />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="shrink-0 rounded-full border border-primary px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.04em] text-primary">
+                    Aktivt
+                  </span>
+                  <Button
+                    onClick={() => setConfirmRemoveCourseId(link.id)}
+                    variant="primaryIcon"
+                    size="icon"
+                    title="Fjern det aktive hold"
+                  >
+                    <X size={14} />
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
 

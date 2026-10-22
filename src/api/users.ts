@@ -45,6 +45,12 @@ export async function createKursist(input: {
   });
 }
 
+export async function cancelInvite(id: string): Promise<{ ok: boolean }> {
+  return request(`/users/${encodeURIComponent(id)}/cancel-invite`, {
+    method: "POST",
+  });
+}
+
 export async function resendInvite(
   id: string,
 ): Promise<{ ok: boolean; inviteToken?: string; mailPreview?: boolean }> {

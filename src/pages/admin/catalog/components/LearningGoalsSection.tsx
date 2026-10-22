@@ -31,10 +31,25 @@ export default function LearningGoalsSection() {
   const [editingGoalIndex, setEditingGoalIndex] = useState<number | null>(null);
   const [goalDraft, setGoalDraft] = useState("");
   const [newGoal, setNewGoal] = useState("");
+  const [showNewGoal, setShowNewGoal] = useState(false);
   const [goalError, setGoalError] = useState("");
   const [confirmDeleteGoal, setConfirmDeleteGoal] = useState<number | null>(
     null,
   );
+
+  const startNewGoal = () => {
+    setShowNewGoal(true);
+    setNewGoal("");
+    setGoalError("");
+    setEditingGoalIndex(null);
+    setConfirmDeleteGoal(null);
+  };
+
+  const cancelNewGoal = () => {
+    setShowNewGoal(false);
+    setNewGoal("");
+    setGoalError("");
+  };
 
   const addGoal = async () => {
     const text = newGoal.trim();
@@ -54,6 +69,7 @@ export default function LearningGoalsSection() {
     });
     setNewGoal("");
     setGoalError("");
+    setShowNewGoal(false);
   };
 
   const startEditGoal = (i: number) => {
@@ -61,6 +77,8 @@ export default function LearningGoalsSection() {
     setGoalDraft(LEARNING_GOALS[i]);
     setGoalError("");
     setConfirmDeleteGoal(null);
+    setShowNewGoal(false);
+    setNewGoal("");
   };
 
   const saveGoal = async (i: number) => {
@@ -119,16 +137,57 @@ export default function LearningGoalsSection() {
 
   return (
     <>
-      <SectionHeader
-        icon={<BookOpen size={20} />}
-        title="Læringsmål"
-        className="mb-2"
-      />
+      <div className="mb-2 flex items-center justify-between">
+        <SectionHeader icon={<BookOpen size={20} />} title="Læringsmål" />
+        {!showNewGoal && (
+          <Button variant="pill" size="xsmall" onClick={startNewGoal}>
+            <PlusCircle size={14} /> Tilføj læringsmål
+          </Button>
+        )}
+      </div>
       <p className="mb-3.5 text-sm leading-normal text-ink-soft">
         Kursisten vælger ét læringsmål pr. registrering. Retter I teksten på et
         læringsmål, opdateres eksisterende registreringer med. Fjerner I et,
         beholder gamle registreringer deres tekst.
       </p>
+
+      {showNewGoal && (
+        <div className="mb-2.5 overflow-hidden rounded-lg border border-border bg-card">
+          <div className="p-4">
+            <Input
+              type="text"
+              value={newGoal}
+              onChange={(e) => setNewGoal(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addGoal();
+              }}
+              placeholder="Vidensmål - Grundlæggende etiske principper i ..."
+            />
+            <div className="mt-2 flex gap-2.5">
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={cancelNewGoal}
+                disabled={isSaving}
+              >
+                Annuller
+              </Button>
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={addGoal}
+                disabled={isSaving}
+                aria-busy={isSaving}
+              >
+                {isSaving ? "Tilføjer…" : "Tilføj"}
+              </Button>
+            </div>
+            {goalError && (
+              <div className="mt-2 text-xs text-[#a14b36]">{goalError}</div>
+            )}
+          </div>
+        </div>
+      )}
 
       {LEARNING_GOALS.map((g, i) => (
         <div
@@ -233,32 +292,8 @@ export default function LearningGoalsSection() {
         </div>
       ))}
 
-      <div className="mt-2.5 flex flex-col gap-2 pt-2">
-        <div className="text-sm font-semibold">Tilføj et nyt læringsmål</div>
-        <div className="flex items-center gap-2 w-full">
-          <div className="w-full">
-            <Input
-              type="text"
-              value={newGoal}
-              onChange={(e) => setNewGoal(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") addGoal();
-              }}
-              placeholder="Vidensmål - Grundlæggende etiske principper i ..."
-            />
-          </div>
-          <Button variant="primary" size="small" onClick={addGoal}>
-            <PlusCircle size={14} /> Tilføj
-          </Button>
-        </div>
-      </div>
-      {goalError && (
-        <div
-          className="-mt-1.5 mb-3 text-xs text-[#a14b36]"
-          style={{ marginTop: 8 }}
-        >
-          {goalError}
-        </div>
+      {!showNewGoal && goalError && (
+        <div className="mt-2 mb-3 text-xs text-[#a14b36]">{goalError}</div>
       )}
     </>
   );
